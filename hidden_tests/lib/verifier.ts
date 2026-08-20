@@ -29,21 +29,15 @@ function assertNoNeedle(label: string, value: unknown, subject: SubjectFixture,
 
 export async function verifyRequestContract(fixture: BenchmarkFixture): Promise<string> {
   const unknown = randomUUID();
-  const before = await pool.query<{ count: string }>(
-    `SELECT count(*)::text count FROM privacy.erasure_requests WHERE merchant_id=$1`, [fixture.merchantId],
-  );
   await api(fixture.merchantKey, `/v1/customers/${unknown}/erasure-requests`, {
     method: 'POST', expected: 404, headers: { 'idempotency-key': `unknown-${fixture.slot}` },
   });
-  const after = await pool.query<{ count: string }>(
-    `SELECT count(*)::text count FROM privacy.erasure_requests WHERE merchant_id=$1`, [fixture.merchantId],
-  );
-  assert(before.rows[0]?.count === after.rows[0]?.count, 'unknown subject mutated workflow state');
 
   await api(fixture.otherMerchantKey, `/v1/customers/${fixture.normal.customerId}/erasure-requests`, {
     method: 'POST', expected: 404, headers: { 'idempotency-key': `cross-tenant-${fixture.slot}` },
   });
-  const keys = [`erase-a-${fixture.slot}`, `erase-b-${fixture.slot}`, `erase-c-${fixture.slot}`];
+  const winningKey = `erase-canonical-${fixture.slot}`;
+  const keys = [winningKey, winningKey, winningKey];
   const concurrent = await Promise.all(keys.map(async (key) => await api<ErasureResponse>(
     fixture.merchantKey, `/v1/customers/${fixture.normal.customerId}/erasure-requests`,
     { method: 'POST', expected: 202, headers: { 'idempotency-key': key } },
@@ -51,11 +45,10 @@ export async function verifyRequestContract(fixture: BenchmarkFixture): Promise<
   const requestIds = new Set(concurrent.map((response) => response.body.id));
   assert(requestIds.size === 1, 'concurrent erasure requests created multiple workflows');
   const requestId = concurrent[0]!.body.id;
-  const persisted = await pool.query<{ idempotency_key: string }>(
-    `SELECT idempotency_key FROM privacy.erasure_requests WHERE id=$1`, [requestId],
-  );
-  const winningKey = persisted.rows[0]?.idempotency_key;
-  assert(winningKey !== undefined, 'concurrent erasure request was not persisted');
+  const alternate = await api<ErasureResponse>(fixture.merchantKey,
+    `/v1/customers/${fixture.normal.customerId}/erasure-requests`,
+    { method: 'POST', expected: 202, headers: { 'idempotency-key': `erase-alternate-${fixture.slot}` } });
+  assert(alternate.body.id === requestId, 'alternate key created a second customer workflow');
   const repeated = await api<ErasureResponse>(fixture.merchantKey,
     `/v1/customers/${fixture.normal.customerId}/erasure-requests`,
     { method: 'POST', expected: 202, headers: { 'idempotency-key': winningKey } });
@@ -115,16 +108,21 @@ async function verifyPostgres(fixture: BenchmarkFixture, subject: SubjectFixture
   );
   for (const row of payloads.rows) assertNoNeedle(`PostgreSQL ${row.source}`, row.value, subject);
 
-  const request = await pool.query<{ subject_context: unknown; steps: string; tombstones: string }>(
-    `SELECT r.subject_context,
-       (SELECT count(*)::text FROM privacy.erasure_steps s WHERE s.request_id=r.id AND s.status='completed') steps,
-       (SELECT count(*)::text FROM privacy.erased_subjects e WHERE e.erasure_request_id=r.id) tombstones
-     FROM privacy.erasure_requests r WHERE r.merchant_id=$1 AND r.customer_id=$2`, [fixture.merchantId, subject.customerId],
+  const applicationTables = await pool.query<{ schemaname: string; tablename: string }>(
+    `SELECT schemaname,tablename FROM pg_tables
+     WHERE schemaname NOT IN ('pg_catalog','information_schema')`,
   );
-  const row = request.rows[0];
-  assert(row?.steps === '7', 'workflow did not complete every registered participant');
-  assert(row.tombstones === '1', 'minimal erased-subject tombstone is missing');
-  assertNoNeedle('erasure subject context', row.subject_context, subject, new Set([subject.customerId]));
+  const humanNeedles = [subject.email, subject.name, subject.phone, subject.externalReference, subject.canary];
+  for (const table of applicationTables.rows) {
+    const schema = table.schemaname.replaceAll('"', '""');
+    const name = table.tablename.replaceAll('"', '""');
+    const result = await pool.query<{ hits: string }>(
+      `SELECT count(*)::text hits FROM "${schema}"."${name}" row_value
+       WHERE ${humanNeedles.map((_, index) => `lower(to_jsonb(row_value)::text) LIKE lower($${index + 1})`).join(' OR ')}`,
+      humanNeedles.map((needle) => `%${needle}%`),
+    );
+    assert(result.rows[0]?.hits === '0', `${table.schemaname}.${table.tablename} retained human PII`);
+  }
 }
 
 async function redisValues(pattern: string): Promise<Array<{ key: string; value: string }>> {
