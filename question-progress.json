@@ -4,7 +4,7 @@
   "intent": "update",
   "project_path": "/Users/amaresh/Desktop/repositories/gdpr_benchmark/payflow_platform",
   "target_band": "unsolvable",
-  "current_phase": "package",
+  "current_phase": "publish",
   "phases": {
     "contract": { "status": "done", "artifacts": ["docs/privacy-and-retention.md", "docs/privacy-api.md"] },
     "inventory": { "status": "done", "artifacts": ["DESIGN.md"] },
@@ -99,6 +99,15 @@
         "in_band": true,
         "record": "calibration/attempts.json"
       }
+    },
+    "package": {
+      "status": "done",
+      "zip_path": "/Users/amaresh/Desktop/repositories/gdpr_benchmark/gdpr-customer-erasure.zip",
+      "zip_size_kb": 122.1,
+      "sha256": "05224f6c2e6fd8bd12d03e569cecfd7edc97d6af2e7196cd1db6c388f2c4855c",
+      "archive_integrity": "pass",
+      "candidate_export_leak_scan": "pass",
+      "handoff": "package-handoff.md"
     }
   }
 }
