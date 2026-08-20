@@ -8,13 +8,30 @@ function addString(output: Set<string>, value: unknown): void {
   if (typeof value === 'string' && value.length >= 3) output.add(value);
 }
 
+function addNestedStrings(output: Set<string>, value: unknown): void {
+  if (typeof value === 'string') {
+    addString(output, value);
+    return;
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) addNestedStrings(output, item);
+    return;
+  }
+  if (value && typeof value === 'object') {
+    for (const item of Object.values(value as Record<string, unknown>)) addNestedStrings(output, item);
+  }
+}
+
 function collectIdentityValues(customer: Record<string, unknown>, related: Array<Record<string, unknown>[]>): string[] {
   const output = new Set<string>();
   for (const field of ['email', 'name', 'phone', 'external_reference']) addString(output, customer[field]);
+  addNestedStrings(output, customer.metadata);
   for (const row of related.flat()) {
-    for (const field of ['value', 'line1', 'line2', 'postal_code', 'provider_token', 'billing_name', 'body']) {
+    for (const field of ['value', 'line1', 'line2', 'city', 'region', 'postal_code', 'provider_token',
+      'billing_name', 'body', 'subject']) {
       addString(output, row[field]);
     }
+    for (const field of ['billing_address', 'attachments']) addNestedStrings(output, row[field]);
   }
   return [...output];
 }
@@ -61,6 +78,8 @@ export class PrivacyRepository {
         client.query(`SELECT * FROM customers.contacts WHERE merchant_id=$1 AND customer_id=$2`, [merchantId, customerId]),
         client.query(`SELECT * FROM customers.payment_method_refs WHERE merchant_id=$1 AND customer_id=$2`, [merchantId, customerId]),
         client.query(`SELECT m.* FROM customers.support_messages m WHERE m.merchant_id=$1 AND m.author_type='customer' AND m.author_id=$2`, [merchantId, customerId]),
+        client.query(`SELECT t.* FROM customers.support_tickets t JOIN customers.support_participants p ON p.ticket_id=t.id
+          WHERE t.merchant_id=$1 AND p.customer_id=$2`, [merchantId, customerId]),
       ]);
       const surrogateId = uuid();
       const context: SubjectContext = {

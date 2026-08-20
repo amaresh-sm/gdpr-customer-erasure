@@ -4,7 +4,7 @@
   "intent": "update",
   "project_path": "/Users/amaresh/Desktop/repositories/gdpr_benchmark/payflow_platform",
   "target_band": "hard",
-  "current_phase": "verifier-design",
+  "current_phase": "mutation-testing",
   "phases": {
     "contract": { "status": "done", "artifacts": ["docs/privacy-and-retention.md", "docs/privacy-api.md"] },
     "inventory": { "status": "done", "artifacts": ["DESIGN.md"] },
@@ -38,6 +38,22 @@
         "dependency_retry": "pass",
         "tenant_isolation": "pass"
       }
+    },
+    "fixtures": {
+      "status": "done",
+      "artifacts": ["hidden_tests/lib/fixture.ts"],
+      "verification": { "reference": "pass", "deterministic_canaries": "pass" }
+    },
+    "verifier": {
+      "status": "done",
+      "artifacts": ["hidden_tests/lib/verifier.ts", "hidden_tests/run.ts"],
+      "verification": { "typecheck": "pass", "lint": "pass", "independent_store_clients": "pass" }
+    },
+    "hidden_suite": {
+      "status": "done",
+      "scenarios": ["tenant_and_idempotency", "cross_store_erasure", "retention",
+        "delayed_work", "historical_replay", "anti_overdeletion"],
+      "verification": { "reference": "8/8 pass", "question_baseline": "5/8 fail" }
     }
   }
 }
