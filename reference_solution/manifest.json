@@ -1,0 +1,25 @@
+{
+  "slug": "gdpr-customer-erasure",
+  "reference_branch": "solution/gdpr-customer-erasure",
+  "baseline_tag": "payflow-platform-v1.0.0",
+  "implementation": {
+    "service": "apps/privacy-service/src",
+    "shared_privacy": "packages/privacy/src",
+    "migration": "packages/database/migrations/002_privacy_erasure.sql",
+    "consumer_changes": [
+      "apps/projection-worker/src/main.ts",
+      "apps/notification-worker/src/main.ts",
+      "apps/document-worker/src/main.ts",
+      "apps/customer-service/src/service.ts",
+      "apps/customer-service/src/repository.ts"
+    ],
+    "integration": [
+      "apps/api-gateway/src/main.ts",
+      "packages/config/src/index.ts",
+      "docker-compose.yml",
+      "package.json",
+      "scripts/seed.ts"
+    ]
+  },
+  "note": "The complete answer key is the reference branch diff from the frozen baseline. This manifest is evaluator-only."
+}

@@ -1,0 +1,19 @@
+{
+  "mutations": [
+    {
+      "id": "primary-record-only",
+      "description": "Deletes the authoritative customer row but omits downstream stores, retained-record anonymization, and durable suppression.",
+      "expected_killer": "cross-store erasure"
+    },
+    {
+      "id": "missing-notification-replay",
+      "description": "Cleans current notification rows but omits the durable tombstone check in the asynchronous notification consumer.",
+      "expected_killer": "historical event replay"
+    },
+    {
+      "id": "blanket-financial-delete",
+      "description": "Treats financial records as ordinary PII and deletes payment and invoice facts instead of anonymizing retained records.",
+      "expected_killer": "financial retention"
+    }
+  ]
+}
