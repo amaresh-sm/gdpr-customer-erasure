@@ -4,7 +4,7 @@
   "intent": "update",
   "project_path": "/Users/amaresh/Desktop/repositories/gdpr_benchmark/payflow_platform",
   "target_band": "hard",
-  "current_phase": "candidate-brief",
+  "current_phase": "determinism",
   "phases": {
     "contract": { "status": "done", "artifacts": ["docs/privacy-and-retention.md", "docs/privacy-api.md"] },
     "inventory": { "status": "done", "artifacts": ["DESIGN.md"] },
@@ -63,6 +63,11 @@
         "missing-notification-replay": "killed by historical replay",
         "blanket-financial-delete": "killed by retention and delayed-work gates"
       }
+    },
+    "ps": {
+      "status": "done",
+      "problem_statement": "README.md",
+      "verification": { "section_count": 5, "spoiler_scan": "pass", "fixed_entry_points": "pass" }
     }
   }
 }
