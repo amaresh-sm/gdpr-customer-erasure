@@ -4,5 +4,6 @@ DESIGN.md export-ignore
 .naive_fixes/ export-ignore
 build-handoff.md export-ignore
 plan-handoff.md export-ignore
+package-handoff.md export-ignore
 question-progress.json export-ignore
 calibration/ export-ignore
