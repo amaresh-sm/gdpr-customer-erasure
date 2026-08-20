@@ -1,12 +1,18 @@
 import { writeFile } from 'node:fs/promises';
 import { closeClients } from './lib/clients.js';
 import { seedFixture, type BenchmarkFixture } from './lib/fixture.js';
-import { releaseDelayedWork, replayHistoricalPiiEvent, requestErasure, verifyErasedEverywhere,
-  verifyFinancialRetention, verifyRequestContract, verifySurvivorUntouched, waitForCompletion } from './lib/verifier.js';
+import { assertNoErasureViolations, collectErasureViolations, releaseDelayedWork,
+  replayHistoricalPiiEvent, requestErasure, verifyFinancialRetention, verifyRequestContract,
+  verifySurvivorUntouched, waitForCompletion } from './lib/verifier.js';
 
 interface TestResult { name: string; durationMs: number; error?: string }
 const results: TestResult[] = [];
 let fixture: BenchmarkFixture;
+
+function newlyIntroduced(previous: string[], current: string[]): string[] {
+  const baseline = new Set(previous);
+  return current.filter((violation) => !baseline.has(violation));
+}
 
 async function test(name: string, operation: () => Promise<void>): Promise<void> {
   const started = Date.now();
@@ -44,25 +50,31 @@ try {
       await waitForCompletion(fixture.merchantKey, normalRequest);
     });
     await test('normal subject PII is absent from every active store', async () => {
-      await verifyErasedEverywhere(fixture, fixture.normal);
+      assertNoErasureViolations(await collectErasureViolations(fixture, fixture.normal), 'normal erasure');
     });
     await test('financial truth and shared unrelated records are retained', async () => {
       await verifyFinancialRetention(fixture);
       await verifySurvivorUntouched(fixture);
     });
     let delayedRequest = '';
+    let delayedViolations: string[] = [];
     await test('pending asynchronous work is sanitized before completion', async () => {
       delayedRequest = await requestErasure(fixture.merchantKey, fixture.delayed.customerId, `delayed-${slot}`);
       await waitForCompletion(fixture.merchantKey, delayedRequest);
-      await verifyErasedEverywhere(fixture, fixture.delayed);
+      delayedViolations = await collectErasureViolations(fixture, fixture.delayed);
+      assertNoErasureViolations(delayedViolations, 'delayed-subject erasure');
     });
     await test('delayed webhook and document work cannot reintroduce PII', async () => {
       await releaseDelayedWork(fixture);
-      await verifyErasedEverywhere(fixture, fixture.delayed);
+      const current = await collectErasureViolations(fixture, fixture.delayed);
+      assertNoErasureViolations(newlyIntroduced(delayedViolations, current), 'delayed work');
+      delayedViolations = current;
     });
     await test('historical event replay is suppressed by durable erasure state', async () => {
       await replayHistoricalPiiEvent(fixture);
-      await verifyErasedEverywhere(fixture, fixture.delayed);
+      const current = await collectErasureViolations(fixture, fixture.delayed);
+      assertNoErasureViolations(newlyIntroduced(delayedViolations, current), 'historical replay');
+      delayedViolations = current;
     });
     await test('survivor remains unchanged after replay and delayed work', async () => {
       await verifySurvivorUntouched(fixture);

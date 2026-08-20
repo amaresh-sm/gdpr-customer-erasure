@@ -19,12 +19,12 @@ function needles(subject: SubjectFixture): string[] {
   return [subject.customerId, subject.email, subject.name, subject.phone, subject.externalReference, subject.canary];
 }
 
-function assertNoNeedle(label: string, value: unknown, subject: SubjectFixture,
-                        allowed: ReadonlySet<string> = new Set()): void {
+function needleHits(value: unknown, subject: SubjectFixture,
+                    allowed: ReadonlySet<string> = new Set()): string[] {
   const serialized = typeof value === 'string' ? value : JSON.stringify(value);
-  const hit = needles(subject).find((needle) => !allowed.has(needle) &&
-    serialized.toLowerCase().includes(needle.toLowerCase()));
-  assert(!hit, `${label} retained PII canary ${hit}`);
+  const labels = ['customer UUID', 'email', 'name', 'phone', 'external reference', 'PII canary'];
+  return needles(subject).flatMap((needle, index) => !allowed.has(needle) &&
+    serialized.toLowerCase().includes(needle.toLowerCase()) ? [labels[index]!] : []);
 }
 
 export async function verifyRequestContract(fixture: BenchmarkFixture): Promise<string> {
@@ -71,7 +71,8 @@ export async function waitForCompletion(apiKey: string, requestId: string): Prom
     { expected: 200 })).body, (body) => body.status === 'completed', `erasure request ${requestId}`, 160);
 }
 
-async function verifyPostgres(fixture: BenchmarkFixture, subject: SubjectFixture): Promise<void> {
+async function collectPostgresViolations(fixture: BenchmarkFixture, subject: SubjectFixture): Promise<string[]> {
+  const violations: string[] = [];
   const checks = await pool.query<{ source: string; hits: string }>(
     `SELECT 'customers' source,count(*)::text hits FROM customers.customers WHERE merchant_id=$1 AND id=$2
      UNION ALL SELECT 'addresses',count(*)::text FROM customers.addresses WHERE merchant_id=$1 AND customer_id=$2
@@ -86,7 +87,9 @@ async function verifyPostgres(fixture: BenchmarkFixture, subject: SubjectFixture
      UNION ALL SELECT 'manifest-link',count(*)::text FROM operations.document_manifests WHERE merchant_id=$1 AND customer_id=$2`,
     [fixture.merchantId, subject.customerId],
   );
-  for (const check of checks.rows) assert(check.hits === '0', `${check.source} retained direct subject link`);
+  for (const check of checks.rows) {
+    if (check.hits !== '0') violations.push(`${check.source} retained ${check.hits} direct subject link(s)`);
+  }
 
   const payloads = await pool.query<{ source: string; value: unknown }>(
     `SELECT 'audit' source,to_jsonb(a) value FROM platform.audit_logs a WHERE merchant_id=$1
@@ -106,7 +109,10 @@ async function verifyPostgres(fixture: BenchmarkFixture, subject: SubjectFixture
      UNION ALL SELECT 'notifications',to_jsonb(n) FROM operations.notifications n WHERE merchant_id=$1
      UNION ALL SELECT 'manifests',to_jsonb(m) FROM operations.document_manifests m WHERE merchant_id=$1`, [fixture.merchantId],
   );
-  for (const row of payloads.rows) assertNoNeedle(`PostgreSQL ${row.source}`, row.value, subject);
+  for (const row of payloads.rows) {
+    const hits = needleHits(row.value, subject);
+    if (hits.length > 0) violations.push(`PostgreSQL ${row.source} retained ${hits.join(', ')}`);
+  }
 
   const applicationTables = await pool.query<{ schemaname: string; tablename: string }>(
     `SELECT schemaname,tablename FROM pg_tables
@@ -121,8 +127,11 @@ async function verifyPostgres(fixture: BenchmarkFixture, subject: SubjectFixture
        WHERE ${humanNeedles.map((_, index) => `lower(to_jsonb(row_value)::text) LIKE lower($${index + 1})`).join(' OR ')}`,
       humanNeedles.map((needle) => `%${needle}%`),
     );
-    assert(result.rows[0]?.hits === '0', `${table.schemaname}.${table.tablename} retained human PII`);
+    if (result.rows[0]?.hits !== '0') {
+      violations.push(`${table.schemaname}.${table.tablename} retained human PII in ${result.rows[0]?.hits ?? 'unknown'} row(s)`);
+    }
   }
+  return violations;
 }
 
 async function redisValues(pattern: string): Promise<Array<{ key: string; value: string }>> {
@@ -161,26 +170,41 @@ async function listObjectNames(prefix: string): Promise<string[]> {
   });
 }
 
-async function verifyExternalStores(fixture: BenchmarkFixture, subject: SubjectFixture): Promise<void> {
+async function collectExternalStoreViolations(fixture: BenchmarkFixture, subject: SubjectFixture): Promise<string[]> {
+  const violations: string[] = [];
   const cache = await redisValues(`merchant:${fixture.merchantId}:*`);
-  for (const entry of cache) assertNoNeedle(`Redis ${entry.key}`, `${entry.key}\n${entry.value}`, subject);
+  for (const entry of cache) {
+    const hits = needleHits(`${entry.key}\n${entry.value}`, subject);
+    if (hits.length > 0) violations.push(`Redis ${entry.key} retained ${hits.join(', ')}`);
+  }
   const exists = await search.exists({ index: CUSTOMER_INDEX, id: `${fixture.merchantId}:${subject.customerId}` });
-  assert(!exists.body, 'OpenSearch retained the subject document');
+  if (exists.body) violations.push('OpenSearch retained the subject document');
   const result = await search.search({ index: CUSTOMER_INDEX, body: { size: 10, query: { query_string: {
     query: needles(subject).map((value) => `"${value.replaceAll('"', '\\"')}"`).join(' OR '),
   } } } });
   const hits = result.body.hits.total;
   const total = typeof hits === 'number' ? hits : hits?.value ?? 0;
-  assert(total === 0, 'OpenSearch retained a PII token');
+  if (total !== 0) violations.push(`OpenSearch retained PII tokens in ${total} document(s)`);
   for (const objectName of await listObjectNames(`${fixture.merchantId}/`)) {
     const object = await minio.getObject(DOCUMENT_BUCKET, objectName);
-    assertNoNeedle(`MinIO ${objectName}`, `${objectName}\n${await streamText(object)}`, subject);
+    const hits = needleHits(`${objectName}\n${await streamText(object)}`, subject);
+    if (hits.length > 0) violations.push(`MinIO ${objectName} retained ${hits.join(', ')}`);
   }
+  return violations;
+}
+
+export async function collectErasureViolations(fixture: BenchmarkFixture, subject: SubjectFixture): Promise<string[]> {
+  return [...await collectPostgresViolations(fixture, subject),
+    ...await collectExternalStoreViolations(fixture, subject)];
+}
+
+export function assertNoErasureViolations(violations: string[], phase = 'erasure verification'): void {
+  assert(violations.length === 0,
+    `${phase} found ${violations.length} violation(s):\n- ${violations.join('\n- ')}`);
 }
 
 export async function verifyErasedEverywhere(fixture: BenchmarkFixture, subject: SubjectFixture): Promise<void> {
-  await verifyPostgres(fixture, subject);
-  await verifyExternalStores(fixture, subject);
+  assertNoErasureViolations(await collectErasureViolations(fixture, subject));
 }
 
 export async function verifyFinancialRetention(fixture: BenchmarkFixture): Promise<void> {
