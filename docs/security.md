@@ -6,7 +6,9 @@ redact authorization headers, API keys, and provider tokens.
 
 Customer erasure requires the dedicated `privacy:erase` scope. Cross-merchant customer and request
 identifiers are returned as not found. The privacy worker retains only the raw internal UUID and an
-opaque replacement UUID after completion; its temporary subject context is cleared.
+opaque replacement UUID after completion; its temporary subject context is cleared. Outside the
+minimal erasure-request and suppression records, application data must reference only the opaque
+replacement UUID after completion, never the supplied customer UUID.
 
 Provider webhooks use an HMAC-SHA256 signature with constant-time comparison. Provider event IDs,
 API idempotency keys, and consumer event IDs provide separate replay protections at each trust

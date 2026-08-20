@@ -25,6 +25,11 @@ personal data is gone and later in-flight work cannot restore it. Required finan
 records belonging to other customers or merchants must remain correct and usable. Failed work must
 be observable and capable of converging safely when retried.
 
+The supplied customer UUID is itself part of the erasure boundary. After completion it may remain
+only in the minimal durable erasure-request and suppression records described by the retention
+policy. All other application-owned rows, payloads, cache entries, search documents, and object
+metadata must delete, null, or replace that UUID with an opaque replacement identifier.
+
 ## What you're working with
 
 The public HTTP entry point is `apps/api-gateway/src/main.ts`. Service boundaries and data flows are

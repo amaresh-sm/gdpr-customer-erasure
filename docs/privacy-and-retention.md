@@ -43,6 +43,13 @@ an opaque replacement UUID, request identifiers, status, and timestamps. It must
 customer's name, email, phone, address, external reference, payment-method token, or free-form
 metadata.
 
+The supplied customer UUID may appear only in those minimal erasure-request and suppression
+records after completion. Every other application-owned relationship—including retained payment,
+invoice, audit, job, notification, analytics, document-manifest, cache, search, and object-storage
+data—must delete or null the original UUID, or rekey it to the opaque replacement UUID. A redacted
+customer row that still uses the supplied UUID is not a suppression record and does not satisfy
+this contract.
+
 Kafka is a bounded-retention transport rather than an authoritative customer store. Historical log
 segments are not rewritten per customer. Consumers must ensure that retained or replayed events
 cannot restore personal data after an erasure has completed. PostgreSQL backups, database WAL, and
