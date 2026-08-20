@@ -3,8 +3,8 @@
   "type": "swe-task",
   "intent": "update",
   "project_path": "/Users/amaresh/Desktop/repositories/gdpr_benchmark/payflow_platform",
-  "target_band": "unsolvable",
-  "current_phase": "publish",
+  "target_band": "hard",
+  "current_phase": "validate",
   "phases": {
     "contract": { "status": "done", "artifacts": ["docs/privacy-and-retention.md", "docs/privacy-api.md"] },
     "inventory": { "status": "done", "artifacts": ["DESIGN.md"] },
@@ -76,7 +76,7 @@
       "scenario_checks": "40/40 pass"
     },
     "validate": {
-      "status": "done",
+      "status": "blocked",
       "mode": "discriminator",
       "matrix": {
         "question_baseline": "fail",
@@ -87,6 +87,7 @@
         "reference_determinism": "5/5 runs; 40/40 scenario checks"
       },
       "adversarial_solver": {
+        "status": "superseded",
         "reasoning_effort": "medium",
         "valid_attempts_per_model": 15,
         "models": {
@@ -97,7 +98,8 @@
         "band": "unsolvable",
         "accepted_reclassification": true,
         "in_band": true,
-        "record": "calibration/attempts.json"
+        "record": "calibration/attempts.json",
+        "superseded_reason": "replaced by the frozen-specification five-run audit"
       },
       "fairness_audit": {
         "status": "passed",
@@ -110,19 +112,21 @@
         "reference_commit": "b7aa314"
       },
       "five_run_sol_recalibration": {
-        "status": "in_progress",
+        "status": "complete",
         "planned_runs": 5,
-        "completed_runs": 3,
-        "provisional": true
+        "completed_runs": 5,
+        "full_passes": 0,
+        "scenario_checks": "28/40 pass",
+        "measured_direction": "unsolvable",
+        "provisional": true,
+        "certification_gate": "blocked: N=5 is below the required N>=15"
       }
     },
     "package": {
-      "status": "done",
-      "zip_path": "/Users/amaresh/Desktop/repositories/gdpr_benchmark/gdpr-customer-erasure.zip",
-      "zip_size_kb": 122.1,
-      "sha256": "05224f6c2e6fd8bd12d03e569cecfd7edc97d6af2e7196cd1db6c388f2c4855c",
-      "archive_integrity": "pass",
-      "candidate_export_leak_scan": "pass",
+      "status": "blocked",
+      "previous_zip": "/Users/amaresh/Desktop/repositories/gdpr_benchmark/gdpr-customer-erasure.zip",
+      "previous_zip_status": "stale; predates the frozen-specification recalibration",
+      "reason": "The current difficulty result is provisional because N=5 is below the N>=15 certification threshold.",
       "handoff": "package-handoff.md"
     }
   }

@@ -122,3 +122,25 @@ Verdict: both expectations are fair, repository-discoverable, production-authent
 covered by the public contract. No candidate-facing wording or hidden-verifier behavior was changed
 after this audit. The specification and verifier are frozen at candidate commit `7f42ed4` and
 reference commit `b7aa314` for the five-run provisional Sol calibration.
+
+## Frozen-specification Sol calibration — 2026-08-21
+
+Five independent `gpt-5.6-sol` attempts ran at medium reasoning from fresh exports of candidate
+commit `7f42ed4`. The hidden suite was absent while each solution was produced and was copied in only
+after the solution and visible checks were final. Every hidden score used a fresh Docker Compose
+project and the frozen eight-scenario verifier.
+
+| Attempt | Scenarios | Full solve | Principal misses |
+|---|---:|---:|---|
+| Sol 1 | 7/8 | no | pending asynchronous payload sanitation |
+| Sol 2 | 6/8 | no | normal and pending cross-store sanitation |
+| Sol 3 | 6/8 | no | invoice-line identity in normal and pending subjects |
+| Sol 4 | 6/8 | no | invoice lines plus pending payment-attempt payloads |
+| Sol 5 | 3/8 | no | orchestration timeout and downstream convergence |
+
+The panel produced **0/5 full solves** and **28/40 scenario checks passed**. This is directional
+evidence toward the `unsolvable` band, while the strong partial-score rate shows that capable
+solutions routinely implement most of the distributed contract. The band remains **provisional**:
+five attempts are below the `N >= 15` certification threshold, so the author target remains `hard`
+and publication certification is blocked pending ten additional valid Sol attempts (or an explicit
+benchmark-governance exception).
