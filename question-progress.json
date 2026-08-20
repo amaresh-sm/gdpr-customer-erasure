@@ -1,0 +1,21 @@
+{
+  "slug": "gdpr-customer-erasure",
+  "type": "swe-task",
+  "intent": "update",
+  "project_path": "/Users/amaresh/Desktop/repositories/gdpr_benchmark/payflow_platform",
+  "target_band": "hard",
+  "current_phase": "build",
+  "phases": {
+    "contract": { "status": "done", "artifacts": ["docs/privacy-and-retention.md", "docs/privacy-api.md"] },
+    "inventory": { "status": "done", "artifacts": ["DESIGN.md"] },
+    "semantics": { "status": "done", "artifacts": ["DESIGN.md"] },
+    "branches": {
+      "status": "done",
+      "solution_prod": "solution-prod",
+      "base_prod": "base-prod",
+      "solution_branch": "solution/gdpr-customer-erasure",
+      "candidate_branch": "question/gdpr-customer-erasure"
+    },
+    "build": { "status": "in_progress" }
+  }
+}
