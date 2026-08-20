@@ -4,7 +4,7 @@
   "intent": "update",
   "project_path": "/Users/amaresh/Desktop/repositories/gdpr_benchmark/payflow_platform",
   "target_band": "hard",
-  "current_phase": "determinism",
+  "current_phase": "adversarial-solver",
   "phases": {
     "contract": { "status": "done", "artifacts": ["docs/privacy-and-retention.md", "docs/privacy-api.md"] },
     "inventory": { "status": "done", "artifacts": ["DESIGN.md"] },
@@ -68,6 +68,12 @@
       "status": "done",
       "problem_statement": "README.md",
       "verification": { "section_count": 5, "spoiler_scan": "pass", "fixed_entry_points": "pass" }
+    },
+    "determinism": {
+      "status": "done",
+      "runs": 5,
+      "passed": 5,
+      "scenario_checks": "40/40 pass"
     }
   }
 }
