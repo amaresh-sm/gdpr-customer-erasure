@@ -1,0 +1,35 @@
+{
+  "benchmark": "gdpr-customer-erasure",
+  "completed_at": "2026-08-20",
+  "protocol": {
+    "fresh_candidate_workspace_per_attempt": true,
+    "candidate_hidden_test_access": false,
+    "reasoning_effort": "medium",
+    "valid_attempts_required_per_model": 15,
+    "full_pass_definition": "all 8 hidden behavioral scenarios pass",
+    "environment_blocked_attempts_excluded": true
+  },
+  "models": {
+    "gpt-5.6-sol": {
+      "valid_attempts": ["sol-1", "sol-2", "sol-3", "sol-4", "sol-5", "sol-7", "sol-8", "sol-9", "sol-12", "sol-14", "sol-15", "sol-16", "sol-18", "sol-19", "sol-20"],
+      "full_passes": [],
+      "full_pass_rate": 0.0,
+      "excluded_environment_attempts": ["sol-6", "sol-10", "sol-11", "sol-13"],
+      "excluded_protocol_attempts": ["sol-17"]
+    },
+    "gpt-5.6-terra": {
+      "valid_attempts": ["terra-1", "terra-2", "terra-4", "terra-5", "terra-6", "terra-9", "terra-10", "terra-12", "terra-14", "terra-15", "terra-16", "terra-17", "terra-18", "terra-19", "terra-20"],
+      "full_passes": [],
+      "full_pass_rate": 0.0,
+      "excluded_environment_attempts": ["terra-3", "terra-7", "terra-8b", "terra-11"],
+      "excluded_protocol_attempts": ["terra-13"]
+    }
+  },
+  "result": {
+    "author_target_band": "hard",
+    "measured_band": "unsolvable",
+    "accepted_band": "unsolvable",
+    "accepted_reclassification": true,
+    "max_model_full_pass_rate": 0.0
+  }
+}

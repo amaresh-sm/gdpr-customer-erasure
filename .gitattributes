@@ -5,3 +5,4 @@ DESIGN.md export-ignore
 build-handoff.md export-ignore
 plan-handoff.md export-ignore
 question-progress.json export-ignore
+calibration/ export-ignore
