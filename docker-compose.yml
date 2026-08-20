@@ -1,0 +1,206 @@
+name: payflow-platform
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: payflow
+      POSTGRES_USER: payflow
+      POSTGRES_PASSWORD: payflow
+    ports: ["5432:5432"]
+    volumes: ["postgres-data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payflow -d payflow"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports: ["6379:6379"]
+    volumes: ["redis-data:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  redpanda:
+    image: redpandadata/redpanda:v24.3.6
+    command: ["redpanda", "start", "--overprovisioned", "--smp", "1", "--memory", "768M", "--reserve-memory", "0M", "--node-id", "0", "--kafka-addr", "PLAINTEXT://0.0.0.0:9092", "--advertise-kafka-addr", "PLAINTEXT://redpanda:9092"]
+    ports: ["9092:9092", "9644:9644"]
+    volumes: ["redpanda-data:/var/lib/redpanda/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -q 'Healthy:.*true'"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  minio:
+    image: minio/minio:RELEASE.2025-02-28T09-55-16Z
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: payflow
+      MINIO_ROOT_PASSWORD: payflow-secret
+    ports: ["9000:9000", "9001:9001"]
+    volumes: ["minio-data:/data"]
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  opensearch:
+    image: opensearchproject/opensearch:2.18.0
+    environment:
+      discovery.type: single-node
+      DISABLE_SECURITY_PLUGIN: "true"
+      OPENSEARCH_JAVA_OPTS: -Xms512m -Xmx512m
+    ports: ["9200:9200"]
+    volumes: ["opensearch-data:/usr/share/opensearch/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:9200/_cluster/health >/dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+
+  migrator:
+    build: .
+    command: ["npm", "run", "migrate"]
+    env_file: [.env.docker]
+    depends_on:
+      postgres: {condition: service_healthy}
+
+  seed:
+    build: .
+    command: ["npm", "run", "seed"]
+    env_file: [.env.docker]
+    depends_on:
+      migrator: {condition: service_completed_successfully}
+      minio: {condition: service_healthy}
+    profiles: ["tools"]
+
+  verifier:
+    build: .
+    command: ["npm", "run", "verify:runtime"]
+    env_file: [.env.docker]
+    depends_on:
+      migrator: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+      minio: {condition: service_healthy}
+      opensearch: {condition: service_healthy}
+    profiles: ["tools"]
+
+  customer-service:
+    build: .
+    command: ["npm", "run", "start:customers"]
+    env_file: [.env.docker]
+    environment:
+      SERVICE_NAME: customer-service
+    depends_on:
+      migrator: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+      redpanda: {condition: service_healthy}
+      minio: {condition: service_healthy}
+    ports: ["3001:3001"]
+
+  payment-service:
+    build: .
+    command: ["npm", "run", "start:payments"]
+    env_file: [.env.docker]
+    environment:
+      SERVICE_NAME: payment-service
+    depends_on:
+      migrator: {condition: service_completed_successfully}
+      redpanda: {condition: service_healthy}
+      minio: {condition: service_healthy}
+      mock-processor: {condition: service_healthy}
+    ports: ["3002:3002"]
+
+  mock-processor:
+    build: .
+    command: ["npm", "run", "start:processor"]
+    env_file: [.env.docker]
+    environment:
+      SERVICE_NAME: mock-processor
+    ports: ["4000:4000"]
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:4000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  webhook-worker:
+    build: .
+    command: ["npm", "run", "start:webhooks"]
+    env_file: [.env.docker]
+    environment:
+      SERVICE_NAME: webhook-worker
+    depends_on:
+      migrator: {condition: service_completed_successfully}
+      redpanda: {condition: service_healthy}
+      minio: {condition: service_healthy}
+    ports: ["3010:3010"]
+
+  projection-worker:
+    build: .
+    command: ["npm", "run", "start:projections"]
+    env_file: [.env.docker]
+    environment:
+      SERVICE_NAME: projection-worker
+    depends_on:
+      migrator: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+      redpanda: {condition: service_healthy}
+      opensearch: {condition: service_healthy}
+
+  notification-worker:
+    build: .
+    command: ["npm", "run", "start:notifications"]
+    env_file: [.env.docker]
+    environment:
+      SERVICE_NAME: notification-worker
+    depends_on:
+      migrator: {condition: service_completed_successfully}
+      redpanda: {condition: service_healthy}
+
+  document-worker:
+    build: .
+    command: ["npm", "run", "start:documents"]
+    env_file: [.env.docker]
+    environment:
+      SERVICE_NAME: document-worker
+    depends_on:
+      migrator: {condition: service_completed_successfully}
+      minio: {condition: service_healthy}
+      redpanda: {condition: service_healthy}
+
+  reconciliation-service:
+    build: .
+    command: ["npm", "run", "start:reconciliation"]
+    env_file: [.env.docker]
+    environment:
+      SERVICE_NAME: reconciliation-service
+    depends_on:
+      migrator: {condition: service_completed_successfully}
+      mock-processor: {condition: service_healthy}
+    ports: ["3004:3004"]
+
+  api-gateway:
+    build: .
+    command: ["npm", "run", "start:gateway"]
+    env_file: [.env.docker]
+    environment:
+      SERVICE_NAME: api-gateway
+    depends_on:
+      customer-service: {condition: service_started}
+      payment-service: {condition: service_started}
+      reconciliation-service: {condition: service_started}
+    ports: ["3000:3000"]
+
+volumes:
+  postgres-data:
+  redis-data:
+  redpanda-data:
+  minio-data:
+  opensearch-data:
