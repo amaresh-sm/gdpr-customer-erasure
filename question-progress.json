@@ -42,19 +42,30 @@
       "passed": 5,
       "scenario_checks": "40/40 pass"
     },
-    "adversarial_solver": {
+    "validate": {
       "status": "done",
-      "reasoning_effort": "medium",
-      "valid_attempts_per_model": 15,
-      "models": {
-        "gpt-5.6-sol": { "full_passes": 0, "attempts": 15, "pass_rate": 0.0 },
-        "gpt-5.6-terra": { "full_passes": 0, "attempts": 15, "pass_rate": 0.0 }
+      "mode": "discriminator",
+      "matrix": {
+        "question_baseline": "fail",
+        "reference_solution": "8/8 pass",
+        "primary-record-only": "fail",
+        "missing-notification-replay": "fail",
+        "blanket-financial-delete": "fail",
+        "reference_determinism": "5/5 runs; 40/40 scenario checks"
       },
-      "author_target_band": "hard",
-      "measured_band": "unsolvable",
-      "accepted_reclassification": true,
-      "in_band_after_reclassification": true,
-      "record": "calibration/attempts.json"
+      "adversarial_solver": {
+        "reasoning_effort": "medium",
+        "valid_attempts_per_model": 15,
+        "models": {
+          "gpt-5.6-sol": { "full_passes": 0, "attempts": 15, "pass_rate": 0.0 },
+          "gpt-5.6-terra": { "full_passes": 0, "attempts": 15, "pass_rate": 0.0 }
+        },
+        "author_target_band": "hard",
+        "band": "unsolvable",
+        "accepted_reclassification": true,
+        "in_band": true,
+        "record": "calibration/attempts.json"
+      }
     }
   }
 }
