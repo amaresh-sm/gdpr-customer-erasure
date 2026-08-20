@@ -51,12 +51,17 @@ export async function verifyRequestContract(fixture: BenchmarkFixture): Promise<
   const requestIds = new Set(concurrent.map((response) => response.body.id));
   assert(requestIds.size === 1, 'concurrent erasure requests created multiple workflows');
   const requestId = concurrent[0]!.body.id;
+  const persisted = await pool.query<{ idempotency_key: string }>(
+    `SELECT idempotency_key FROM privacy.erasure_requests WHERE id=$1`, [requestId],
+  );
+  const winningKey = persisted.rows[0]?.idempotency_key;
+  assert(winningKey !== undefined, 'concurrent erasure request was not persisted');
   const repeated = await api<ErasureResponse>(fixture.merchantKey,
     `/v1/customers/${fixture.normal.customerId}/erasure-requests`,
-    { method: 'POST', expected: 202, headers: { 'idempotency-key': keys[0]! } });
+    { method: 'POST', expected: 202, headers: { 'idempotency-key': winningKey } });
   assert(repeated.body.id === requestId, 'idempotent retry changed request id');
   await api(fixture.merchantKey, `/v1/customers/${fixture.survivor.customerId}/erasure-requests`, {
-    method: 'POST', expected: 409, headers: { 'idempotency-key': keys[0]! },
+    method: 'POST', expected: 409, headers: { 'idempotency-key': winningKey },
   });
   return requestId;
 }

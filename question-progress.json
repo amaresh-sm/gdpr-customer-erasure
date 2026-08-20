@@ -4,7 +4,7 @@
   "intent": "update",
   "project_path": "/Users/amaresh/Desktop/repositories/gdpr_benchmark/payflow_platform",
   "target_band": "hard",
-  "current_phase": "mutation-testing",
+  "current_phase": "candidate-brief",
   "phases": {
     "contract": { "status": "done", "artifacts": ["docs/privacy-and-retention.md", "docs/privacy-api.md"] },
     "inventory": { "status": "done", "artifacts": ["DESIGN.md"] },
@@ -54,6 +54,15 @@
       "scenarios": ["tenant_and_idempotency", "cross_store_erasure", "retention",
         "delayed_work", "historical_replay", "anti_overdeletion"],
       "verification": { "reference": "8/8 pass", "question_baseline": "5/8 fail" }
+    },
+    "mutation_testing": {
+      "status": "done",
+      "artifacts": [".naive_fixes/mutations.json", ".naive_fixes/apply.mjs"],
+      "verification": {
+        "primary-record-only": "killed by cross-store erasure",
+        "missing-notification-replay": "killed by historical replay",
+        "blanket-financial-delete": "killed by retention and delayed-work gates"
+      }
     }
   }
 }
