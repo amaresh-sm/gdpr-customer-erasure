@@ -5,6 +5,7 @@ import { config } from '../../../packages/config/src/index.js';
 import { pool } from '../../../packages/database/src/pool.js';
 import { consumer, DOMAIN_TOPIC } from '../../../packages/messaging/src/kafka.js';
 import { logger } from '../../../packages/observability/src/logger.js';
+import { erasedSubjectSurrogate } from '../../../packages/privacy/src/subjects.js';
 import { CUSTOMER_INDEX, searchClient } from '../../../packages/search/src/client.js';
 
 process.env.SERVICE_NAME = 'projection-worker';
@@ -22,6 +23,15 @@ async function ensureIndex(): Promise<void> {
 async function project(event: EventEnvelope): Promise<void> {
   const customerId = typeof event.payload.customerId === 'string' ? event.payload.customerId : event.aggregateType === 'customer' ? event.aggregateId : undefined;
   const cacheKey = customerId ? `merchant:${event.merchantId}:customer:${customerId}` : undefined;
+  if (customerId && await erasedSubjectSurrogate(event.merchantId, customerId)) {
+    if (cacheKey) {
+      await redis.del(cacheKey, `${cacheKey}:activity`);
+      const documentId = `${event.merchantId}:${customerId}`;
+      const exists = await searchClient.exists({ index: CUSTOMER_INDEX, id: documentId });
+      if (exists.body) await searchClient.delete({ index: CUSTOMER_INDEX, id: documentId, refresh: true });
+    }
+    return;
+  }
   if (event.eventType === EVENT_TYPES.CUSTOMER_CREATED || event.eventType === EVENT_TYPES.CUSTOMER_UPDATED) {
     const document = { merchantId: event.merchantId, customerId, email: event.payload.email, name: event.payload.name,
       phone: event.payload.phone, updatedAt: event.occurredAt };

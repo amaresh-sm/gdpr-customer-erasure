@@ -24,7 +24,8 @@
     "start:projections": "tsx apps/projection-worker/src/main.ts",
     "start:notifications": "tsx apps/notification-worker/src/main.ts",
     "start:documents": "tsx apps/document-worker/src/main.ts",
-    "start:reconciliation": "tsx apps/reconciliation-service/src/main.ts"
+    "start:reconciliation": "tsx apps/reconciliation-service/src/main.ts",
+    "start:privacy": "tsx apps/privacy-service/src/main.ts"
   },
   "dependencies": {
     "@fastify/http-proxy": "11.6.0",

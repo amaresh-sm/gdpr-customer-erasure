@@ -46,7 +46,8 @@ export class CustomerRepository {
                version: number, fields: { email?: string | undefined; name?: string | undefined; phone?: string | null | undefined }): Promise<CustomerRow | undefined> {
     const result = await client.query<CustomerRow>(
       `UPDATE customers.customers SET email=COALESCE($4,email),name=COALESCE($5,name),phone=COALESCE($6,phone),
-       version=version+1,updated_at=now() WHERE merchant_id=$1 AND id=$2 AND version=$3 RETURNING *`,
+       version=version+1,updated_at=now()
+       WHERE merchant_id=$1 AND id=$2 AND version=$3 AND status='active' RETURNING *`,
       [merchantId, customerId, version, fields.email ?? null, fields.name ?? null, fields.phone ?? null],
     );
     return result.rows[0];

@@ -38,7 +38,8 @@ export class CustomerService {
   }): Promise<string> {
     const result = await client.query<{ id: string }>(
       `INSERT INTO customers.addresses(merchant_id,customer_id,kind,line1,line2,city,region,postal_code,country)
-       SELECT $1,id,$3,$4,$5,$6,$7,$8,$9 FROM customers.customers WHERE merchant_id=$1 AND id=$2 RETURNING id`,
+       SELECT $1,id,$3,$4,$5,$6,$7,$8,$9 FROM customers.customers
+       WHERE merchant_id=$1 AND id=$2 AND status='active' RETURNING id`,
       [merchantId, customerId, input.kind, input.line1, input.line2 ?? null, input.city, input.region ?? null,
        input.postalCode, input.country],
     );
@@ -55,7 +56,8 @@ export class CustomerService {
                    input: { kind: string; value: string; isPrimary: boolean }): Promise<string> {
     const result = await client.query<{ id: string }>(
       `INSERT INTO customers.contacts(merchant_id,customer_id,kind,value,is_primary)
-       SELECT $1,id,$3,$4,$5 FROM customers.customers WHERE merchant_id=$1 AND id=$2 RETURNING id`,
+       SELECT $1,id,$3,$4,$5 FROM customers.customers
+       WHERE merchant_id=$1 AND id=$2 AND status='active' RETURNING id`,
       [merchantId, customerId, input.kind, input.value, input.isPrimary],
     );
     if (!result.rows[0]) throw Object.assign(new Error('customer not found'), { statusCode: 404 });
@@ -73,7 +75,8 @@ export class CustomerService {
     const result = await client.query<{ id: string }>(
       `INSERT INTO customers.payment_method_refs
        (merchant_id,customer_id,provider_token,type,brand,last4,billing_name,billing_address)
-       SELECT $1,id,$3,$4,$5,$6,$7,$8 FROM customers.customers WHERE merchant_id=$1 AND id=$2 RETURNING id`,
+       SELECT $1,id,$3,$4,$5,$6,$7,$8 FROM customers.customers
+       WHERE merchant_id=$1 AND id=$2 AND status='active' RETURNING id`,
       [merchantId, customerId, input.providerToken, input.type, input.brand ?? null, input.last4 ?? null,
         input.billingName ?? null, input.billingAddress ?? null],
     );
@@ -90,7 +93,10 @@ export class CustomerService {
 
   async createSupportTicket(client: pg.PoolClient, merchantId: string, customerId: string,
                             subject: string, body: string): Promise<string> {
-    const exists = await client.query(`SELECT 1 FROM customers.customers WHERE merchant_id=$1 AND id=$2`, [merchantId, customerId]);
+    const exists = await client.query(
+      `SELECT 1 FROM customers.customers WHERE merchant_id=$1 AND id=$2 AND status='active'`,
+      [merchantId, customerId],
+    );
     if (!exists.rowCount) throw Object.assign(new Error('customer not found'), { statusCode: 404 });
     const ticket = await client.query<{ id: string }>(
       `INSERT INTO customers.support_tickets(merchant_id,subject) VALUES($1,$2) RETURNING id`, [merchantId, subject],

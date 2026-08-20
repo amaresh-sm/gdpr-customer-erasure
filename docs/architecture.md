@@ -8,6 +8,7 @@ api-gateway
   |-- payment-service ------- PostgreSQL(payments) + MinIO
   |      `-- mock-processor -- delayed signed webhooks
   |-- reconciliation-service -- immutable ledger + provider settlements
+  |-- privacy-service ------- durable erasure workflow + participant registry
   |
   `-- Kafka/Redpanda
          |-- projection-worker ---- Redis + OpenSearch

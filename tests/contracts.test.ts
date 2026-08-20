@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { createCustomerSchema, createPaymentSchema, createRefundSchema } from '../packages/contracts/src/domain.js';
 import { eventEnvelopeSchema } from '../packages/contracts/src/events.js';
 import { requestHash } from '../apps/payment-service/src/idempotency.js';
+import { containsSubjectValue, redactSubjectValue } from '../packages/privacy/src/redact.js';
 
 test('domain contracts normalize currency and reject invalid monetary values', () => {
   assert.equal(createPaymentSchema.parse({ customerId: randomUUID(), paymentMethodId: randomUUID(), amount: 100, currency: 'usd' }).currency, 'USD');
@@ -24,4 +25,18 @@ test('event envelopes require tenant, aggregate, and correlation identities', ()
 test('idempotency hashes are deterministic and payload-sensitive', () => {
   assert.equal(requestHash({ amount: 100 }), requestHash({ amount: 100 }));
   assert.notEqual(requestHash({ amount: 100 }), requestHash({ amount: 101 }));
+});
+
+test('privacy redaction replaces only the selected subject and preserves financial values', () => {
+  const context = { merchantId: randomUUID(), customerId: randomUUID(), surrogateId: randomUUID(),
+    sensitiveValues: ['erase-me@example.test', 'Erase Me'] };
+  const input = { customerId: context.customerId, email: 'erase-me@example.test', amount: 4200,
+    survivor: 'survivor@example.test', nested: { description: 'Invoice for Erase Me' } };
+  const output = redactSubjectValue(input, context);
+  assert.equal(output.customerId, context.surrogateId);
+  assert.equal(output.email, '[redacted]');
+  assert.equal(output.amount, 4200);
+  assert.equal(output.survivor, 'survivor@example.test');
+  assert.equal(output.nested.description, 'Invoice for [redacted]');
+  assert.equal(containsSubjectValue(output, context), false);
 });

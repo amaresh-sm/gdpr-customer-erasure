@@ -186,6 +186,19 @@ services:
       mock-processor: {condition: service_healthy}
     ports: ["3004:3004"]
 
+  privacy-service:
+    build: .
+    command: ["npm", "run", "start:privacy"]
+    env_file: [.env.docker]
+    environment:
+      SERVICE_NAME: privacy-service
+    depends_on:
+      migrator: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+      minio: {condition: service_healthy}
+      opensearch: {condition: service_healthy}
+    ports: ["3005:3005"]
+
   api-gateway:
     build: .
     command: ["npm", "run", "start:gateway"]
@@ -196,6 +209,7 @@ services:
       customer-service: {condition: service_started}
       payment-service: {condition: service_started}
       reconciliation-service: {condition: service_started}
+      privacy-service: {condition: service_started}
     ports: ["3000:3000"]
 
 volumes:

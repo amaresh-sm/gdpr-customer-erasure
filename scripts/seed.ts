@@ -24,8 +24,8 @@ await transaction(async (client) => {
   );
   await client.query(
     `INSERT INTO platform.api_keys(merchant_id,key_hash,label,scopes)
-     VALUES($1,$2,'secondary tenant',ARRAY['customers:read','customers:write','payments:read','payments:write','reconciliation:read','reconciliation:write'])
-     ON CONFLICT(key_hash) DO NOTHING`, [SECOND_MERCHANT_ID, createHash('sha256').update(SECOND_API_KEY).digest('hex')],
+     VALUES($1,$2,'secondary tenant',ARRAY['customers:read','customers:write','payments:read','payments:write','reconciliation:read','reconciliation:write','privacy:erase'])
+     ON CONFLICT(key_hash) DO UPDATE SET scopes=EXCLUDED.scopes`, [SECOND_MERCHANT_ID, createHash('sha256').update(SECOND_API_KEY).digest('hex')],
   );
   await client.query(
     `INSERT INTO platform.admins(id,merchant_id,email,display_name,role)
@@ -33,8 +33,8 @@ await transaction(async (client) => {
   );
   await client.query(
     `INSERT INTO platform.api_keys(merchant_id,key_hash,label,scopes)
-     VALUES($1,$2,'local benchmark',ARRAY['customers:read','customers:write','payments:read','payments:write','reconciliation:read','reconciliation:write'])
-     ON CONFLICT(key_hash) DO NOTHING`, [MERCHANT_ID, createHash('sha256').update(RAW_API_KEY).digest('hex')],
+     VALUES($1,$2,'local benchmark',ARRAY['customers:read','customers:write','payments:read','payments:write','reconciliation:read','reconciliation:write','privacy:erase'])
+     ON CONFLICT(key_hash) DO UPDATE SET scopes=EXCLUDED.scopes`, [MERCHANT_ID, createHash('sha256').update(RAW_API_KEY).digest('hex')],
   );
   for (const [code, name, accountType] of [
     ['PROCESSOR_CLEARING', 'Processor clearing', 'asset'], ['MERCHANT_PAYABLE', 'Merchant payable', 'liability'],

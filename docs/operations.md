@@ -20,6 +20,16 @@ between MinIO objects and PostgreSQL manifests.
 - Document jobs use exponential retry and retain each attempt.
 - Terminal webhook or job failures are copied to `operations.dead_letters` for operator review.
 - Redis and OpenSearch are disposable projections. Replaying the domain topic rebuilds them.
+- Privacy requests checkpoint an explicit participant registry. Completed steps are not repeated
+  after a participant failure, and stale customer events are suppressed by a minimal durable
+  erased-subject record.
+
+## Privacy recovery
+
+The public request status must remain `failed` while a required dependency is unavailable. The
+worker retries with bounded backoff and resumes from its stored participant checkpoints. Do not
+manually mark a request completed. Restore the failed dependency and inspect the request through
+`GET /v1/erasure-requests/:id`.
 
 ## Financial incident checks
 
