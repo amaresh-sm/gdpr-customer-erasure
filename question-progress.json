@@ -98,6 +98,22 @@
         "accepted_reclassification": true,
         "in_band": true,
         "record": "calibration/attempts.json"
+      },
+      "fairness_audit": {
+        "status": "passed",
+        "completed_at": "2026-08-21",
+        "invoice_lines": "candidate-visible and contract-derived",
+        "dead_letters": "candidate-visible and contract-derived",
+        "candidate_export_hidden_surface": "absent",
+        "specification_frozen": true,
+        "candidate_commit": "7f42ed4",
+        "reference_commit": "b7aa314"
+      },
+      "five_run_sol_recalibration": {
+        "status": "in_progress",
+        "planned_runs": 5,
+        "completed_runs": 3,
+        "provisional": true
       }
     },
     "package": {

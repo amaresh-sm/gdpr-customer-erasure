@@ -97,3 +97,28 @@ and public request state are graded.
 - Consumer-only tombstone: prevents new projections but leaves stored PII in active systems.
 
 Each must be materialized and rejected during the later discriminator phase.
+
+## Fairness audit and specification freeze — 2026-08-21
+
+The recurring Sol misses for `payments.invoice_lines` and `operations.dead_letters` were audited
+against the exact `git archive question/gdpr-customer-erasure` candidate workspace.
+
+- **Invoice-line descriptions are discoverable.** The public invoice API accepts an arbitrary
+  `description`, `apps/payment-service/src/invoices.ts` stores it verbatim in
+  `payments.invoice_lines` and in the invoice object, and the schema exposes the column. The README
+  explicitly requires correctness for arbitrary customer-supplied text. The retention policy says
+  retained financial facts do not justify retaining embedded identity, and that PostgreSQL,
+  embedded JSON, and MinIO documents must converge. Testing a customer name in an invoice-line
+  description is therefore a representative instance of the public contract, not a private rule.
+- **Dead-letter payloads are discoverable.** The retention policy explicitly includes dead letters
+  in the completion boundary. The operations runbook names `operations.dead_letters`; the schema
+  exposes its `payload` and `error` fields; and both the webhook and document workers visibly copy
+  failed payloads into it. Testing pre-existing PII in those fields follows directly from the
+  documented completion rule and production retry topology.
+- The candidate export contains all of those clues and excludes `hidden_tests/`, `DESIGN.md`, and
+  `calibration/` as intended.
+
+Verdict: both expectations are fair, repository-discoverable, production-authentic, and already
+covered by the public contract. No candidate-facing wording or hidden-verifier behavior was changed
+after this audit. The specification and verifier are frozen at candidate commit `7f42ed4` and
+reference commit `b7aa314` for the five-run provisional Sol calibration.
