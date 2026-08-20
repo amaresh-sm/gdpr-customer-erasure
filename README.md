@@ -1,37 +1,43 @@
-# PayFlow Platform
+# Implement durable customer erasure in PayFlow
 
-PayFlow is a production-shaped, multi-tenant payment platform. It models merchant administration,
-customers, tokenized payment methods, payment processing, refunds, invoices, immutable ledger
-postings, provider webhooks, event-driven projections, object storage, notifications, and
-reconciliation.
+You maintain PayFlow, a production-shaped, multi-tenant payment platform whose customer identity
+is propagated through synchronous services, asynchronous workers, and several storage systems.
 
-This repository is the ordinary product application. It intentionally contains no privacy-erasure
-feature, benchmark harness, reference solution, or candidate task.
+## The problem
 
-The local deployment is intentionally substantial: five stateful infrastructure systems and nine
-independently running application processes. It is designed for distributed-systems exercises,
-not as a single-process demo.
+PayFlow publishes a customer-erasure API contract, but the application does not yet carry out that
+contract. Implement it so an authenticated merchant can request erasure and observe durable
+progress. The behavior must remain correct under duplicate and concurrent requests, process
+restarts, dependency failures, delayed jobs and provider webhooks, old event delivery, tenant
+boundary probes, and arbitrary customer-supplied text.
 
-## Local environment
+## Requirement
 
-```bash
-docker compose up --build -d
-docker compose --profile tools run --rm seed
-npm run scenario
-docker compose --profile tools run --rm verifier
-```
+Implement these fixed public entry points through the API gateway; do not change their HTTP
+methods, paths, authentication model, or response shapes:
 
-Services:
+- `POST /v1/customers/:customerId/erasure-requests`
+- `GET /v1/erasure-requests/:requestId`
 
-- API gateway: `http://localhost:3000`
-- Customer service: `http://localhost:3001`
-- Payment service: `http://localhost:3002`
-- Reconciliation service: `http://localhost:3004`
-- Mock payment processor: `http://localhost:4000`
-- Signed provider-webhook receiver: `http://localhost:3010`
-- MinIO console: `http://localhost:9001`
-- OpenSearch: `http://localhost:9200`
-- Redpanda Kafka: `localhost:9092`
+The precise API behavior is in `docs/privacy-api.md`, and the erasure/retention contract is in
+`docs/privacy-and-retention.md`. A request may report `completed` only when the subject's active
+personal data is gone and later in-flight work cannot restore it. Required financial facts and
+records belonging to other customers or merchants must remain correct and usable. Failed work must
+be observable and capable of converging safely when retried.
 
-Run checks with `npm test`, `npm run typecheck`, `npm run lint`, and `npm audit --omit=dev`.
-Operational procedures and failure semantics are in [docs/operations.md](docs/operations.md).
+## What you're working with
+
+The public HTTP entry point is `apps/api-gateway/src/main.ts`. Service boundaries and data flows are
+documented in `docs/architecture.md`, `docs/domain-model.md`, and `docs/event-catalog.md`; operational
+and financial constraints are in `docs/operations.md` and `docs/financial-invariants.md`. The
+repository already provides PostgreSQL transaction primitives, authenticated merchant context,
+outbox/inbox messaging, background-worker patterns, and clients for Redis, OpenSearch, MinIO, and
+Kafka. You may add services, migrations, modules, and tests while preserving existing product
+behavior.
+
+## Verifying
+
+Run `npm ci`, then `npm test`, `npm run typecheck`, `npm run lint`, and `npm run build`. Start the
+full local environment with `docker compose up --build -d`; `npm run scenario` exercises ordinary
+payment flows. Passing the visible checks is necessary but not sufficient: the graded suite
+exercises the complete public contract and distributed failure conditions described above.

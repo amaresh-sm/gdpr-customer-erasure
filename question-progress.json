@@ -4,7 +4,7 @@
   "intent": "update",
   "project_path": "/Users/amaresh/Desktop/repositories/gdpr_benchmark/payflow_platform",
   "target_band": "hard",
-  "current_phase": "build",
+  "current_phase": "determinism",
   "phases": {
     "contract": { "status": "done", "artifacts": ["docs/privacy-and-retention.md", "docs/privacy-api.md"] },
     "inventory": { "status": "done", "artifacts": ["DESIGN.md"] },
@@ -16,6 +16,25 @@
       "solution_branch": "solution/gdpr-customer-erasure",
       "candidate_branch": "question/gdpr-customer-erasure"
     },
-    "build": { "status": "in_progress" }
+    "build": { "status": "done", "branch": "solution/gdpr-customer-erasure" },
+    "fixtures": { "status": "done", "artifacts": ["hidden_tests/lib/fixture.ts"] },
+    "verifier": { "status": "done", "artifacts": ["hidden_tests/lib/verifier.ts", "hidden_tests/run.ts"] },
+    "hidden_suite": {
+      "status": "done",
+      "verification": { "reference": "8/8 pass", "question_baseline": "5/8 fail" }
+    },
+    "mutation_testing": {
+      "status": "done",
+      "verification": {
+        "primary-record-only": "killed",
+        "missing-notification-replay": "killed",
+        "blanket-financial-delete": "killed"
+      }
+    },
+    "ps": {
+      "status": "done",
+      "problem_statement": "README.md",
+      "verification": { "section_count": 5, "spoiler_scan": "pass", "fixed_entry_points": "pass" }
+    }
   }
 }
