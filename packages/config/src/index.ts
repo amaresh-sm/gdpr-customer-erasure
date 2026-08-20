@@ -14,7 +14,6 @@ const schema = z.object({
   CUSTOMER_SERVICE_URL: z.string().url(),
   PAYMENT_SERVICE_URL: z.string().url(),
   RECONCILIATION_SERVICE_URL: z.string().url(),
-  PRIVACY_SERVICE_URL: z.string().url(),
   PROCESSOR_URL: z.string().url(),
   PROCESSOR_WEBHOOK_URL: z.string().url().default('http://webhook-worker:3010/provider/webhooks'),
   PROCESSOR_WEBHOOK_SECRET: z.string().min(8),

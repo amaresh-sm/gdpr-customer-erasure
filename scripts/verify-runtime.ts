@@ -8,11 +8,9 @@ import { DOCUMENT_BUCKET, objectStore } from '../packages/storage/src/minio.js';
 const database = await pool.query<{
   customers: string; payments: string; published: string; unfinished_webhooks: string; dead_letters: string;
   unbalanced_entries: string; missing_captures: string; unfinished_jobs: string; missing_receipts: string; manifests: string;
-  cache_expected: string;
 }>(`
   SELECT
     (SELECT count(*) FROM customers.customers)::text customers,
-    (SELECT count(*) FROM customers.customers WHERE updated_at>=now()-interval '55 minutes')::text cache_expected,
     (SELECT count(*) FROM payments.payment_intents)::text payments,
     (SELECT count(*) FROM operations.outbox_events WHERE status='published')::text published,
     (SELECT count(*) FROM operations.provider_webhooks WHERE status<>'processed')::text unfinished_webhooks,
@@ -48,7 +46,7 @@ do {
   cursor = next;
   projectedCustomers += keys.filter((key) => !key.endsWith(':activity')).length;
 } while (cursor !== '0');
-assert.ok(projectedCustomers >= Number(state.cache_expected), 'Redis customer projections are incomplete for the active TTL window');
+assert.ok(projectedCustomers >= Number(state.customers), 'Redis customer projections are incomplete');
 
 const search = await searchClient.count({ index: CUSTOMER_INDEX });
 assert.ok(search.body.count >= Number(state.customers), 'OpenSearch customer projections are incomplete');

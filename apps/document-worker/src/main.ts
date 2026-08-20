@@ -3,8 +3,6 @@ import { EVENT_TYPES } from '../../../packages/contracts/src/events.js';
 import { transaction } from '../../../packages/database/src/pool.js';
 import { startOutboxPublisher } from '../../../packages/messaging/src/publisher.js';
 import { logger } from '../../../packages/observability/src/logger.js';
-import { erasedCustomerBlock } from '../../../packages/privacy/src/redact.js';
-import { erasedSubjectSurrogate } from '../../../packages/privacy/src/subjects.js';
 import { storeReceipt } from '../../webhook-worker/src/receipt.js';
 
 process.env.SERVICE_NAME = 'document-worker';
@@ -33,17 +31,13 @@ async function claim(): Promise<(Job & { attemptId: string }) | undefined> {
 }
 
 async function complete(job: Job & { attemptId: string }): Promise<void> {
-  const surrogateId = await erasedSubjectSurrogate(job.merchant_id, job.payload.customerId);
-  const payload = surrogateId ? { ...job.payload, customerId: surrogateId,
-    customerSnapshot: erasedCustomerBlock({ merchantId: job.merchant_id, customerId: job.payload.customerId,
-      surrogateId, sensitiveValues: [] }) } : job.payload;
-  const stored = await storeReceipt(payload);
+  const stored = await storeReceipt(job.payload);
   await transaction(async (client) => {
     await client.query(
       `INSERT INTO operations.document_manifests
        (merchant_id,customer_id,object_key,document_type,content_type,checksum,metadata)
        VALUES($1,$2,$3,'receipt','application/json',$4,$5) ON CONFLICT(object_key) DO NOTHING`,
-      [job.merchant_id, payload.customerId, stored.objectKey, stored.checksum, { paymentId: payload.paymentId }],
+      [job.merchant_id, job.payload.customerId, stored.objectKey, stored.checksum, { paymentId: job.payload.paymentId }],
     );
     await addReceiptEvent(client, job, stored.objectKey);
     await client.query(`UPDATE operations.jobs SET status='completed',locked_by=NULL,locked_at=NULL WHERE id=$1`, [job.id]);

@@ -3,7 +3,6 @@ import { EVENT_TYPES, eventEnvelopeSchema } from '../../../packages/contracts/sr
 import { transaction } from '../../../packages/database/src/pool.js';
 import { consumer, DOMAIN_TOPIC } from '../../../packages/messaging/src/kafka.js';
 import { logger } from '../../../packages/observability/src/logger.js';
-import { isErasedSubject } from '../../../packages/privacy/src/subjects.js';
 
 process.env.SERVICE_NAME = 'notification-worker';
 const kafka = consumer('payflow-notifications-v1');
@@ -25,13 +24,8 @@ async function handle({ message }: EachMessagePayload): Promise<void> {
        VALUES('notification-worker',$1,$2,'processing') ON CONFLICT DO NOTHING`, [event.eventId, event.eventType],
     );
     if (!inserted.rowCount) return;
-    const customerId = typeof event.payload.customerId === 'string' ? event.payload.customerId : null;
-    if (customerId && await isErasedSubject(event.merchantId, customerId, client)) {
-      await client.query(`UPDATE operations.inbox_events SET status='processed',processed_at=now()
-        WHERE consumer='notification-worker' AND event_id=$1`, [event.eventId]);
-      return;
-    }
     const destination = String(event.payload.customerEmail ?? event.payload.email ?? '');
+    const customerId = typeof event.payload.customerId === 'string' ? event.payload.customerId : null;
     if (destination) {
       await client.query(
         `INSERT INTO operations.notification_preferences(merchant_id,customer_id,channel,destination)

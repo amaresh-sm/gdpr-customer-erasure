@@ -4,7 +4,7 @@
   "intent": "update",
   "project_path": "/Users/amaresh/Desktop/repositories/gdpr_benchmark/payflow_platform",
   "target_band": "hard",
-  "current_phase": "verifier-design",
+  "current_phase": "build",
   "phases": {
     "contract": { "status": "done", "artifacts": ["docs/privacy-and-retention.md", "docs/privacy-api.md"] },
     "inventory": { "status": "done", "artifacts": ["DESIGN.md"] },
@@ -16,28 +16,6 @@
       "solution_branch": "solution/gdpr-customer-erasure",
       "candidate_branch": "question/gdpr-customer-erasure"
     },
-    "build": {
-      "status": "done",
-      "branch": "solution/gdpr-customer-erasure",
-      "artifacts": [
-        "apps/privacy-service/src",
-        "packages/privacy/src",
-        "packages/database/migrations/002_privacy_erasure.sql",
-        "reference_solution/manifest.json",
-        "build-handoff.md"
-      ],
-      "verification": {
-        "typecheck": "pass",
-        "lint": "pass",
-        "unit_tests": "4/4 pass",
-        "build": "pass",
-        "runtime_verifier": "pass",
-        "normal_erasure": "pass",
-        "delayed_webhook": "pass",
-        "event_replay": "pass",
-        "dependency_retry": "pass",
-        "tenant_isolation": "pass"
-      }
-    }
+    "build": { "status": "in_progress" }
   }
 }

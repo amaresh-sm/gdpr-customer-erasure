@@ -1,7 +1,6 @@
 const services = [
   ['gateway', 'http://localhost:3000/health'], ['customers', 'http://localhost:3001/health'],
   ['payments', 'http://localhost:3002/health'], ['reconciliation', 'http://localhost:3004/health'],
-  ['privacy', 'http://localhost:3005/health'],
   ['processor', 'http://localhost:4000/health'], ['webhooks', 'http://localhost:3010/health'],
 ] as const;
 

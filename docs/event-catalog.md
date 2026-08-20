@@ -31,9 +31,5 @@ Operational events:
 - `settlement.imported.v1`
 - `reconciliation.completed.v1`
 
-Privacy erasure uses a durable participant workflow rather than broadcasting personal data in a
-new event. Existing consumers consult the minimal erased-subject suppression record before applying
-historical customer events.
-
 Payload schemas are defined in `packages/contracts` and consumers must ignore unknown additive
 fields. Breaking changes require a new event version.

@@ -31,13 +31,5 @@ methods are provider-token references; raw card or bank credentials are never ac
 - `POST /v1/reconciliation/runs` compares the latest settlement with captured payments.
 - `GET /v1/reconciliation/runs/:id` returns matched and mismatched line items.
 
-## Privacy erasure
-
-- `POST /v1/customers/:id/erasure-requests` requires `privacy:erase` and an `Idempotency-Key`.
-- `GET /v1/erasure-requests/:id` returns durable progress.
-
-The full completion and retention contract is in `privacy-and-retention.md`; request and response
-details are in `privacy-api.md`.
-
 The seed command prints two local merchant credentials. `npm run scenario` uses the first unless
 `PAYFLOW_API_KEY` is provided.

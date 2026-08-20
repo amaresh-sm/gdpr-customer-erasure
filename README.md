@@ -3,9 +3,12 @@
 PayFlow is a production-shaped, multi-tenant payment platform. It models merchant administration,
 customers, tokenized payment methods, payment processing, refunds, invoices, immutable ledger
 postings, provider webhooks, event-driven projections, object storage, notifications, and
-reconciliation, and durable privacy erasure.
+reconciliation.
 
-The local deployment is intentionally substantial: five stateful infrastructure systems and ten
+This repository is the ordinary product application. It intentionally contains no privacy-erasure
+feature, benchmark harness, reference solution, or candidate task.
+
+The local deployment is intentionally substantial: five stateful infrastructure systems and nine
 independently running application processes. It is designed for distributed-systems exercises,
 not as a single-process demo.
 
@@ -24,7 +27,6 @@ Services:
 - Customer service: `http://localhost:3001`
 - Payment service: `http://localhost:3002`
 - Reconciliation service: `http://localhost:3004`
-- Privacy service: `http://localhost:3005`
 - Mock payment processor: `http://localhost:4000`
 - Signed provider-webhook receiver: `http://localhost:3010`
 - MinIO console: `http://localhost:9001`
@@ -33,5 +35,3 @@ Services:
 
 Run checks with `npm test`, `npm run typecheck`, `npm run lint`, and `npm audit --omit=dev`.
 Operational procedures and failure semantics are in [docs/operations.md](docs/operations.md).
-Privacy behavior is defined by [docs/privacy-and-retention.md](docs/privacy-and-retention.md) and
-[docs/privacy-api.md](docs/privacy-api.md).
