@@ -145,6 +145,16 @@
         "model": "gpt-5.6-sol",
         "reasoning_effort": "high",
         "reason": "Fresh, candidate-only workspace and separate hidden scorer were used. The runner reported fixture and financial-retention passes, then request-contract timeout and normal-erasure failures before terminating without results for all eight scenarios. It is retained as diagnostic evidence, not counted in the calibrated score."
+      },
+      {
+        "id": "sol-mailpit-high-final",
+        "model": "gpt-5.6-sol",
+        "reasoning_effort": "high",
+        "scenarios_passed": 3,
+        "scenarios_total": 8,
+        "full_pass": false,
+        "failed_scenarios": ["request contract is tenant-safe, concurrent, and idempotent", "normal subject PII is absent from every active store", "pending asynchronous work is sanitized before completion", "delayed webhook and document work cannot reintroduce PII", "historical event replay is suppressed by durable erasure state"],
+        "reason": "Full JUnit report captured by a detached isolated scorer with 90-second per-scenario limits. Not aggregated into the calibrated panel until the changed verifier is requalified against the reference."
       }
     ]
   },
