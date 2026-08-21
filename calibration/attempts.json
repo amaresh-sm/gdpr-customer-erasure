@@ -132,7 +132,15 @@
       "reason": "Three valid Terra attempts are directional evidence only; N >= 15 is required for certification."
     },
     "reference_determinism": { "runs": 5, "scenario_checks": "40/40 pass" },
-    "excluded_attempts": [{ "id": "terra-mailpit-preflight", "reason": "archive setup stopped before implementation; no score was collected" }]
+    "excluded_attempts": [
+      { "id": "terra-mailpit-preflight", "reason": "archive setup stopped before implementation; no score was collected" },
+      {
+        "id": "sol-mailpit-xhigh-isolated",
+        "model": "gpt-5.6-sol",
+        "reasoning_effort": "xhigh",
+        "reason": "Fresh, candidate-only workspace and separate hidden scorer were used. The candidate's erasure worker hit a PostgreSQL UUID/text parameter error; the runner reported fixture and financial-retention passes, then request-contract and normal-erasure failures before terminating without results for all eight scenarios. It is retained as diagnostic evidence, not counted in the calibrated score."
+      }
+    ]
   },
   "superseded_calibration": {
     "completed_at": "2026-08-20",
