@@ -193,8 +193,10 @@ async function collectExternalStoreViolations(fixture: BenchmarkFixture, subject
   for (const needle of [subject.email, subject.canary]) {
     const response = await fetch(`${settings.mailpit}/api/v1/search?query=${encodeURIComponent(needle)}`);
     if (!response.ok) throw new Error(`Mailpit search failed: ${response.status}`);
-    const body = await response.json() as { total?: number; messages?: unknown[] };
-    const total = body.total ?? body.messages?.length ?? 0;
+    const body = await response.json() as { messages_count?: number; messages?: unknown[] };
+    // Mailpit's `total` is the total mailbox size, not the number matching
+    // the query. Only `messages_count` represents a scoped PII hit.
+    const total = body.messages_count ?? body.messages?.length ?? 0;
     if (total > 0) violations.push(`Mailpit retained ${needle} in ${total} provider message(s)`);
   }
   return violations;

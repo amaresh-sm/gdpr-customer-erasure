@@ -47,14 +47,7 @@ async function matchingMessageIds(destination: string): Promise<string[]> {
   return [...new Set((body.messages ?? []).map(messageId).filter((id): id is string => Boolean(id)))];
 }
 
-/** Returns whether the provider still has a message for the supplied recipient. */
-export async function mailpitHasMessagesForRecipient(destination: string): Promise<boolean> {
-  return (await matchingMessageIds(destination)).length > 0;
-}
-
-/** Removes captured provider messages addressed to a deleted subject. */
-export async function deleteMailpitMessagesForRecipient(destination: string): Promise<void> {
-  const ids = await matchingMessageIds(destination);
+async function deleteMessageIds(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
   const response = await request('/api/v1/messages', {
     method: 'DELETE',
@@ -62,4 +55,19 @@ export async function deleteMailpitMessagesForRecipient(destination: string): Pr
     body: JSON.stringify({ IDs: ids }),
   });
   if (!response.ok) throw new Error(`mailpit_delete_failed:${response.status}`);
+}
+
+/** Removes known provider messages without relying on the eventually consistent search index. */
+export async function deleteMailpitMessageIds(ids: readonly string[]): Promise<void> {
+  await deleteMessageIds([...new Set(ids)]);
+}
+
+/** Returns whether the provider still has a message for the supplied recipient. */
+export async function mailpitHasMessagesForRecipient(destination: string): Promise<boolean> {
+  return (await matchingMessageIds(destination)).length > 0;
+}
+
+/** Removes captured provider messages addressed to a deleted subject. */
+export async function deleteMailpitMessagesForRecipient(destination: string): Promise<void> {
+  await deleteMessageIds(await matchingMessageIds(destination));
 }

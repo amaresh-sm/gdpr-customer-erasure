@@ -1,6 +1,6 @@
 import type { EachMessagePayload } from 'kafkajs';
 import { EVENT_TYPES, eventEnvelopeSchema } from '../../../packages/contracts/src/events.js';
-import { pool, transaction } from '../../../packages/database/src/pool.js';
+import { pool, transaction, withAdvisoryLock } from '../../../packages/database/src/pool.js';
 import { consumer, DOMAIN_TOPIC } from '../../../packages/messaging/src/kafka.js';
 import { sendMailpitEmail } from '../../../packages/notifications/src/mailpit.js';
 import { logger } from '../../../packages/observability/src/logger.js';
@@ -101,25 +101,40 @@ async function claimDelivery(): Promise<Delivery | undefined> {
 async function deliverOne(): Promise<boolean> {
   const delivery = await claimDelivery();
   if (!delivery) return false;
-  try {
-    const providerMessageId = await sendMailpitEmail({ messageKey: delivery.message_key, destination: delivery.destination,
-      subject: delivery.subject, textBody: delivery.text_body, htmlBody: delivery.html_body });
-    await pool.query(
-      `UPDATE operations.email_deliveries SET status='delivered',provider_message_id=$2,delivered_at=now(),last_error=NULL WHERE id=$1`,
-      [delivery.id, providerMessageId ?? null],
-    );
-    await pool.query(
-      `UPDATE operations.notifications SET status='delivered',attempts=attempts+1,delivered_at=now()
-       WHERE merchant_id=$1 AND customer_id IS NOT DISTINCT FROM $2 AND destination=$3 AND template=$4 AND status='queued'`,
-      [delivery.merchant_id, delivery.customer_id, delivery.destination, delivery.template],
-    );
-  } catch (error) {
-    const delay = Math.min(30, 2 ** delivery.attempts);
-    await pool.query(
-      `UPDATE operations.email_deliveries SET status='failed',last_error=$2,available_at=now()+($3 || ' seconds')::interval WHERE id=$1`,
-      [delivery.id, error instanceof Error ? error.message.slice(0, 300) : 'provider_error', delay],
-    );
-  }
+  const lockKey = delivery.customer_id ? `privacy:${delivery.merchant_id}:${delivery.customer_id}` : undefined;
+  const send = async (): Promise<void> => {
+    if (delivery.customer_id && await isErasedSubject(delivery.merchant_id, delivery.customer_id)) {
+      await pool.query(
+        `UPDATE operations.email_deliveries SET customer_id=(SELECT surrogate_id FROM privacy.erased_subjects WHERE merchant_id=$2 AND customer_id=$3),
+         destination='[redacted]',subject='[redacted]',text_body='[redacted]',html_body='[redacted]',
+         provider_message_id=NULL,status='cancelled',cancelled_at=now(),last_error=NULL WHERE id=$1`,
+        [delivery.id, delivery.merchant_id, delivery.customer_id],
+      );
+      return;
+    }
+    try {
+      const providerMessageId = await sendMailpitEmail({ messageKey: delivery.message_key, destination: delivery.destination,
+        subject: delivery.subject, textBody: delivery.text_body, htmlBody: delivery.html_body });
+      await pool.query(
+        `UPDATE operations.email_deliveries SET status='delivered',provider_message_id=$2,delivered_at=now(),last_error=NULL
+         WHERE id=$1 AND status='processing'`, [delivery.id, providerMessageId ?? null],
+      );
+      await pool.query(
+        `UPDATE operations.notifications SET status='delivered',attempts=attempts+1,delivered_at=now()
+         WHERE merchant_id=$1 AND customer_id IS NOT DISTINCT FROM $2 AND destination=$3 AND template=$4 AND status='queued'`,
+        [delivery.merchant_id, delivery.customer_id, delivery.destination, delivery.template],
+      );
+    } catch (error) {
+      const delay = Math.min(30, 2 ** delivery.attempts);
+      await pool.query(
+        `UPDATE operations.email_deliveries SET status='failed',last_error=$2,available_at=now()+($3 || ' seconds')::interval
+         WHERE id=$1 AND status='processing'`,
+        [delivery.id, error instanceof Error ? error.message.slice(0, 300) : 'provider_error', delay],
+      );
+    }
+  };
+  if (lockKey) await withAdvisoryLock(lockKey, async () => await send());
+  else await send();
   return true;
 }
 
