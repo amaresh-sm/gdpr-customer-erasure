@@ -176,3 +176,17 @@ that stopped before implementation was excluded.
 
 This is directional evidence toward `unsolvable`, not a certified band: N=3 is below the required
 N>=15. No candidate-facing behavior changed during the calibration.
+
+## Certified Mailpit scorer repair and Sol rerun — 2026-08-21
+
+The Mailpit verifier originally treated the provider API's `total` field as query matches. Mailpit
+defines that field as the complete mailbox size; `messages_count` is the scoped search result. This
+made an unrelated survivor message look like retained target PII. The verifier now uses
+`messages_count`, and the reference implementation was requalified in five fresh Docker stacks:
+**40/40 scenarios passed**.
+
+One preserved high-reasoning Sol candidate was then rerun from a fresh candidate-only stack with the
+hidden suite mounted read-only only for scoring. It scored **3/8**. The failed erasure worker logs
+show PostgreSQL SQLSTATE `42P18`: one outbox scrub parameter is bound as both `uuid` and `text`, so
+the transaction rolls back before any durable cleanup. This is a certified result for that candidate
+implementation, but remains model-calibration provisional at N=1.

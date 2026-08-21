@@ -132,6 +132,44 @@
       "reason": "Three valid Terra attempts are directional evidence only; N >= 15 is required for certification."
     },
     "reference_determinism": { "runs": 5, "scenario_checks": "40/40 pass" },
+    "certified_sol_runs": {
+      "status": "provisional",
+      "protocol": {
+        "candidate_commit": "5b49e21",
+        "reference_commit": "de8d916",
+        "reference_determinism": "5 fresh runs, 40/40 scenarios pass",
+        "fresh_candidate_workspace": true,
+        "candidate_hidden_test_access": false,
+        "model": "gpt-5.6-sol",
+        "reasoning_effort": "high",
+        "runtime": "fresh Docker Compose candidate stack with read-only hidden-test mount"
+      },
+      "attempts": [
+        {
+          "id": "sol-high-certified-1",
+          "scenarios_passed": 3,
+          "scenarios_total": 8,
+          "full_pass": false,
+          "failed_scenarios": [
+            "request contract is tenant-safe, concurrent, and idempotent",
+            "normal subject PII is absent from every active store",
+            "pending asynchronous work is sanitized before completion",
+            "delayed webhook and document work cannot reintroduce PII",
+            "historical event replay is suppressed by durable erasure state"
+          ],
+          "diagnosis": "The candidate repeatedly raises PostgreSQL SQLSTATE 42P18 in its erasure transaction by binding one placeholder as both uuid and text; the transaction rolls back before distributed cleanup."
+        }
+      ],
+      "result": {
+        "full_passes": 0,
+        "full_pass_rate": 0.0,
+        "scenario_checks_passed": 3,
+        "scenario_checks_total": 8,
+        "scenario_pass_rate": 0.375,
+        "provisional": true,
+        "reason": "One certified Sol run is evidence about this implementation, not a model-level difficulty estimate."
+      }
+    },
     "excluded_attempts": [
       { "id": "terra-mailpit-preflight", "reason": "archive setup stopped before implementation; no score was collected" },
       {
