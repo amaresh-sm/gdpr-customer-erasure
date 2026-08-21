@@ -18,6 +18,7 @@ const schema = z.object({
   PROCESSOR_WEBHOOK_URL: z.string().url().default('http://webhook-worker:3010/provider/webhooks'),
   PROCESSOR_WEBHOOK_SECRET: z.string().min(8),
   INTERNAL_SERVICE_TOKEN: z.string().min(8),
+  MAILPIT_API_URL: z.string().url(),
 });
 
 export type Config = z.infer<typeof schema>;
