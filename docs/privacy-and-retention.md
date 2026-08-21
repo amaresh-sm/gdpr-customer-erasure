@@ -31,8 +31,8 @@ or the operational ticket record that the other participant still relies on.
 
 An erasure is complete only when all mutable online copies governed by PayFlow have converged to
 the policy above. Completion includes PostgreSQL records and embedded JSON, Redis, OpenSearch,
-MinIO documents, pending work, dead letters, notifications, analytics, and other application-owned
-projections.
+MinIO documents, pending work, dead letters, notification delivery records, the application-owned
+Mailpit provider mailbox, analytics, and other application-owned projections.
 
 Completion must remain true after duplicate delivery, process restart, retry, a delayed provider
 webhook, or replay of an event that was created before erasure. Existing financial processing must
@@ -46,7 +46,8 @@ metadata.
 The supplied customer UUID may appear only in those minimal erasure-request and suppression
 records after completion. Every other application-owned relationship—including retained payment,
 invoice, audit, job, notification, analytics, document-manifest, cache, search, and object-storage
-data—must delete or null the original UUID, or rekey it to the opaque replacement UUID. A redacted
+data—including queued, retried, or provider-captured email—must delete or null the original UUID,
+or rekey it to the opaque replacement UUID. A redacted
 customer row that still uses the supplied UUID is not a suppression record and does not satisfy
 this contract.
 
@@ -55,6 +56,10 @@ segments are not rewritten per customer. Consumers must ensure that retained or 
 cannot restore personal data after an erasure has completed. PostgreSQL backups, database WAL, and
 infrastructure disaster-recovery media are governed by separate expiry and access procedures and
 are outside the online erasure operation.
+
+Mailpit models only the PayFlow-controlled capture/archive used by this local deployment. Its
+messages must be removed or made free of the erased subject's data before completion. This does not
+claim that PayFlow can delete a message already delivered to an independent recipient mailbox.
 
 ## Isolation and availability
 

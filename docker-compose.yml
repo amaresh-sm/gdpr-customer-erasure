@@ -64,6 +64,15 @@ services:
       timeout: 5s
       retries: 40
 
+  mailpit:
+    image: axllent/mailpit:v1.24.1
+    ports: ["1025:1025", "8025:8025"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8025/api/v1/info"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
   migrator:
     build: .
     command: ["npm", "run", "migrate"]
@@ -163,6 +172,7 @@ services:
     depends_on:
       migrator: {condition: service_completed_successfully}
       redpanda: {condition: service_healthy}
+      mailpit: {condition: service_healthy}
 
   document-worker:
     build: .

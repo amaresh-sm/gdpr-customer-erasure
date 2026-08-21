@@ -12,7 +12,7 @@ api-gateway
   |
   `-- Kafka/Redpanda
          |-- projection-worker ---- Redis + OpenSearch
-         |-- notification-worker -- notification delivery history
+         |-- notification-worker -- PostgreSQL delivery queue -> Mailpit provider
          |-- webhook-worker ------- inbox -> payment state machine
          `-- document-worker ------ durable jobs -> MinIO receipts
 ```
@@ -25,6 +25,15 @@ Receipt creation deliberately crosses an asynchronous boundary. The webhook work
 capture, ledger entry, payment event, and document job together. The document worker claims jobs
 with `SKIP LOCKED`, writes a deterministic MinIO object, records its checksum manifest, and emits a
 receipt event. Attempts are retained and terminal failures move to the dead-letter table.
+
+## Outbound email
+
+The notification worker translates payment and invoice events into durable
+`operations.email_deliveries` records. It renders the recipient address and product payload before
+submitting the message through the local Mailpit provider API. Delivery records are claimed with
+`SKIP LOCKED`, retry transient provider failures with backoff, and retain a provider message
+reference when delivery succeeds. Mailpit is an application-owned captured-mail provider in this
+environment: its SMTP/API mailbox is operational state, not an end user's external inbox.
 
 ## Non-negotiable boundaries
 
