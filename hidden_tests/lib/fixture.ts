@@ -27,6 +27,7 @@ export interface BenchmarkFixture {
   survivor: { customerId: string; email: string; name: string; phone: string; externalReference: string };
   delayedWebhookId: string;
   delayedJobId: string;
+  delayedEmailDeliveryId: string;
   normalFinancial: { amount: string; currency: string; status: string; postings: string; signedBalance: string };
 }
 
@@ -106,6 +107,10 @@ export async function seedFixture(slot: string): Promise<BenchmarkFixture> {
   await poll(async () => Number((await pool.query<{ count: string }>(
     `SELECT count(*)::text count FROM operations.document_manifests WHERE metadata->>'paymentId'=$1`, [normal.paymentId])).rows[0]!.count),
   (count) => count === 1, 'normal receipt');
+  await poll(async () => Number((await pool.query<{ count: string }>(
+    `SELECT count(*)::text count FROM operations.email_deliveries
+     WHERE merchant_id=$1 AND customer_id=$2 AND status='delivered'`, [merchant.id, normal.customerId])).rows[0]!.count),
+  (count) => count >= 1, 'normal Mailpit delivery');
 
   const delayedPaymentId = fixtureUuid(`${slot}:delayed-payment`);
   const providerPaymentId = `pi_hidden_${createHash('sha256').update(slot).digest('hex').slice(0, 16)}`;
@@ -137,6 +142,14 @@ export async function seedFixture(slot: string): Promise<BenchmarkFixture> {
       { merchantId: merchant.id, customerId: delayed.customerId, paymentId: delayedPaymentId,
         amount: 9100, currency: 'USD', customerSnapshot: { email: delayed.email, name: delayed.name, canary: delayed.canary } }],
   );
+  const delayedEmailDeliveryId = fixtureUuid(`${slot}:delayed-email-delivery`);
+  await pool.query(
+    `INSERT INTO operations.email_deliveries
+     (id,merchant_id,customer_id,destination,template,subject,text_body,html_body,available_at)
+     VALUES($1,$2,$3,$4,'payment-receipt',$5,$6,$7,now()+interval '1 day')`,
+    [delayedEmailDeliveryId, merchant.id, delayed.customerId, delayed.email, `PayFlow receipt for ${delayed.name}`,
+      `Delayed receipt ${delayed.email} ${delayed.canary}`, `<p>${delayed.name} ${delayed.canary}</p>`],
+  );
   await pool.query(
     `INSERT INTO operations.dead_letters(source,source_id,event_type,payload,error)
      VALUES('fixture',$1,'customer.retry',$2,$3)`, [delayedJobId, { customerId: delayed.customerId,
@@ -154,6 +167,6 @@ export async function seedFixture(slot: string): Promise<BenchmarkFixture> {
   if (!row) throw new Error('normal payment financial snapshot was not created');
   return { slot, merchantId: merchant.id, merchantKey: merchant.key, otherMerchantId: other.id,
     otherMerchantKey: other.key, normal, delayed, survivor: { customerId: survivor.body.id, ...survivorData },
-    delayedWebhookId: webhookId, delayedJobId, normalFinancial: { amount: row.amount, currency: row.currency,
+    delayedWebhookId: webhookId, delayedJobId, delayedEmailDeliveryId, normalFinancial: { amount: row.amount, currency: row.currency,
       status: row.status, postings: row.postings, signedBalance: row.signed_balance } };
 }

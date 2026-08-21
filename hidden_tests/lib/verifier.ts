@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
-import { DOCUMENT_BUCKET, CUSTOMER_INDEX, kafka, minio, pool, redis, search } from './clients.js';
+import { DOCUMENT_BUCKET, CUSTOMER_INDEX, kafka, minio, pool, redis, search, settings } from './clients.js';
 import { api, poll } from './http.js';
 import type { BenchmarkFixture, SubjectFixture } from './fixture.js';
 
@@ -190,6 +190,13 @@ async function collectExternalStoreViolations(fixture: BenchmarkFixture, subject
     const hits = needleHits(`${objectName}\n${await streamText(object)}`, subject);
     if (hits.length > 0) violations.push(`MinIO ${objectName} retained ${hits.join(', ')}`);
   }
+  for (const needle of [subject.email, subject.canary]) {
+    const response = await fetch(`${settings.mailpit}/api/v1/search?query=${encodeURIComponent(needle)}`);
+    if (!response.ok) throw new Error(`Mailpit search failed: ${response.status}`);
+    const body = await response.json() as { total?: number; messages?: unknown[] };
+    const total = body.total ?? body.messages?.length ?? 0;
+    if (total > 0) violations.push(`Mailpit retained ${needle} in ${total} provider message(s)`);
+  }
   return violations;
 }
 
@@ -244,6 +251,7 @@ export async function verifySurvivorUntouched(fixture: BenchmarkFixture): Promis
 export async function releaseDelayedWork(fixture: BenchmarkFixture): Promise<void> {
   await pool.query(`UPDATE operations.provider_webhooks SET next_attempt_at=now() WHERE id=$1`, [fixture.delayedWebhookId]);
   await pool.query(`UPDATE operations.jobs SET available_at=now() WHERE id=$1`, [fixture.delayedJobId]);
+  await pool.query(`UPDATE operations.email_deliveries SET available_at=now() WHERE id=$1`, [fixture.delayedEmailDeliveryId]);
   await poll(async () => (await pool.query<{ status: string }>(
     `SELECT status FROM operations.provider_webhooks WHERE id=$1`, [fixture.delayedWebhookId])).rows[0]?.status,
   (status) => status === 'processed', 'delayed webhook');
