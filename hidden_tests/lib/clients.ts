@@ -10,6 +10,7 @@ export const settings = {
   postgres: process.env.POSTGRES_URL ?? 'postgres://payflow:payflow@postgres:5432/payflow',
   redis: process.env.REDIS_URL ?? 'redis://redis:6379',
   search: process.env.OPENSEARCH_NODE ?? 'http://opensearch:9200',
+  mailpit: process.env.MAILPIT_API_URL ?? 'http://mailpit:8025',
   kafka: (process.env.KAFKA_BROKERS ?? 'redpanda:9092').split(','),
   minioHost: process.env.MINIO_ENDPOINT ?? 'minio',
   minioPort: Number(process.env.MINIO_PORT ?? 9000),
