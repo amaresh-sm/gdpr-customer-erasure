@@ -5,9 +5,15 @@ export async function api<T>(apiKey: string, path: string, options: {
   body?: unknown;
   headers?: Record<string, string>;
   expected?: number;
+  timeoutMs?: number;
 } = {}): Promise<{ status: number; body: T }> {
   const headers: Record<string, string> = { authorization: `Bearer ${apiKey}`, ...options.headers };
-  const init: RequestInit = { method: options.method ?? 'GET', headers };
+  // A broken candidate endpoint must not hold the complete hidden suite open forever.
+  const init: RequestInit = {
+    method: options.method ?? 'GET',
+    headers,
+    signal: AbortSignal.timeout(options.timeoutMs ?? 10_000),
+  };
   if (options.body !== undefined) {
     headers['content-type'] = 'application/json';
     init.body = JSON.stringify(options.body);

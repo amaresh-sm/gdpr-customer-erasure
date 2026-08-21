@@ -8,6 +8,10 @@ import { assertNoErasureViolations, collectErasureViolations, releaseDelayedWork
 interface TestResult { name: string; durationMs: number; error?: string }
 const results: TestResult[] = [];
 let fixture: BenchmarkFixture;
+// A correct workflow completes well inside this bound. Keep the guard outside the
+// individual polling helpers so any hung candidate participant is reported as a
+// scenario failure rather than preventing later independent checks from running.
+const scenarioTimeoutMs = Number(process.env.ERASURE_SCENARIO_TIMEOUT_MS ?? '90000');
 
 function newlyIntroduced(previous: string[], current: string[]): string[] {
   const baseline = new Set(previous);
@@ -16,14 +20,22 @@ function newlyIntroduced(previous: string[], current: string[]): string[] {
 
 async function test(name: string, operation: () => Promise<void>): Promise<void> {
   const started = Date.now();
+  let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    await operation();
+    await Promise.race([
+      operation(),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`scenario timed out after ${scenarioTimeoutMs}ms`)), scenarioTimeoutMs);
+      }),
+    ]);
     results.push({ name, durationMs: Date.now() - started });
     process.stdout.write(`PASS ${name}\n`);
   } catch (error) {
     const message = error instanceof Error ? error.stack ?? error.message : String(error);
     results.push({ name, durationMs: Date.now() - started, error: message });
     process.stdout.write(`FAIL ${name}: ${message}\n`);
+  } finally {
+    if (timer) clearTimeout(timer);
   }
 }
 
