@@ -2,7 +2,7 @@
   "benchmark": "gdpr-customer-erasure",
   "updated_at": "2026-08-21",
   "current_calibration": {
-    "status": "provisional",
+    "status": "superseded",
     "completed_at": "2026-08-21",
     "protocol": {
       "candidate_commit": "7f42ed4",
@@ -79,8 +79,25 @@
       "measured_direction": "unsolvable",
       "final_band": null,
       "provisional": true,
-      "reason": "Five runs are useful directional evidence but are below the N >= 15 certification threshold."
+      "reason": "Superseded because the Mailpit provider topology and hidden verifier changed."
     }
+  },
+  "mailpit_recalibration": {
+    "status": "in_progress",
+    "protocol": {
+      "candidate_commit": "5b49e21",
+      "reference_commit": "77d80e6",
+      "specification_and_verifier_frozen": true,
+      "fresh_candidate_workspace_per_attempt": true,
+      "candidate_hidden_test_access": false,
+      "model": "gpt-5.6-terra",
+      "reasoning_effort": "medium",
+      "planned_initial_attempts": 3,
+      "full_pass_definition": "all 8 hidden behavioral scenarios pass",
+      "runtime": "fresh Docker Compose stack per hidden score"
+    },
+    "attempts": [],
+    "reference_determinism": { "runs": 5, "scenario_checks": "40/40 pass" }
   },
   "superseded_calibration": {
     "completed_at": "2026-08-20",

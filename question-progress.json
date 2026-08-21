@@ -53,7 +53,7 @@
       "status": "done",
       "scenarios": ["tenant_and_idempotency", "cross_store_erasure", "retention",
         "delayed_work", "historical_replay", "anti_overdeletion"],
-      "verification": { "reference": "8/8 pass", "question_baseline": "5/8 fail" }
+      "verification": { "reference": "8/8 pass after Mailpit expansion", "question_baseline": "requires fresh score" }
     },
     "mutation_testing": {
       "status": "done",
@@ -73,18 +73,18 @@
       "status": "done",
       "runs": 5,
       "passed": 5,
-      "scenario_checks": "40/40 pass"
+      "scenario_checks": "40/40 pass after Mailpit expansion"
     },
     "validate": {
       "status": "blocked",
       "mode": "discriminator",
       "matrix": {
         "question_baseline": "fail",
-        "reference_solution": "8/8 pass",
+        "reference_solution": "8/8 pass after Mailpit expansion",
         "primary-record-only": "fail",
         "missing-notification-replay": "fail",
         "blanket-financial-delete": "fail",
-        "reference_determinism": "5/5 runs; 40/40 scenario checks"
+        "reference_determinism": "5/5 runs; 40/40 scenario checks after Mailpit expansion"
       },
       "adversarial_solver": {
         "status": "superseded",
@@ -108,18 +108,25 @@
         "dead_letters": "candidate-visible and contract-derived",
         "candidate_export_hidden_surface": "absent",
         "specification_frozen": true,
-        "candidate_commit": "7f42ed4",
-        "reference_commit": "b7aa314"
+        "candidate_commit": "5b49e21",
+        "reference_commit": "77d80e6"
       },
       "five_run_sol_recalibration": {
-        "status": "complete",
+        "status": "superseded",
         "planned_runs": 5,
         "completed_runs": 5,
         "full_passes": 0,
         "scenario_checks": "28/40 pass",
         "measured_direction": "unsolvable",
         "provisional": true,
-        "certification_gate": "blocked: N=5 is below the required N>=15"
+        "certification_gate": "superseded: the provider topology and verifier changed"
+      },
+      "mailpit_recalibration": {
+        "status": "in_progress",
+        "planned_terra_runs": 3,
+        "reference_determinism": "5/5 runs; 40/40 scenario checks",
+        "candidate_export_hidden_surface": "absent",
+        "certification_gate": "blocked pending fresh calibration"
       }
     },
     "package": {

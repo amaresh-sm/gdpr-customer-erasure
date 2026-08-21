@@ -30,12 +30,14 @@ This file is evaluator-only. It must never appear in a candidate workspace.
 | Operations/PostgreSQL | idempotency response bodies | retain key/hash; redact response | API replay |
 | Operations/PostgreSQL | analytics | retain aggregate facts; null identity and redact properties | event replay |
 | Operations/PostgreSQL | notification preferences/history | delete | event replay |
+| Operations/PostgreSQL | durable outbound email queue and rendered recipient/body | cancel/redact and rekey | delayed provider submission |
 | Operations/PostgreSQL | document manifests | retain retained-document facts; replace linkage/redact metadata; delete import manifests | document retry |
 | Redis | customer document, activity hash, secondary values | delete subject keys and values | projection replay |
 | OpenSearch | customer document | delete | customer event replay |
 | MinIO | customer import | delete | none |
 | MinIO | invoice and receipt JSON | retain financial body with redacted customer section | delayed document job |
 | Kafka/Redpanda | bounded-retention historical events | no per-record rewrite; enforce replay suppression | fresh consumer group |
+| Mailpit provider mailbox | captured recipient, subject, text and HTML message copies | remove app-owned captured messages | delayed delivery or notification replay |
 | Privacy/PostgreSQL | request context | temporary; remove PII before completion | workflow resume |
 | Privacy/PostgreSQL | erased-subject marker | retain only UUIDs/status/timestamps | required suppression control |
 
@@ -66,9 +68,10 @@ The reference uses these ordered, individually checkpointed contracts:
 2. `financial-records`
 3. `object-storage`
 4. `operational-records`
-5. `derived-projections`
-6. `customer-records`
-7. `completion-verification`
+5. `notification-provider`
+6. `derived-projections`
+7. `customer-records`
+8. `completion-verification`
 
 The hidden verifier must not require these names or this ordering. Only final observable behavior
 and public request state are graded.
@@ -144,3 +147,19 @@ solutions routinely implement most of the distributed contract. The band remains
 five attempts are below the `N >= 15` certification threshold, so the author target remains `hard`
 and publication certification is blocked pending ten additional valid Sol attempts (or an explicit
 benchmark-governance exception).
+
+## Mailpit topology revision and re-freeze — 2026-08-21
+
+The prior five-run calibration is superseded for certification. PayFlow now has a production-shaped
+outbound email path: notification events create a durable delivery record containing the rendered
+recipient and message body, then submit it through the application-owned Mailpit provider. The
+fixture establishes both a normal delivered message and a delayed queued message. The verifier
+queries Mailpit's independent API for the subject email and PII canary, alongside its existing
+direct PostgreSQL, Redis, OpenSearch, MinIO, and Kafka checks.
+
+The updated reference passed all eight scenarios in five consecutive independent runtime runs
+(40/40 checks): one qualification run plus four determinism runs. Fresh Terra calibration begins
+from candidate exports that exclude the hidden surface. The Mailpit expectation is candidate-visible
+and contract-derived: `docs/architecture.md` documents the provider-backed delivery queue and
+`docs/privacy-and-retention.md` makes the application-owned provider mailbox part of completion,
+while excluding independent recipient inboxes.
