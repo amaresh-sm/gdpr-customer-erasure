@@ -163,3 +163,16 @@ from candidate exports that exclude the hidden surface. The Mailpit expectation 
 and contract-derived: `docs/architecture.md` documents the provider-backed delivery queue and
 `docs/privacy-and-retention.md` makes the application-owned provider mailbox part of completion,
 while excluding independent recipient inboxes.
+
+## Initial Terra calibration after Mailpit revision — 2026-08-21
+
+Three independent medium-reasoning `gpt-5.6-terra` attempts ran from fresh candidate exports of
+`5b49e21`; the hidden suite was mounted read-only only after each implementation and its public
+checks were complete. All three passed the three non-erasure scenarios and scored **3/8**, for
+**0/3 full solves** and **9/24 scenario checks**. Each built request/idempotency/suppression state
+but left the distributed cleanup incomplete; each therefore retained customer data in the active
+stores, including Mailpit, and did not expose the completed gateway contract. A setup-only attempt
+that stopped before implementation was excluded.
+
+This is directional evidence toward `unsolvable`, not a certified band: N=3 is below the required
+N>=15. No candidate-facing behavior changed during the calibration.

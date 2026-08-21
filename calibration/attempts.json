@@ -83,7 +83,7 @@
     }
   },
   "mailpit_recalibration": {
-    "status": "in_progress",
+    "status": "provisional",
     "protocol": {
       "candidate_commit": "5b49e21",
       "reference_commit": "77d80e6",
@@ -93,11 +93,46 @@
       "model": "gpt-5.6-terra",
       "reasoning_effort": "medium",
       "planned_initial_attempts": 3,
+      "valid_attempts": 3,
       "full_pass_definition": "all 8 hidden behavioral scenarios pass",
       "runtime": "fresh Docker Compose stack per hidden score"
     },
-    "attempts": [],
-    "reference_determinism": { "runs": 5, "scenario_checks": "40/40 pass" }
+    "attempts": [
+      {
+        "id": "terra-mailpit-1",
+        "scenarios_passed": 3,
+        "scenarios_total": 8,
+        "full_pass": false,
+        "failed_scenarios": ["request contract is tenant-safe, concurrent, and idempotent", "normal subject PII is absent from every active store", "pending asynchronous work is sanitized before completion", "delayed webhook and document work cannot reintroduce PII", "historical event replay is suppressed by durable erasure state"]
+      },
+      {
+        "id": "terra-mailpit-2",
+        "scenarios_passed": 3,
+        "scenarios_total": 8,
+        "full_pass": false,
+        "failed_scenarios": ["request contract is tenant-safe, concurrent, and idempotent", "normal subject PII is absent from every active store", "pending asynchronous work is sanitized before completion", "delayed webhook and document work cannot reintroduce PII", "historical event replay is suppressed by durable erasure state"]
+      },
+      {
+        "id": "terra-mailpit-3",
+        "scenarios_passed": 3,
+        "scenarios_total": 8,
+        "full_pass": false,
+        "failed_scenarios": ["request contract is tenant-safe, concurrent, and idempotent", "normal subject PII is absent from every active store", "pending asynchronous work is sanitized before completion", "delayed webhook and document work cannot reintroduce PII", "historical event replay is suppressed by durable erasure state"]
+      }
+    ],
+    "result": {
+      "full_passes": 0,
+      "full_pass_rate": 0.0,
+      "scenario_checks_passed": 9,
+      "scenario_checks_total": 24,
+      "scenario_pass_rate": 0.375,
+      "measured_direction": "unsolvable",
+      "final_band": null,
+      "provisional": true,
+      "reason": "Three valid Terra attempts are directional evidence only; N >= 15 is required for certification."
+    },
+    "reference_determinism": { "runs": 5, "scenario_checks": "40/40 pass" },
+    "excluded_attempts": [{ "id": "terra-mailpit-preflight", "reason": "archive setup stopped before implementation; no score was collected" }]
   },
   "superseded_calibration": {
     "completed_at": "2026-08-20",

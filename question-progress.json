@@ -122,11 +122,16 @@
         "certification_gate": "superseded: the provider topology and verifier changed"
       },
       "mailpit_recalibration": {
-        "status": "in_progress",
+        "status": "complete_provisional",
         "planned_terra_runs": 3,
+        "completed_terra_runs": 3,
+        "full_passes": 0,
+        "scenario_checks": "9/24 pass",
+        "measured_direction": "unsolvable",
+        "provisional": true,
         "reference_determinism": "5/5 runs; 40/40 scenario checks",
         "candidate_export_hidden_surface": "absent",
-        "certification_gate": "blocked pending fresh calibration"
+        "certification_gate": "blocked: N=3 is below the required N>=15"
       }
     },
     "package": {
