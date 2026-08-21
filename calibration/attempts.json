@@ -141,12 +141,13 @@
         "fresh_candidate_workspace": true,
         "candidate_hidden_test_access": false,
         "model": "gpt-5.6-sol",
-        "reasoning_effort": "high",
+        "reasoning_effort": "varies by attempt; retained with each result",
         "runtime": "fresh Docker Compose candidate stack with read-only hidden-test mount"
       },
       "attempts": [
         {
           "id": "sol-high-certified-1",
+          "reasoning_effort": "high",
           "scenarios_passed": 3,
           "scenarios_total": 8,
           "full_pass": false,
@@ -158,16 +159,31 @@
             "historical event replay is suppressed by durable erasure state"
           ],
           "diagnosis": "The candidate repeatedly raises PostgreSQL SQLSTATE 42P18 in its erasure transaction by binding one placeholder as both uuid and text; the transaction rolls back before distributed cleanup."
+        },
+        {
+          "id": "sol-certified-2",
+          "reasoning_effort": "default (not explicitly overridden)",
+          "scenarios_passed": 3,
+          "scenarios_total": 8,
+          "full_pass": false,
+          "failed_scenarios": [
+            "request contract is tenant-safe, concurrent, and idempotent",
+            "normal subject PII is absent from every active store",
+            "pending asynchronous work is sanitized before completion",
+            "delayed webhook and document work cannot reintroduce PII",
+            "historical event replay is suppressed by durable erasure state"
+          ],
+          "diagnosis": "The candidate worker bound its shared three-value parameter array to DELETE statements with only two placeholders. PostgreSQL rejected each attempt with 'bind message supplies 3 parameters, but prepared statement requires 2', so the transaction rolled back and requests remained retryable until the verifier timeout."
         }
       ],
       "result": {
         "full_passes": 0,
         "full_pass_rate": 0.0,
-        "scenario_checks_passed": 3,
-        "scenario_checks_total": 8,
+        "scenario_checks_passed": 6,
+        "scenario_checks_total": 16,
         "scenario_pass_rate": 0.375,
         "provisional": true,
-        "reason": "One certified Sol run is evidence about this implementation, not a model-level difficulty estimate."
+        "reason": "Two certified Sol runs are evidence about the implementations, not a model-level difficulty estimate; the benchmark requires a larger model panel."
       }
     },
     "excluded_attempts": [

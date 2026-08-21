@@ -188,5 +188,10 @@ made an unrelated survivor message look like retained target PII. The verifier n
 One preserved high-reasoning Sol candidate was then rerun from a fresh candidate-only stack with the
 hidden suite mounted read-only only for scoring. It scored **3/8**. The failed erasure worker logs
 show PostgreSQL SQLSTATE `42P18`: one outbox scrub parameter is bound as both `uuid` and `text`, so
-the transaction rolls back before any durable cleanup. This is a certified result for that candidate
-implementation, but remains model-calibration provisional at N=1.
+the transaction rolls back before any durable cleanup.
+
+A second independent Sol candidate was produced from the same fresh candidate-only export and scored
+**3/8**. PostgreSQL logs show its worker binds a three-value parameter array to two-placeholder
+`DELETE` statements, rejecting each with a bind-count error and rolling back the cleanup transaction.
+Both are certified results for their individual implementations, but remain model-calibration
+provisional at N=2.
