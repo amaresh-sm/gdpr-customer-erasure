@@ -47,6 +47,11 @@ async function matchingMessageIds(destination: string): Promise<string[]> {
   return [...new Set((body.messages ?? []).map(messageId).filter((id): id is string => Boolean(id)))];
 }
 
+/** Returns whether the provider still has a message for the supplied recipient. */
+export async function mailpitHasMessagesForRecipient(destination: string): Promise<boolean> {
+  return (await matchingMessageIds(destination)).length > 0;
+}
+
 /** Removes captured provider messages addressed to a deleted subject. */
 export async function deleteMailpitMessagesForRecipient(destination: string): Promise<void> {
   const ids = await matchingMessageIds(destination);

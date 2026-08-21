@@ -3,6 +3,7 @@ import { eraseCustomerRecords } from './handlers/customer-records.js';
 import { eraseDerivedProjections } from './handlers/derived-projections.js';
 import { verifyCompletion } from './handlers/completion-verification.js';
 import { anonymizeFinancialRecords } from './handlers/financial-records.js';
+import { eraseNotificationProvider } from './handlers/notification-provider.js';
 import { sanitizeObjectStorage } from './handlers/object-storage.js';
 import { sanitizeOperationalRecords } from './handlers/operational-records.js';
 import { quiesceSubject } from './handlers/quiescence.js';
@@ -17,6 +18,7 @@ export const PARTICIPANTS: readonly ErasureParticipant[] = [
   { name: 'subject-quiescence', run: quiesceSubject },
   { name: 'financial-records', run: anonymizeFinancialRecords },
   { name: 'object-storage', run: sanitizeObjectStorage },
+  { name: 'notification-provider', run: eraseNotificationProvider },
   { name: 'operational-records', run: sanitizeOperationalRecords },
   { name: 'derived-projections', run: eraseDerivedProjections },
   { name: 'customer-records', run: eraseCustomerRecords },

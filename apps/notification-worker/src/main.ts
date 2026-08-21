@@ -73,12 +73,26 @@ async function recordDelivery(event: ReturnType<typeof eventEnvelopeSchema.parse
 
 async function claimDelivery(): Promise<Delivery | undefined> {
   return await transaction(async (client) => {
+    const candidate = await client.query<Delivery>(
+      `SELECT * FROM operations.email_deliveries
+       WHERE status IN ('pending','failed') AND attempts<max_attempts AND available_at<=now()
+       ORDER BY created_at FOR UPDATE SKIP LOCKED LIMIT 1`,
+    );
+    const delivery = candidate.rows[0];
+    if (!delivery) return undefined;
+    if (delivery.customer_id && await isErasedSubject(delivery.merchant_id, delivery.customer_id, client)) {
+      await client.query(
+        `UPDATE operations.email_deliveries
+         SET customer_id=(SELECT surrogate_id FROM privacy.erased_subjects WHERE merchant_id=$2 AND customer_id=$3),
+           destination='[redacted]',subject='[redacted]',text_body='[redacted]',html_body='[redacted]',
+           provider_message_id=NULL,status='cancelled',cancelled_at=now(),last_error=NULL
+         WHERE id=$1`, [delivery.id, delivery.merchant_id, delivery.customer_id],
+      );
+      return undefined;
+    }
     const result = await client.query<Delivery>(
       `UPDATE operations.email_deliveries SET status='processing',attempts=attempts+1,last_error=NULL
-       WHERE id=(SELECT id FROM operations.email_deliveries
-         WHERE status IN ('pending','failed') AND attempts<max_attempts AND available_at<=now()
-         ORDER BY created_at FOR UPDATE SKIP LOCKED LIMIT 1)
-       RETURNING *`,
+       WHERE id=$1 RETURNING *`, [delivery.id],
     );
     return result.rows[0];
   });

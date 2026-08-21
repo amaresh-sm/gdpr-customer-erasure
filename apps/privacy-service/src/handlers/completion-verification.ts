@@ -1,6 +1,7 @@
 import { Redis } from 'ioredis';
 import { config } from '../../../../packages/config/src/index.js';
 import { pool } from '../../../../packages/database/src/pool.js';
+import { mailpitHasMessagesForRecipient } from '../../../../packages/notifications/src/mailpit.js';
 import { containsSubjectValue } from '../../../../packages/privacy/src/redact.js';
 import type { ErasureRequestRecord, SubjectContext } from '../../../../packages/privacy/src/types.js';
 import { CUSTOMER_INDEX, searchClient } from '../../../../packages/search/src/client.js';
@@ -21,8 +22,12 @@ export async function verifyCompletion(request: ErasureRequestRecord): Promise<v
     pool.query(`SELECT 1 FROM payments.invoices WHERE merchant_id=$1 AND customer_id=$2`, [request.merchant_id, request.customer_id]),
     pool.query(`SELECT 1 FROM operations.notification_preferences WHERE merchant_id=$1 AND customer_id=$2`, [request.merchant_id, request.customer_id]),
     pool.query(`SELECT 1 FROM operations.notifications WHERE merchant_id=$1 AND customer_id=$2`, [request.merchant_id, request.customer_id]),
+    pool.query(`SELECT 1 FROM operations.email_deliveries WHERE merchant_id=$1 AND customer_id=$2`, [request.merchant_id, request.customer_id]),
   ]);
   checks.forEach((result, index) => assertZero(`relational_${index}`, result.rowCount ?? 0));
+  for (const destination of context.sensitiveValues.filter((value) => value.includes('@'))) {
+    if (await mailpitHasMessagesForRecipient(destination)) throw new Error('verification_failed:mailpit_message');
+  }
 
   const payloads = await pool.query<{ value: unknown }>(
     `SELECT payload value FROM operations.outbox_events
