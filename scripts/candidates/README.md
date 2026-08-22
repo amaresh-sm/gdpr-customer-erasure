@@ -22,6 +22,12 @@ npm run candidates:record-score -- \
   --verifier-ref solution/gdpr-customer-erasure
 ```
 
+Render the comparable headline table from the recorded evidence:
+
+```bash
+npm run candidates:summary -- --run-dir candidates/gpt-5.6-sol-high-<timestamp>
+```
+
 The local CLI launcher can measure timestamps, exit state, Codex JSONL tokens/tool trajectory, and
 candidate/source hashes. Container-only facts (cgroup CPU and memory, mount/network attestation,
 generation/gateway image IDs, and tmpfs credential handling) are deliberately marked
