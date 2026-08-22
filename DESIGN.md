@@ -2,6 +2,16 @@
 
 This file is evaluator-only. It must never appear in a candidate workspace.
 
+## Canonical benchmark layout
+
+The benchmark now uses one physical evaluator tree. `instruction/task.md` and `codebase/` are the
+only assets copied into an isolated candidate workspace. `reference_solution/source/` is the frozen
+golden source snapshot, and `hidden_tests/` is mounted read-only only into a scorer after candidate
+generation has finished. `candidates/` is local-only, Git-ignored, and retains model source snapshots
+with telemetry and score reports. Historical references below to `question/...` and `solution/...`
+describe the Git states from which these two source snapshots were reconstructed; they are not part
+of a candidate handoff.
+
 ## Local candidate artifact policy
 
 Every generated calibration candidate is retained locally under `candidates/`, which is excluded

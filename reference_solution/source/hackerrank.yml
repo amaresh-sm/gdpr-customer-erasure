@@ -1,0 +1,27 @@
+type: backend
+version: 1
+
+configuration:
+  has_webserver: true
+  ide_config:
+    default_open_files:
+      - README.md
+      - apps/api-gateway/src/main.ts
+      - docs/privacy-api.md
+    project_menu:
+      install: npm ci
+      run: docker compose up --build
+      test: npm test
+  scoring:
+    command: >-
+      sh -lc 'docker compose up --build -d && docker compose build verifier &&
+      docker compose run --rm -v "$PWD:/reports" -e JUNIT_PATH=/reports/junit.xml
+      -e ERASURE_TEST_SLOT=scoring verifier node --import tsx hidden_tests/run.ts'
+    files:
+      - junit.xml
+    type: junit
+  readonly_paths:
+    - README.md
+    - tests/
+    - hidden_tests/
+    - hackerrank.yml

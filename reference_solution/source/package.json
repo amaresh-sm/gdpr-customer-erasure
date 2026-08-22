@@ -1,0 +1,54 @@
+{
+  "name": "payflow-platform",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint . --max-warnings=0",
+    "test": "node --import tsx --test tests/**/*.test.ts",
+    "migrate": "tsx packages/database/src/migrate.ts",
+    "seed": "tsx scripts/seed.ts",
+    "scenario": "tsx scripts/generate-scenario.ts",
+    "smoke": "tsx scripts/smoke.ts",
+    "verify:runtime": "tsx scripts/verify-runtime.ts",
+    "candidates:run": "tsx scripts/candidates/run.ts",
+    "candidates:record-score": "tsx scripts/candidates/record-score.ts",
+    "candidates:summary": "tsx scripts/candidates/summary.ts",
+    "start:gateway": "tsx apps/api-gateway/src/main.ts",
+    "start:customers": "tsx apps/customer-service/src/main.ts",
+    "start:payments": "tsx apps/payment-service/src/main.ts",
+    "start:processor": "tsx apps/mock-processor/src/main.ts",
+    "start:webhooks": "tsx apps/webhook-worker/src/main.ts",
+    "start:projections": "tsx apps/projection-worker/src/main.ts",
+    "start:notifications": "tsx apps/notification-worker/src/main.ts",
+    "start:documents": "tsx apps/document-worker/src/main.ts",
+    "start:reconciliation": "tsx apps/reconciliation-service/src/main.ts",
+    "start:privacy": "tsx apps/privacy-service/src/main.ts"
+  },
+  "dependencies": {
+    "@fastify/http-proxy": "11.6.0",
+    "@opensearch-project/opensearch": "^3.5.1",
+    "fastify": "^5.2.1",
+    "ioredis": "^5.4.2",
+    "kafkajs": "^2.2.4",
+    "minio": "^8.0.5",
+    "pg": "^8.13.3",
+    "pino": "^9.6.0",
+    "uuid": "^11.1.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.19.0",
+    "@types/node": "^22.10.10",
+    "@types/pg": "^8.11.11",
+    "eslint": "^9.19.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.22.0"
+  }
+}

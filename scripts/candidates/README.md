@@ -1,11 +1,11 @@
 # Candidate calibration launcher
 
 Use the launcher for every new model attempt. It creates a timestamped, ignored local artifact,
-exports only the candidate branch, invokes `codex exec --json`, keeps raw JSONL only in temporary
+copies only the `codebase/` baseline, invokes `codex exec --json`, keeps raw JSONL only in temporary
 storage, and writes sanitized telemetry into `metadata.json` and `logs/events.sanitized.json`.
 
 ```bash
-npm run candidates:run -- \
+npx --prefix codebase tsx scripts/candidates/run.ts -- \
   --model gpt-5.6-sol \
   --thinking high \
   --prompt-file /absolute/path/to/public-candidate-prompt.txt \
@@ -16,16 +16,13 @@ After the candidate source is frozen, score it in a separate Docker project and 
 report without copying the hidden suite into the artifact:
 
 ```bash
-npm run candidates:record-score -- \
-  --run-dir candidates/gpt-5.6-sol-high-<timestamp> \
-  --junit /absolute/path/to/junit.xml \
-  --verifier-ref solution/gdpr-customer-erasure
+scripts/candidates/score.sh candidates/gpt-5.6-sol-high-<timestamp>
 ```
 
 Render the comparable headline table from the recorded evidence:
 
 ```bash
-npm run candidates:summary -- --run-dir candidates/gpt-5.6-sol-high-<timestamp>
+npx --prefix codebase tsx scripts/candidates/summary.ts -- --run-dir candidates/gpt-5.6-sol-high-<timestamp>
 ```
 
 The local CLI launcher can measure timestamps, exit state, Codex JSONL tokens/tool trajectory, and

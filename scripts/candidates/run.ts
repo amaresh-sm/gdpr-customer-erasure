@@ -1,5 +1,5 @@
 import { createWriteStream } from 'node:fs';
-import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
@@ -10,6 +10,7 @@ interface Options {
   promptFile: string;
   provider: string;
   baselineRef: string;
+  codebaseDirectory: string;
   timeoutSeconds: number;
 }
 
@@ -28,7 +29,8 @@ function options(): Options {
     thinking: option('--thinking'),
     promptFile: resolve(option('--prompt-file')),
     provider: option('--provider', 'codex-login'),
-    baselineRef: option('--baseline-ref', 'question/gdpr-customer-erasure'),
+    baselineRef: option('--baseline-ref', 'HEAD'),
+    codebaseDirectory: resolve(option('--codebase-dir', 'codebase')),
     timeoutSeconds,
   };
 }
@@ -50,18 +52,11 @@ async function exitCode(command: string, args: string[], cwd: string): Promise<v
   if (code !== 0) throw new Error(`${command} failed: ${Buffer.concat(stderr).toString('utf8')}`);
 }
 
-async function exportCandidate(ref: string, destination: string, cwd: string): Promise<void> {
-  const archive = spawn('git', ['archive', ref], { cwd, stdio: ['ignore', 'pipe', 'pipe'] });
-  const extract = spawn('tar', ['-x', '-C', destination], { cwd, stdio: ['pipe', 'ignore', 'pipe'] });
-  archive.stdout.pipe(extract.stdin);
-  const errors: Buffer[] = [];
-  archive.stderr.on('data', (chunk: Buffer) => errors.push(chunk));
-  extract.stderr.on('data', (chunk: Buffer) => errors.push(chunk));
-  const [[archiveCode], [extractCode]] = await Promise.all([
-    once(archive, 'close') as Promise<[number | null, NodeJS.Signals | null]>,
-    once(extract, 'close') as Promise<[number | null, NodeJS.Signals | null]>,
-  ]);
-  if (archiveCode !== 0 || extractCode !== 0) throw new Error(`candidate export failed: ${Buffer.concat(errors).toString('utf8')}`);
+async function exportCandidate(source: string, destination: string): Promise<void> {
+  await cp(source, destination, {
+    recursive: true,
+    filter: (path) => !/(^|\/)(node_modules|dist|\.git|hidden_tests|reference_solution|candidates)(\/|$)/.test(path),
+  });
 }
 
 /** Launches an isolated candidate export through Codex and records an auditable local artifact. */
@@ -77,7 +72,7 @@ async function main(): Promise<void> {
   await mkdir(join(runDirectory, 'reports'), { recursive: true });
   await mkdir(logsDirectory, { recursive: true });
   const startedAt = new Date().toISOString();
-  await exportCandidate(config.baselineRef, sourceDirectory, projectRoot);
+  await exportCandidate(config.codebaseDirectory, sourceDirectory);
   const executionStarted = Date.now();
   const rawOutput = createWriteStream(rawEvents, { flags: 'wx' });
   const stderr = createWriteStream(join(logsDirectory, 'codex.stderr.log'), { flags: 'wx' });
