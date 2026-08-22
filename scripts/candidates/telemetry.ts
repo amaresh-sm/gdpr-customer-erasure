@@ -123,6 +123,7 @@ export async function parseCodexJsonl(path: string): Promise<JsonlTelemetry> {
     const payload = isRecord(event.payload) ? event.payload : event;
     const eventType = typeof event.type === 'string' ? event.type : '';
     const payloadType = typeof payload.type === 'string' ? payload.type : '';
+    const item = isRecord(event.item) ? event.item : undefined;
     const timestamp = timestampOf(event);
 
     if (eventType === 'session_meta' && typeof payload.session_id === 'string') threadId = payload.session_id;
@@ -133,6 +134,38 @@ export async function parseCodexJsonl(path: string): Promise<JsonlTelemetry> {
     tokens = richerUsage(tokens, usageFrom(info?.total_token_usage));
     tokens = richerUsage(tokens, usageFrom(payload.usage));
     tokens = richerUsage(tokens, usageFrom(event.usage));
+    tokens = richerUsage(tokens, usageFrom(item?.usage));
+
+    // Codex CLI 0.144+ emits tool activity as item.started/item.completed
+    // rather than the older response_item/function_call pair.
+    if ((eventType === 'item.started' || eventType === 'item.completed') && item?.type === 'command_execution') {
+      const callId = typeof item.id === 'string' ? item.id : `item-${calls.length + pending.size + 1}`;
+      if (eventType === 'item.started') {
+        pending.set(callId, {
+          name: 'command_execution',
+          startedAt: timestamp,
+          arguments: { command: item.command ?? null },
+        });
+      } else {
+        const pendingCall = pending.get(callId);
+        const output = { output: item.aggregated_output ?? null, exit_code: item.exit_code ?? null, status: item.status ?? null };
+        calls.push({
+          sequence: calls.length + 1,
+          call_id: callId,
+          name: pendingCall?.name ?? 'command_execution',
+          category: 'shell',
+          started_at: pendingCall?.startedAt ?? timestamp,
+          duration_ms: pendingCall ? durationMs(pendingCall.startedAt, timestamp) : null,
+          status: item.exit_code === 0 || item.status === 'completed' ? 'ok' : 'error',
+          sanitized_arguments: sanitize(pendingCall?.arguments ?? { command: item.command ?? null }),
+          result_size_bytes: Buffer.byteLength(JSON.stringify(output)),
+          result_sha256: sha256(JSON.stringify(output)),
+          result_metadata: { call_id: callId, exit_code: typeof item.exit_code === 'number' ? item.exit_code : null },
+          truncated: item.truncated === true,
+        });
+        pending.delete(callId);
+      }
+    }
 
     const responseType = eventType === 'response_item' ? payloadType : eventType;
     if (responseType === 'function_call' || responseType === 'tool_call') {
