@@ -5,3 +5,4 @@ coverage/
 junit.xml
 *.log
 .DS_Store
+/candidates/

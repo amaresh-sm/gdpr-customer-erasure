@@ -2,6 +2,17 @@
 
 This file is evaluator-only. It must never appear in a candidate workspace.
 
+## Local candidate artifact policy
+
+Every generated calibration candidate is retained locally under `candidates/`, which is excluded
+from Git and Docker build contexts. The directory name is
+`<model>-<thinking>-<UTC timestamp>` (for example `gpt-5.6-sol-high-20260822T103015Z`). Each
+artifact contains the exact candidate-only source snapshot, a manifest with model/prompt/base-commit
+and checksum metadata, public-check logs, hidden-score JUnit and scorer logs, and any agent/runtime
+logs that can be captured. Candidate agents work only from a fresh exported workspace; hidden tests
+are mounted read-only only after that snapshot is stored. The retained artifacts are evaluator-only
+and must never be committed, packaged, Docker-copied, or exposed to later candidates.
+
 ## Provenance and target
 
 - Product baseline: `payflow-platform-v1.0.0` at `a80300c`.
