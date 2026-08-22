@@ -6,6 +6,33 @@ import { pool, transaction } from './pool.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const migrationsDirectory = resolve(here, '../migrations');
+
+/**
+ * A compose health check is advisory: on a freshly-created network, DNS and
+ * PostgreSQL can still take a moment to become reachable after Compose starts
+ * the migrator. Retrying here makes migrations safe to run both in Compose and
+ * as a standalone operational command.
+ */
+async function waitForDatabase(): Promise<void> {
+  const attempts = 30;
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      await pool.query('SELECT 1');
+      return;
+    } catch (error) {
+      lastError = error;
+      if (attempt < attempts) {
+        await new Promise((resolveDelay) => setTimeout(resolveDelay, 1_000));
+      }
+    }
+  }
+
+  throw new Error(`database did not become reachable after ${attempts} seconds`, { cause: lastError });
+}
+
+await waitForDatabase();
 await pool.query(`CREATE TABLE IF NOT EXISTS public.schema_migrations(
   name text PRIMARY KEY, checksum text NOT NULL, applied_at timestamptz NOT NULL DEFAULT now()
 )`);

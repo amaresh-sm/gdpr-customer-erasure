@@ -216,3 +216,17 @@ A second independent Sol candidate was produced from the same fresh candidate-on
 `DELETE` statements, rejecting each with a bind-count error and rolling back the cleanup transaction.
 Both are certified results for their individual implementations, but remain model-calibration
 provisional at N=2.
+
+## Physical-layout certification — 2026-08-22
+
+The benchmark is now distributed as one physical repository layout: `instruction/` and
+`codebase/` are the only candidate-facing inputs; `reference_solution/`, `hidden_tests/`, and
+`candidates/` are evaluator or local-authoring surfaces. Candidate exports copy only `codebase/`
+into a fresh source directory with no `.git` metadata or private directories. The hidden verifier
+is mounted read-only only into the one-off verifier container after generation has finished.
+
+Fresh Docker stacks exposed a real PostgreSQL/DNS startup race in the migrator. A 30-second
+database-reachability retry was added to the shared migration command in both the candidate
+baseline and golden source. The relocated reference then passed five clean, independent runtime
+runs, for **40/40** scenario checks. This certification is about verifier and reference stability;
+it does not alter the frozen candidate task contract or the provisional calibration results above.

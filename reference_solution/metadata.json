@@ -1,10 +1,11 @@
 {
   "schema_version": 1,
-  "source_ref": "solution/gdpr-customer-erasure@cbbf3fe",
+  "source_ref": "derived from solution/gdpr-customer-erasure@cbbf3fe",
   "baseline_ref": "question/gdpr-customer-erasure@5b49e21",
   "verification": {
     "reference_determinism_runs": 5,
     "scenario_checks": "40/40 pass",
-    "note": "This source snapshot is the full golden implementation. It is evaluator-only and excluded from candidate exports."
+    "verified_at": "2026-08-22",
+    "note": "This source snapshot is the full golden implementation. It includes the shared database-startup retry needed for reliable fresh-stack runs, is evaluator-only, and is excluded from candidate exports."
   }
 }
