@@ -11,7 +11,7 @@ npm run candidates:run -- \
   --thinking ultra \
   --provider codex-login \
   --prompt-file instruction/task.md \
-  --timeout-seconds 900
+  --timeout-seconds 5400
 ```
 
 Check a run without accessing its source from the model container:
