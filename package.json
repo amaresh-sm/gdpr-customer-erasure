@@ -16,6 +16,8 @@
     "scenario": "tsx scripts/generate-scenario.ts",
     "smoke": "tsx scripts/smoke.ts",
     "verify:runtime": "tsx scripts/verify-runtime.ts",
+    "candidates:run": "tsx scripts/candidates/run.ts",
+    "candidates:record-score": "tsx scripts/candidates/record-score.ts",
     "start:gateway": "tsx apps/api-gateway/src/main.ts",
     "start:customers": "tsx apps/customer-service/src/main.ts",
     "start:payments": "tsx apps/payment-service/src/main.ts",
