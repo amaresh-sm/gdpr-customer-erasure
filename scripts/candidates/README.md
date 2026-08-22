@@ -1,19 +1,33 @@
 # Candidate calibration launcher
 
-Use the launcher for every new model attempt. It creates a timestamped, ignored local artifact,
-copies only the `codebase/` baseline, invokes `codex exec --json`, keeps raw JSONL only in temporary
-storage, and writes sanitized telemetry into `metadata.json` and `logs/events.sanitized.json`.
+Use the launcher for every new model attempt. It creates a timestamped, ignored local artifact and
+starts a durable Docker model container. The model receives only the copied `codebase/` plus the
+public task prompt; it cannot mount `hidden_tests/`, `reference_solution/`, calibration records, or
+other candidates. The container continues after the calling terminal returns.
 
 ```bash
-npx --prefix codebase tsx scripts/candidates/run.ts -- \
+npm run candidates:run -- \
   --model gpt-5.6-sol \
-  --thinking high \
-  --prompt-file /absolute/path/to/public-candidate-prompt.txt \
+  --thinking ultra \
+  --provider codex-login \
+  --prompt-file instruction/task.md \
   --timeout-seconds 900
 ```
 
-After the candidate source is frozen, score it in a separate Docker project and attach the JUnit
-report without copying the hidden suite into the artifact:
+Check a run without accessing its source from the model container:
+
+```bash
+npm run candidates:status -- --run-dir candidates/gpt-5.6-sol-ultra-<timestamp>
+```
+
+After the model container exits, finalize trusted telemetry and remove all generation containers:
+
+```bash
+npm run candidates:finalize -- --run-dir candidates/gpt-5.6-sol-ultra-<timestamp>
+```
+
+`score.sh` performs that finalization automatically when appropriate. It then runs a separate
+Docker project and attaches the JUnit report without copying the hidden suite into the artifact:
 
 ```bash
 scripts/candidates/score.sh candidates/gpt-5.6-sol-high-<timestamp>
@@ -25,8 +39,24 @@ Render the comparable headline table from the recorded evidence:
 npx --prefix codebase tsx scripts/candidates/summary.ts -- --run-dir candidates/gpt-5.6-sol-high-<timestamp>
 ```
 
-The local CLI launcher can measure timestamps, exit state, Codex JSONL tokens/tool trajectory, and
-candidate/source hashes. Container-only facts (cgroup CPU and memory, mount/network attestation,
-generation/gateway image IDs, and tmpfs credential handling) are deliberately marked
-`not_available` until a containerized generation launcher supplies them. This prevents fabricated
-benchmark evidence.
+For Portkey, use `--provider portkey` with a private environment file containing
+`PORTKEY_API_KEY` and exactly one of `PORTKEY_CONFIG` or `PORTKEY_PROVIDER`:
+
+```bash
+npm run candidates:run -- \
+  --model @provider/model \
+  --thinking ultra \
+  --provider portkey \
+  --portkey-env-file /absolute/path/to/private-portkey.env
+```
+
+The Portkey key is streamed only into a trusted proxy container's tmpfs and is not a model-container
+environment variable, bind mount, candidate file, or persisted report. The report records only a
+SHA-256 route identity. Raw Codex JSONL is retained only temporarily, then sanitized into
+`metadata.json` and `logs/events.sanitized.json`. Cgroup CPU/memory sampling and credential leak
+scanning are currently explicitly marked `not_available`; the launcher does not fabricate them.
+
+For compatibility with existing private benchmark configuration, a supplied private environment
+file may use `OPENAI_API_KEY` and `OPENAI_BASE_URL` as the Portkey key and base URL. This fallback
+is accepted only from `--portkey-env-file`, never copied into the candidate source, and never
+recorded in metadata.

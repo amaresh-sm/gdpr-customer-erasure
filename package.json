@@ -3,7 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "candidates:run": "npx --prefix codebase tsx scripts/candidates/run.ts",
+    "candidates:run": "npx --prefix codebase tsx scripts/candidates/start-container.ts",
+    "candidates:status": "npx --prefix codebase tsx scripts/candidates/status-container.ts",
+    "candidates:finalize": "npx --prefix codebase tsx scripts/candidates/finalize-container.ts",
     "candidates:score": "bash scripts/candidates/score.sh",
     "candidates:summary": "npx --prefix codebase tsx scripts/candidates/summary.ts"
   }

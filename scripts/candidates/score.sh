@@ -13,8 +13,15 @@ report_dir="$run_dir/reports"
 run_id=$(basename "$run_dir")
 project="candidate-${run_id//[^a-z0-9]/-}"
 
-if [[ ! -f "$run_dir/metadata.json" || ! -f "$source_dir/docker-compose.yml" ]]; then
-  echo "candidate artifact is incomplete: expected metadata.json and source/docker-compose.yml" >&2
+if [[ ! -f "$source_dir/docker-compose.yml" ]]; then
+  echo "candidate artifact is incomplete: expected source/docker-compose.yml" >&2
+  exit 64
+fi
+if [[ ! -f "$run_dir/metadata.json" && -f "$run_dir/trusted/launch.json" ]]; then
+  npx --prefix "$root_dir/codebase" tsx "$root_dir/scripts/candidates/finalize-container.ts" -- --run-dir "$run_dir"
+fi
+if [[ ! -f "$run_dir/metadata.json" ]]; then
+  echo "candidate generation has not completed and cannot be scored" >&2
   exit 64
 fi
 if [[ ! -d "$root_dir/hidden_tests" ]]; then
