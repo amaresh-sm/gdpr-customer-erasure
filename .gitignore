@@ -1,4 +1,6 @@
 /candidates/
+/node_modules/
+/dist/
 *.log
 *.zip
 .DS_Store
