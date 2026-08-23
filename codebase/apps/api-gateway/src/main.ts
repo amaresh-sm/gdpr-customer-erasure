@@ -1,16 +1,26 @@
 import Fastify from 'fastify';
-import proxy from '@fastify/http-proxy';
 import { config } from '../../../packages/config/src/index.js';
-import { logger } from '../../../packages/observability/src/logger.js';
+import { readiness } from './readiness.js';
+import { registerUpstreamRoutes } from './routes.js';
 
 process.env.SERVICE_NAME = 'api-gateway';
 const settings = config();
-const app = Fastify({ loggerInstance: logger, requestIdHeader: 'x-correlation-id' });
+const app = Fastify({
+  logger: {
+    level: settings.LOG_LEVEL,
+    base: { service: 'api-gateway' },
+    redact: ['req.headers.authorization', '*.apiKey', '*.providerToken'],
+  },
+  requestIdHeader: 'x-correlation-id',
+});
 app.get('/health', async () => ({ status: 'ok', service: 'api-gateway' }));
-await app.register(proxy, { upstream: settings.CUSTOMER_SERVICE_URL, prefix: '/v1/customers', rewritePrefix: '/v1/customers' });
-await app.register(proxy, { upstream: settings.CUSTOMER_SERVICE_URL, prefix: '/v1/customer-imports', rewritePrefix: '/v1/customer-imports' });
-await app.register(proxy, { upstream: settings.PAYMENT_SERVICE_URL, prefix: '/v1/payments', rewritePrefix: '/v1/payments' });
-await app.register(proxy, { upstream: settings.PAYMENT_SERVICE_URL, prefix: '/v1/refunds', rewritePrefix: '/v1/refunds' });
-await app.register(proxy, { upstream: settings.PAYMENT_SERVICE_URL, prefix: '/v1/invoices', rewritePrefix: '/v1/invoices' });
-await app.register(proxy, { upstream: settings.RECONCILIATION_SERVICE_URL, prefix: '/v1/reconciliation', rewritePrefix: '/v1/reconciliation' });
+app.get('/ready', async (_request, reply) => {
+  const status = await readiness(settings);
+  return reply.code(status.ready ? 200 : 503).send(status);
+});
+app.addHook('onRequest', async (request, reply) => {
+  request.headers['x-correlation-id'] = request.id;
+  void reply.header('x-correlation-id', request.id);
+});
+await registerUpstreamRoutes(app, settings);
 await app.listen({ host: '0.0.0.0', port: 3000 });

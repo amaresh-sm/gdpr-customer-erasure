@@ -2,14 +2,15 @@ import { Redis } from 'ioredis';
 import type { EachMessagePayload } from 'kafkajs';
 import { eventEnvelopeSchema, EVENT_TYPES, type EventEnvelope } from '../../../packages/contracts/src/events.js';
 import { config } from '../../../packages/config/src/index.js';
-import { pool } from '../../../packages/database/src/pool.js';
 import { consumer, DOMAIN_TOPIC } from '../../../packages/messaging/src/kafka.js';
 import { logger } from '../../../packages/observability/src/logger.js';
 import { CUSTOMER_INDEX, searchClient } from '../../../packages/search/src/client.js';
+import { ProjectionRepository } from './repository.js';
 
 process.env.SERVICE_NAME = 'projection-worker';
 const redis = new Redis(config().REDIS_URL);
 const kafka = consumer('payflow-projections-v1');
+const repository = new ProjectionRepository();
 
 async function ensureIndex(): Promise<void> {
   const exists = await searchClient.indices.exists({ index: CUSTOMER_INDEX });
@@ -42,32 +43,20 @@ async function project(event: EventEnvelope): Promise<void> {
       customerEmail: String(event.payload.customerEmail ?? ''), occurredAt: event.occurredAt
     });
   }
-  await pool.query(
-    `INSERT INTO operations.analytics_events(merchant_id,customer_id,anonymous_id,event_type,email,properties,occurred_at)
-     VALUES($1,$2,$3,$4,$5,$6,$7)`, [event.merchantId, customerId ?? null, `anon_${event.aggregateId}`,
-  event.eventType, event.payload.email ?? event.payload.customerEmail ?? null, event.payload, event.occurredAt],
-  );
 }
 
 async function handle({ message, partition }: EachMessagePayload): Promise<void> {
   if (!message.value) return;
   const event = eventEnvelopeSchema.parse(JSON.parse(message.value.toString()));
-  const inserted = await pool.query(
-    `INSERT INTO operations.inbox_events(consumer,event_id,event_type,status)
-     VALUES('projection-worker',$1,$2,'processing') ON CONFLICT DO NOTHING`, [event.eventId, event.eventType],
-  );
-  if (!inserted.rowCount) return;
+  if (!await repository.claim(event)) return;
+  const customerId = typeof event.payload.customerId === 'string'
+    ? event.payload.customerId
+    : event.aggregateType === 'customer' ? event.aggregateId : undefined;
   try {
     await project(event);
-    await pool.query(`UPDATE operations.inbox_events SET status='processed',processed_at=now() WHERE consumer='projection-worker' AND event_id=$1`, [event.eventId]);
-    await pool.query(
-      `INSERT INTO operations.projection_checkpoints(projection,partition,offset_value)
-       VALUES('customer-activity',$1,$2) ON CONFLICT(projection,partition) DO UPDATE SET offset_value=$2,updated_at=now()`,
-      [partition, Number(message.offset)],
-    );
+    await repository.complete(event, customerId, partition, Number(message.offset));
   } catch (error) {
-    await pool.query(`UPDATE operations.inbox_events SET status='failed',error=$2 WHERE consumer='projection-worker' AND event_id=$1`,
-      [event.eventId, error instanceof Error ? error.message : String(error)]);
+    await repository.fail(event.eventId, error);
     throw error;
   }
 }

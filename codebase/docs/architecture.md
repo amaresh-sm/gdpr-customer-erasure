@@ -5,8 +5,8 @@
 ```text
 api-gateway
   |-- customer-service ------ PostgreSQL(customers) + Redis
-  |-- payment-service ------- PostgreSQL(payments) + MinIO
-  |      `-- mock-processor -- delayed signed webhooks
+  |-- payment-service ------- PostgreSQL(payments) + provider adapter
+  |      `-- sandbox processor -- delayed signed webhooks
   |-- reconciliation-service -- immutable ledger + provider settlements
   |
   `-- Kafka/Redpanda
@@ -16,28 +16,38 @@ api-gateway
          `-- document-worker ------ durable jobs -> MinIO receipts
 ```
 
-Each service owns its schema and repository layer. Cross-service reads occur through HTTP or
-versioned events. Business transactions write domain state and an outbox record atomically.
-Consumers use durable inbox/checkpoint records and tolerate duplicate delivery.
+The `customers` and `payments` bounded contexts own their PostgreSQL schemas. A bounded context can
+have more than one deployable: for example, the payment API and webhook worker both participate in
+the payments state machine. Shared delivery infrastructure lives in the `operations` schema.
+Cross-context reads occur through HTTP or versioned events, not by reaching into another context's
+tables. SQL is kept in repositories and transaction-focused domain modules so locking and ledger
+behavior remain explicit without mixing persistence into HTTP or process entrypoints.
+
+The sandbox processor is an external-provider substitute for local development. It uses an
+isolated `provider_sandbox` schema in the local PostgreSQL instance, persists accepted operations,
+and retries signed webhook delivery after restarts. Production deployments would replace it with a
+remote provider adapter; application code talks to both through the same HTTP client.
 
 Receipt creation deliberately crosses an asynchronous boundary. The webhook worker commits the
 capture, ledger entry, payment event, and document job together. The document worker claims jobs
-with `SKIP LOCKED`, writes a deterministic MinIO object, records its checksum manifest, and emits a
-receipt event. Attempts are retained and terminal failures move to the dead-letter table.
+with `SKIP LOCKED` and a time-limited lease, writes a deterministic MinIO object, records its
+checksum manifest, and emits a receipt event. Attempts are retained, expired leases are recovered,
+and terminal failures move to the dead-letter table.
 
 ## Outbound email
 
 The notification worker translates payment and invoice events into durable
 `operations.email_deliveries` records. It renders the recipient address and product payload before
 submitting the message through the local Mailpit provider API. Delivery records are claimed with
-`SKIP LOCKED`, retry transient provider failures with backoff, and retain a provider message
-reference when delivery succeeds. Mailpit is an application-owned captured-mail provider in this
+`SKIP LOCKED` and a time-limited lease, retry transient provider failures with backoff, and retain
+delivery attempts and a provider message reference. Mailpit is an application-owned captured-mail provider in this
 environment: its SMTP/API mailbox is operational state, not an end user's external inbox.
 
 ## Non-negotiable boundaries
 
 - Every merchant-facing query includes `merchant_id`.
-- Services never query another service's schema from production code.
+- Bounded contexts do not query one another's schemas; their cooperating API and worker
+  deployables may share the schema owned by that context.
 - Ledger postings are append-only and balanced per transaction.
 - Provider webhook IDs, API idempotency keys, and Kafka event IDs are independently deduplicated.
 - Search, caches, analytics, and notifications are projections, not sources of financial truth.

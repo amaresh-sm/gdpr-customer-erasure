@@ -35,7 +35,10 @@ for (const [index, person] of personas.entries()) {
     ...person, externalReference: `${person.externalReference}-${runSuffix}`,
     email: person.email.replace('@', `+${runSuffix}@`)
   };
-  const customer = await api<{ id: string }>('/v1/customers', 'POST', { ...uniquePerson, metadata: { segment: index === 0 ? 'enterprise' : 'retail', source: 'scenario-generator' } });
+  const customer = await api<{ id: string }>('/v1/customers', 'POST', {
+    ...uniquePerson,
+    metadata: { segment: index === 0 ? 'enterprise' : 'retail', source: 'local-development' },
+  });
   await api(`/v1/customers/${customer.id}/addresses`, 'POST', {
     kind: 'billing', line1: `${100 + index} Market Street`,
     city: person.city, region: person.region, postalCode: person.postalCode, country: person.country

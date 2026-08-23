@@ -3,7 +3,7 @@ import { v4 as uuid } from 'uuid';
 import { EVENT_TYPES } from '../../../packages/contracts/src/events.js';
 import { advisoryLock, transaction } from '../../../packages/database/src/pool.js';
 import { addOutboxEvent } from '../../../packages/messaging/src/outbox.js';
-import { postJournal } from '../../payment-service/src/ledger.js';
+import { postJournal } from '../../../packages/payments/src/ledger.js';
 
 type ProviderEvent = { id: string; type: string; data: Record<string, unknown> };
 
@@ -14,7 +14,12 @@ export async function processProviderEvent(webhookId: string, event: ProviderEve
     else if (event.type === 'payment.failed') await paymentFailed(client, event);
     else if (event.type === 'refund.succeeded') await refundSucceeded(client, event);
     else throw new Error(`unsupported provider event ${event.type}`);
-    await client.query(`UPDATE operations.provider_webhooks SET status='processed',processed_at=now() WHERE id=$1`, [webhookId]);
+    await client.query(
+      `UPDATE operations.provider_webhooks
+       SET status='processed',processed_at=now(),locked_by=NULL,locked_at=NULL,lease_expires_at=NULL,last_error=NULL
+       WHERE id=$1`,
+      [webhookId],
+    );
   });
 }
 

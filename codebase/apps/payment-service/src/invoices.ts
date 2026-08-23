@@ -5,10 +5,11 @@ import { config } from '../../../packages/config/src/index.js';
 import { transaction } from '../../../packages/database/src/pool.js';
 import { addOutboxEvent } from '../../../packages/messaging/src/outbox.js';
 import { DOCUMENT_BUCKET, ensureBucket, objectStore } from '../../../packages/storage/src/minio.js';
-
-type InvoiceLine = { description: string; quantity: number; unitAmount: number };
+import { InvoiceRepository, type InvoiceLine } from './invoice-repository.js';
 
 export class InvoiceService {
+  constructor(private readonly repository = new InvoiceRepository()) {}
+
   async create(merchantId: string, authorization: string, input: {
     customerId: string; currency: string; tax: number; lines: InvoiceLine[];
   }): Promise<Record<string, unknown>> {
@@ -27,22 +28,20 @@ export class InvoiceService {
     const objectKey = `${merchantId}/invoices/${invoiceId}.json`;
     await objectStore.putObject(DOCUMENT_BUCKET, objectKey, document, Buffer.byteLength(document), { 'Content-Type': 'application/json' });
     await transaction(async (client) => {
-      await client.query(
-        `INSERT INTO payments.invoices(id,merchant_id,customer_id,number,status,currency,subtotal,tax,total,billing_snapshot,object_key,issued_at)
-         VALUES($1,$2,$3,$4,'issued',$5,$6,$7,$8,$9,$10,now())`,
-        [invoiceId, merchantId, input.customerId, number, input.currency, subtotal, input.tax, total, customer, objectKey],
-      );
-      for (const line of input.lines) {
-        await client.query(
-          `INSERT INTO payments.invoice_lines(invoice_id,description,quantity,unit_amount,total) VALUES($1,$2,$3,$4,$5)`,
-          [invoiceId, line.description, line.quantity, line.unitAmount, line.quantity * line.unitAmount],
-        );
-      }
-      await client.query(
-        `INSERT INTO operations.document_manifests(merchant_id,customer_id,object_key,document_type,content_type,checksum,metadata)
-         VALUES($1,$2,$3,'invoice','application/json',$4,$5)`, [merchantId, input.customerId, objectKey,
-        createHash('sha256').update(document).digest('hex'), { invoiceId, number }],
-      );
+      await this.repository.create(client, {
+        invoiceId,
+        merchantId,
+        customerId: input.customerId,
+        number,
+        currency: input.currency,
+        subtotal,
+        tax: input.tax,
+        total,
+        customer,
+        objectKey,
+        checksum: createHash('sha256').update(document).digest('hex'),
+        lines: input.lines,
+      });
       await addOutboxEvent(client, {
         eventType: EVENT_TYPES.INVOICE_ISSUED, aggregateType: 'invoice', aggregateId: invoiceId,
         merchantId, correlationId: uuid(), payload: {

@@ -1,35 +1,49 @@
-import { pool, transaction } from '../../database/src/pool.js';
-import { DOMAIN_TOPIC, producer } from './kafka.js';
+import { randomUUID } from 'node:crypto';
 import { logger } from '../../observability/src/logger.js';
+import { DOMAIN_TOPIC, producer } from './kafka.js';
+import {
+  claimOutboxEvents,
+  markOutboxFailed,
+  markOutboxPublished,
+  recoverExpiredOutboxLeases,
+} from './outbox-publisher-repository.js';
 
+/** Publishes committed outbox rows with crash-recoverable leases and bounded retry. */
 export async function startOutboxPublisher(signal: AbortSignal): Promise<void> {
   const kafka = producer();
+  const workerId = `${process.env.SERVICE_NAME ?? 'service'}-outbox-${randomUUID()}`;
+  let lastLeaseRecovery = 0;
   await kafka.connect();
   try {
     while (!signal.aborted) {
-      const events = await transaction(async (client) => {
-        const result = await client.query(
-          `SELECT * FROM operations.outbox_events
-           WHERE status='pending' AND available_at<=now()
-           ORDER BY created_at FOR UPDATE SKIP LOCKED LIMIT 50`,
-        );
-        if (result.rowCount) {
-          await client.query(`UPDATE operations.outbox_events SET status='publishing',attempts=attempts+1 WHERE id=ANY($1)`,
-                             [result.rows.map((row) => row.id)]);
-        }
-        return result.rows;
-      });
-      for (const row of events) {
+      if (Date.now() - lastLeaseRecovery > 30_000) {
+        await recoverExpiredOutboxLeases();
+        lastLeaseRecovery = Date.now();
+      }
+      const events = await claimOutboxEvents(workerId);
+      for (const event of events) {
         try {
-          await kafka.send({ topic: DOMAIN_TOPIC, messages: [{ key: row.aggregate_id, value: JSON.stringify({
-            eventId: row.id, eventType: row.event_type, eventVersion: row.event_version,
-            occurredAt: row.created_at, aggregateType: row.aggregate_type, aggregateId: row.aggregate_id,
-            merchantId: row.merchant_id, correlationId: row.correlation_id, payload: row.payload,
-          }) }] });
-          await pool.query(`UPDATE operations.outbox_events SET status='published',published_at=now() WHERE id=$1`, [row.id]);
+          await kafka.send({
+            topic: DOMAIN_TOPIC,
+            messages: [{
+              key: event.aggregate_id,
+              value: JSON.stringify({
+                eventId: event.id,
+                eventType: event.event_type,
+                eventVersion: event.event_version,
+                occurredAt: event.created_at,
+                aggregateType: event.aggregate_type,
+                aggregateId: event.aggregate_id,
+                merchantId: event.merchant_id,
+                correlationId: event.correlation_id,
+                payload: event.payload,
+              }),
+            }],
+          });
+          await markOutboxPublished(event.id, workerId);
         } catch (error) {
-          logger.error({ error, eventId: row.id }, 'outbox publish failed');
-          await pool.query(`UPDATE operations.outbox_events SET status='pending',available_at=now()+interval '5 seconds' WHERE id=$1`, [row.id]);
+          logger.error({ error, eventId: event.id }, 'outbox publish failed');
+          await markOutboxFailed(event, workerId, error);
         }
       }
       await new Promise((resolve) => setTimeout(resolve, events.length ? 50 : 500));

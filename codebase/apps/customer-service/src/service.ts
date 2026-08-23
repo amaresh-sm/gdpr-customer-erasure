@@ -5,7 +5,13 @@ import type { CreateCustomer } from '../../../packages/contracts/src/domain.js';
 import { transaction } from '../../../packages/database/src/pool.js';
 import { addOutboxEvent } from '../../../packages/messaging/src/outbox.js';
 import { DOCUMENT_BUCKET, ensureBucket, objectStore } from '../../../packages/storage/src/minio.js';
-import { CustomerRepository, type CustomerRow } from './repository.js';
+import {
+  CustomerRepository,
+  type AddressInput,
+  type ContactInput,
+  type CustomerRow,
+  type PaymentMethodInput,
+} from './repository.js';
 
 export class CustomerService {
   constructor(private readonly repository = new CustomerRepository()) {}
@@ -32,18 +38,9 @@ export class CustomerService {
     });
   }
 
-  async addAddress(client: pg.PoolClient, merchantId: string, customerId: string, input: {
-    kind: string; line1: string; line2?: string | undefined; city: string; region?: string | undefined;
-    postalCode: string; country: string;
-  }): Promise<string> {
-    const result = await client.query<{ id: string }>(
-      `INSERT INTO customers.addresses(merchant_id,customer_id,kind,line1,line2,city,region,postal_code,country)
-       SELECT $1,id,$3,$4,$5,$6,$7,$8,$9 FROM customers.customers WHERE merchant_id=$1 AND id=$2 RETURNING id`,
-      [merchantId, customerId, input.kind, input.line1, input.line2 ?? null, input.city, input.region ?? null,
-       input.postalCode, input.country],
-    );
-    if (!result.rows[0]) throw Object.assign(new Error('customer not found'), { statusCode: 404 });
-    const addressId = result.rows[0].id;
+  async addAddress(client: pg.PoolClient, merchantId: string, customerId: string, input: AddressInput): Promise<string> {
+    const addressId = await this.repository.addAddress(client, merchantId, customerId, input);
+    if (!addressId) throw Object.assign(new Error('customer not found'), { statusCode: 404 });
     const correlationId = uuid();
     await this.audit(client, merchantId, customerId, 'customer.address.created', correlationId, { addressId, ...input });
     await addOutboxEvent(client, { eventType: EVENT_TYPES.CUSTOMER_ADDRESS_CHANGED, aggregateType: 'customer',
@@ -52,14 +49,9 @@ export class CustomerService {
   }
 
   async addContact(client: pg.PoolClient, merchantId: string, customerId: string,
-                   input: { kind: string; value: string; isPrimary: boolean }): Promise<string> {
-    const result = await client.query<{ id: string }>(
-      `INSERT INTO customers.contacts(merchant_id,customer_id,kind,value,is_primary)
-       SELECT $1,id,$3,$4,$5 FROM customers.customers WHERE merchant_id=$1 AND id=$2 RETURNING id`,
-      [merchantId, customerId, input.kind, input.value, input.isPrimary],
-    );
-    if (!result.rows[0]) throw Object.assign(new Error('customer not found'), { statusCode: 404 });
-    const contactId = result.rows[0].id;
+                   input: ContactInput): Promise<string> {
+    const contactId = await this.repository.addContact(client, merchantId, customerId, input);
+    if (!contactId) throw Object.assign(new Error('customer not found'), { statusCode: 404 });
     const correlationId = uuid();
     await this.audit(client, merchantId, customerId, 'customer.contact.created', correlationId, { contactId, ...input });
     await addOutboxEvent(client, { eventType: EVENT_TYPES.CUSTOMER_CONTACT_CHANGED, aggregateType: 'customer',
@@ -68,17 +60,9 @@ export class CustomerService {
   }
 
   async attachPaymentMethod(client: pg.PoolClient, merchantId: string, customerId: string,
-                            input: { providerToken: string; type: string; brand?: string | undefined; last4?: string | undefined;
-                              billingName?: string | undefined; billingAddress?: Record<string, unknown> | undefined }): Promise<string> {
-    const result = await client.query<{ id: string }>(
-      `INSERT INTO customers.payment_method_refs
-       (merchant_id,customer_id,provider_token,type,brand,last4,billing_name,billing_address)
-       SELECT $1,id,$3,$4,$5,$6,$7,$8 FROM customers.customers WHERE merchant_id=$1 AND id=$2 RETURNING id`,
-      [merchantId, customerId, input.providerToken, input.type, input.brand ?? null, input.last4 ?? null,
-        input.billingName ?? null, input.billingAddress ?? null],
-    );
-    if (!result.rows[0]) throw Object.assign(new Error('customer not found'), { statusCode: 404 });
-    const paymentMethodId = result.rows[0].id;
+                            input: PaymentMethodInput): Promise<string> {
+    const paymentMethodId = await this.repository.attachPaymentMethod(client, merchantId, customerId, input);
+    if (!paymentMethodId) throw Object.assign(new Error('customer not found'), { statusCode: 404 });
     const correlationId = uuid();
     await this.audit(client, merchantId, customerId, 'payment_method.attached', correlationId,
       { paymentMethodId, type: input.type, last4: input.last4 });
@@ -90,21 +74,12 @@ export class CustomerService {
 
   async createSupportTicket(client: pg.PoolClient, merchantId: string, customerId: string,
                             subject: string, body: string): Promise<string> {
-    const exists = await client.query(`SELECT 1 FROM customers.customers WHERE merchant_id=$1 AND id=$2`, [merchantId, customerId]);
-    if (!exists.rowCount) throw Object.assign(new Error('customer not found'), { statusCode: 404 });
-    const ticket = await client.query<{ id: string }>(
-      `INSERT INTO customers.support_tickets(merchant_id,subject) VALUES($1,$2) RETURNING id`, [merchantId, subject],
-    );
-    const ticketId = ticket.rows[0]!.id;
-    await client.query(`INSERT INTO customers.support_participants(ticket_id,customer_id) VALUES($1,$2)`, [ticketId, customerId]);
-    const message = await client.query<{ id: string }>(
-      `INSERT INTO customers.support_messages(merchant_id,ticket_id,author_type,author_id,body)
-       VALUES($1,$2,'customer',$3,$4) RETURNING id`, [merchantId, ticketId, customerId, body],
-    );
+    const created = await this.repository.createSupportTicket(client, merchantId, customerId, subject, body);
+    if (!created) throw Object.assign(new Error('customer not found'), { statusCode: 404 });
     await addOutboxEvent(client, { eventType: EVENT_TYPES.SUPPORT_MESSAGE_CREATED, aggregateType: 'customer',
-      aggregateId: customerId, merchantId, correlationId: uuid(), payload: { customerId, ticketId,
-        messageId: message.rows[0]!.id, subject, body } });
-    return ticketId;
+      aggregateId: customerId, merchantId, correlationId: uuid(), payload: { customerId, ticketId: created.ticketId,
+        messageId: created.messageId, subject, body } });
+    return created.ticketId;
   }
 
   async importCustomerArtifact(merchantId: string, source: string, content: string): Promise<string> {
@@ -113,15 +88,7 @@ export class CustomerService {
     const objectKey = `${merchantId}/imports/${importId}.json`;
     await objectStore.putObject(DOCUMENT_BUCKET, objectKey, content, Buffer.byteLength(content), { 'Content-Type': 'application/json' });
     await transaction(async (client) => {
-      await client.query(
-        `INSERT INTO customers.customer_imports(id,merchant_id,source,object_key,status,rows_total,rows_succeeded)
-         VALUES($1,$2,$3,$4,'completed',1,1)`, [importId, merchantId, source, objectKey],
-      );
-      await client.query(
-        `INSERT INTO operations.document_manifests(merchant_id,object_key,document_type,content_type,checksum,metadata)
-         VALUES($1,$2,'customer_import','application/json',encode(digest($3,'sha256'),'hex'),$4)`,
-        [merchantId, objectKey, content, { importId, source }],
-      );
+      await this.repository.recordImport(client, { importId, merchantId, source, objectKey, content });
     });
     return importId;
   }
@@ -133,9 +100,6 @@ export class CustomerService {
 
   private async audit(client: pg.PoolClient, merchantId: string, customerId: string, action: string,
                       correlationId: string, metadata: Record<string, unknown>): Promise<void> {
-    await client.query(
-      `INSERT INTO platform.audit_logs(merchant_id,actor_type,target_type,target_id,action,metadata,correlation_id)
-       VALUES($1,'api_key','customer',$2,$3,$4,$5)`, [merchantId, customerId, action, metadata, correlationId],
-    );
+    await this.repository.audit(client, merchantId, customerId, action, correlationId, metadata);
   }
 }

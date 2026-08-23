@@ -14,8 +14,10 @@ export async function postJournal(
     postings: Posting[];
   },
 ): Promise<string> {
-  const debit = input.postings.filter((p) => p.direction === 'debit').reduce((sum, p) => sum + p.amount, 0);
-  const credit = input.postings.filter((p) => p.direction === 'credit').reduce((sum, p) => sum + p.amount, 0);
+  const debit = input.postings.filter((posting) => posting.direction === 'debit')
+    .reduce((sum, posting) => sum + posting.amount, 0);
+  const credit = input.postings.filter((posting) => posting.direction === 'credit')
+    .reduce((sum, posting) => sum + posting.amount, 0);
   if (debit !== credit || debit <= 0) throw new Error('journal entry is not balanced');
 
   const entry = await client.query<{ id: string }>(

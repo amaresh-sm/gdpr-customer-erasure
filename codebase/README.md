@@ -25,7 +25,7 @@ Check that the local services are available:
 
 ```bash
 npm run smoke
-npm run check:runtime
+docker compose --profile tools run --rm runtime-check
 ```
 
 The API gateway is available at `http://localhost:3000`. Service and infrastructure ports are

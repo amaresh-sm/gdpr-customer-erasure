@@ -89,7 +89,7 @@ services:
       minio: {condition: service_healthy}
     profiles: ["tools"]
 
-  verifier:
+  runtime-check:
     build: .
     command: ["npm", "run", "check:runtime"]
     env_file: [.env.docker]
@@ -133,6 +133,8 @@ services:
     env_file: [.env.docker]
     environment:
       SERVICE_NAME: mock-processor
+    depends_on:
+      migrator: {condition: service_completed_successfully}
     ports: ["4000:4000"]
     healthcheck:
       test: ["CMD-SHELL", "node -e \"fetch('http://localhost:4000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
