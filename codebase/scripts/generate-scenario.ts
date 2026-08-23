@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 const gateway = process.env.GATEWAY_URL ?? 'http://localhost:3000';
-const apiKey = process.env.PAYFLOW_API_KEY ?? 'pf_test_benchmark_4ad1539de977';
+const apiKey = process.env.PAYFLOW_API_KEY ?? 'pf_local_dev_northstar_4ad1539de977';
 
 async function api<T>(path: string, method = 'GET', body?: unknown, extraHeaders: Record<string, string> = {}): Promise<T> {
   const headers: Record<string, string> = { authorization: `Bearer ${apiKey}`, ...extraHeaders };

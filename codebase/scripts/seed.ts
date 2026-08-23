@@ -4,10 +4,10 @@ import { ensureBucket } from '../packages/storage/src/minio.js';
 
 const MERCHANT_ID = '10000000-0000-4000-8000-000000000001';
 const ADMIN_ID = '10000000-0000-4000-8000-000000000002';
-const RAW_API_KEY = 'pf_test_benchmark_4ad1539de977';
+const RAW_API_KEY = 'pf_local_dev_northstar_4ad1539de977';
 const SECOND_MERCHANT_ID = '20000000-0000-4000-8000-000000000001';
 const SECOND_ADMIN_ID = '20000000-0000-4000-8000-000000000002';
-const SECOND_API_KEY = 'pf_test_bluebird_924bd90d2201';
+const SECOND_API_KEY = 'pf_local_dev_bluebird_924bd90d2201';
 
 await transaction(async (client) => {
   await client.query(
@@ -24,7 +24,7 @@ await transaction(async (client) => {
   );
   await client.query(
     `INSERT INTO platform.api_keys(merchant_id,key_hash,label,scopes)
-     VALUES($1,$2,'secondary tenant',ARRAY['customers:read','customers:write','payments:read','payments:write','reconciliation:read','reconciliation:write'])
+     VALUES($1,$2,'Bluebird local development',ARRAY['customers:read','customers:write','payments:read','payments:write','reconciliation:read','reconciliation:write'])
      ON CONFLICT(key_hash) DO NOTHING`, [SECOND_MERCHANT_ID, createHash('sha256').update(SECOND_API_KEY).digest('hex')],
   );
   await client.query(
@@ -33,7 +33,7 @@ await transaction(async (client) => {
   );
   await client.query(
     `INSERT INTO platform.api_keys(merchant_id,key_hash,label,scopes)
-     VALUES($1,$2,'local benchmark',ARRAY['customers:read','customers:write','payments:read','payments:write','reconciliation:read','reconciliation:write'])
+     VALUES($1,$2,'Northstar local development',ARRAY['customers:read','customers:write','payments:read','payments:write','reconciliation:read','reconciliation:write'])
      ON CONFLICT(key_hash) DO NOTHING`, [MERCHANT_ID, createHash('sha256').update(RAW_API_KEY).digest('hex')],
   );
   for (const [code, name, accountType] of [

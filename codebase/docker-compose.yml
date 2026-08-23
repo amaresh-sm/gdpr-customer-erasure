@@ -91,7 +91,7 @@ services:
 
   verifier:
     build: .
-    command: ["npm", "run", "verify:runtime"]
+    command: ["npm", "run", "check:runtime"]
     env_file: [.env.docker]
     depends_on:
       migrator: {condition: service_completed_successfully}
