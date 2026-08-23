@@ -230,3 +230,29 @@ database-reachability retry was added to the shared migration command in both th
 baseline and golden source. The relocated reference then passed five clean, independent runtime
 runs, for **40/40** scenario checks. This certification is about verifier and reference stability;
 it does not alter the frozen candidate task contract or the provisional calibration results above.
+
+## Verifier contract hardening — 2026-08-23
+
+The private verifier now closes the material coverage gaps in the tenant-isolation, retention, and
+failure/retry contract:
+
+- Fixture provisioning proves that the normal subject's PII exists before erasure in PostgreSQL,
+  Redis, OpenSearch, MinIO, and Mailpit, as well as in the delayed webhook, job, email-delivery,
+  and dead-letter surfaces. A missing surface blocks scoring rather than awarding a vacuous cleanup
+  pass.
+- A cross-merchant `POST` is followed by a direct target-state check, and cross-merchant `GET` of a
+  real erasure request must return `404`. This verifies both non-disclosure and non-mutation.
+- Survivor preservation now checks the unrelated participant's exact shared-ticket message body in
+  addition to its identity fields and ticket participation. Financial preservation now checks
+  invoice totals and invoice-line quantities/amounts alongside payment and balanced-ledger facts.
+- The delayed-subject case installs a temporary transaction-serialization fault on the retained
+  payment write boundary. The request must become `failed` rather than `completed`, expose no PII
+  in its public error code, retain its canonical ID when reposted, and converge only after the fault
+  is removed. The existing delayed-webhook and replay checks then prove that the completed retry
+  cannot reintroduce PII and still produces one balanced financial outcome.
+
+The hidden-test TypeScript configuration now extends the candidate codebase compiler settings and
+passes `tsc --noEmit`. The revised suite passed all eight scenarios in **five** separate verifier
+containers against a newly provisioned isolated reference stack, each with a unique fixture slot.
+This is deterministic fixture-level evidence; a literal process-restart scenario and current
+mutation matrix remain separate publication-certification work.

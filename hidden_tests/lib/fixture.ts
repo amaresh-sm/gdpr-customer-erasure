@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { api, poll } from './http.js';
-import { fixtureUuid, pool } from './clients.js';
+import { CUSTOMER_INDEX, fixtureUuid, pool, redis, search } from './clients.js';
 
 export interface SubjectFixture {
   customerId: string;
@@ -24,11 +24,23 @@ export interface BenchmarkFixture {
   otherMerchantKey: string;
   normal: SubjectFixture;
   delayed: SubjectFixture;
-  survivor: { customerId: string; email: string; name: string; phone: string; externalReference: string };
+  survivor: { customerId: string; email: string; name: string; phone: string; externalReference: string; messageBody: string };
   delayedWebhookId: string;
   delayedJobId: string;
   delayedEmailDeliveryId: string;
-  normalFinancial: { amount: string; currency: string; status: string; postings: string; signedBalance: string };
+  normalFinancial: {
+    amount: string;
+    currency: string;
+    status: string;
+    postings: string;
+    signedBalance: string;
+    invoiceSubtotal: string;
+    invoiceTax: string;
+    invoiceTotal: string;
+    invoiceLineQuantity: string;
+    invoiceLineUnitAmount: string;
+    invoiceLineTotal: string;
+  };
 }
 
 async function provisionMerchant(slot: string, suffix: string): Promise<{ id: string; key: string }> {
@@ -92,9 +104,10 @@ export async function seedFixture(slot: string): Promise<BenchmarkFixture> {
     body: { ...survivorData, metadata: { role: 'shared-ticket-survivor' } } });
   await pool.query(`INSERT INTO customers.support_participants(ticket_id,customer_id) VALUES($1,$2)`,
     [normal.ticketId, survivor.body.id]);
+  const survivorMessageBody = `SURVIVOR_MESSAGE_${slot}`;
   await pool.query(
     `INSERT INTO customers.support_messages(merchant_id,ticket_id,author_type,author_id,body)
-     VALUES($1,$2,'customer',$3,$4)`, [merchant.id, normal.ticketId, survivor.body.id, `SURVIVOR_MESSAGE_${slot}`],
+     VALUES($1,$2,'customer',$3,$4)`, [merchant.id, normal.ticketId, survivor.body.id, survivorMessageBody],
   );
 
   const payment = await api<{ id: string }>(merchant.key, '/v1/payments', { method: 'POST', expected: 202,
@@ -111,6 +124,10 @@ export async function seedFixture(slot: string): Promise<BenchmarkFixture> {
     `SELECT count(*)::text count FROM operations.email_deliveries
      WHERE merchant_id=$1 AND customer_id=$2 AND status='delivered'`, [merchant.id, normal.customerId])).rows[0]!.count),
   (count) => count >= 1, 'normal Mailpit delivery');
+  await poll(async () => await redis.get(`merchant:${merchant.id}:customer:${normal.customerId}`),
+  (value) => typeof value === 'string' && value.includes(normal.email), 'normal Redis projection');
+  await poll(async () => (await search.exists({ index: CUSTOMER_INDEX, id: `${merchant.id}:${normal.customerId}` })).body,
+  (exists) => exists === true, 'normal OpenSearch projection');
 
   const delayedPaymentId = fixtureUuid(`${slot}:delayed-payment`);
   const providerPaymentId = `pi_hidden_${createHash('sha256').update(slot).digest('hex').slice(0, 16)}`;
@@ -165,8 +182,19 @@ export async function seedFixture(slot: string): Promise<BenchmarkFixture> {
   );
   const row = financial.rows[0];
   if (!row) throw new Error('normal payment financial snapshot was not created');
+  const invoiceFinancial = await pool.query<{
+    subtotal: string; tax: string; total: string; quantity: string; unit_amount: string; line_total: string;
+  }>(
+    `SELECT i.subtotal::text,i.tax::text,i.total::text,l.quantity::text,l.unit_amount::text,l.total::text line_total
+       FROM payments.invoices i JOIN payments.invoice_lines l ON l.invoice_id=i.id WHERE i.id=$1 ORDER BY l.id LIMIT 1`,
+    [normal.invoiceId],
+  );
+  const invoice = invoiceFinancial.rows[0];
+  if (!invoice) throw new Error('normal invoice financial snapshot was not created');
   return { slot, merchantId: merchant.id, merchantKey: merchant.key, otherMerchantId: other.id,
-    otherMerchantKey: other.key, normal, delayed, survivor: { customerId: survivor.body.id, ...survivorData },
+    otherMerchantKey: other.key, normal, delayed, survivor: { customerId: survivor.body.id, ...survivorData, messageBody: survivorMessageBody },
     delayedWebhookId: webhookId, delayedJobId, delayedEmailDeliveryId, normalFinancial: { amount: row.amount, currency: row.currency,
-      status: row.status, postings: row.postings, signedBalance: row.signed_balance } };
+      status: row.status, postings: row.postings, signedBalance: row.signed_balance,
+      invoiceSubtotal: invoice.subtotal, invoiceTax: invoice.tax, invoiceTotal: invoice.total,
+      invoiceLineQuantity: invoice.quantity, invoiceLineUnitAmount: invoice.unit_amount, invoiceLineTotal: invoice.line_total } };
 }

@@ -2,12 +2,13 @@ import { writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { closeClients } from './lib/clients.js';
 import { seedFixture, type BenchmarkFixture } from './lib/fixture.js';
-import { assertNoErasureViolations, collectErasureViolations, releaseDelayedWork,
-  replayHistoricalPiiEvent, requestErasure, verifyFinancialRetention,
-  verifySurvivorUntouched, waitForCompletion } from './lib/verifier.js';
+import { assertNoErasureViolations, collectErasureViolations, installTransientPaymentWriteFailure,
+  releaseDelayedWork, removeTransientPaymentWriteFailure, replayHistoricalPiiEvent, requestErasure,
+  verifyFinancialRetention, verifyFixtureCoverage, verifySubjectUnchanged, verifySurvivorUntouched,
+  waitForCompletion, waitForStatus } from './lib/verifier.js';
 import { api } from './lib/http.js';
 
-interface TestResult { name: string; durationMs: number; error?: string }
+interface TestResult { name: string; durationMs: number; error?: string | undefined }
 type CheckState = 'pass' | 'fail' | 'blocked';
 
 interface DiagnosticCheck {
@@ -16,7 +17,7 @@ interface DiagnosticCheck {
   maximum: number;
   earned: number;
   state: CheckState;
-  evidence?: string;
+  evidence?: string | undefined;
 }
 
 interface ScoreReport {
@@ -26,12 +27,13 @@ interface ScoreReport {
   earned: number | null;
   maximum: 8;
   checks: DiagnosticCheck[];
-  blocked_reason?: string;
+  blocked_reason?: string | undefined;
 }
 
 interface ErasureResponse {
   id: string;
   status: 'pending' | 'processing' | 'failed' | 'completed';
+  lastError?: string | null;
 }
 
 const results: TestResult[] = [];
@@ -51,7 +53,7 @@ function errorText(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-async function observe(operation: () => Promise<void>): Promise<{ ok: boolean; evidence?: string }> {
+async function observe(operation: () => Promise<void>): Promise<{ ok: boolean; evidence?: string | undefined }> {
   try {
     await operation();
     return { ok: true };
@@ -60,7 +62,7 @@ async function observe(operation: () => Promise<void>): Promise<{ ok: boolean; e
   }
 }
 
-function recordCheck(id: string, label: string, maximum: number, observed: { ok: boolean; evidence?: string },
+function recordCheck(id: string, label: string, maximum: number, observed: { ok: boolean; evidence?: string | undefined },
                      eligible = true, ineligibleReason = 'a prerequisite safety check failed'): boolean {
   if (!eligible) {
     checks.push({ id, label, maximum, earned: 0, state: 'blocked', evidence: ineligibleReason });
@@ -75,7 +77,7 @@ function violationsFor(violations: string[], prefix: string): string[] {
   return violations.filter((violation) => violation.startsWith(prefix));
 }
 
-function noViolations(violations: string[]): { ok: boolean; evidence?: string } {
+function noViolations(violations: string[]): { ok: boolean; evidence?: string | undefined } {
   return violations.length === 0 ? { ok: true } : { ok: false, evidence: violations.join('; ') };
 }
 
@@ -140,7 +142,10 @@ async function writeScoreReport(): Promise<void> {
 
 const slot = process.env.ERASURE_TEST_SLOT ?? `${Date.now()}-${process.pid}`;
 try {
-  await test('deterministic fixture provisions cross-store PII', async () => { fixture = await seedFixture(slot); });
+  await test('deterministic fixture provisions cross-store PII', async () => {
+    fixture = await seedFixture(slot);
+    await verifyFixtureCoverage(fixture);
+  });
   if (fixture!) {
     let normalRequest = '';
     await test('request contract is tenant-safe, concurrent, and idempotent', async () => {
@@ -151,12 +156,12 @@ try {
         });
       });
       recordCheck('api.unknown_customer', 'Unknown customer is tenant-safe', 0.1, unknownCustomer);
-      const crossTenant = await observe(async () => {
+      const crossTenantPost = await observe(async () => {
         await api(fixture.otherMerchantKey, `/v1/customers/${fixture.normal.customerId}/erasure-requests`, {
           method: 'POST', expected: 404, headers: { 'idempotency-key': `cross-tenant-${slot}` },
         });
+        await verifySubjectUnchanged(fixture, fixture.normal);
       });
-      recordCheck('api.cross_tenant', 'Cross-tenant customer is hidden', 0.1, crossTenant);
 
       const winningKey = `erase-canonical-${slot}`;
       let requestId = '';
@@ -171,6 +176,14 @@ try {
       });
       const concurrentOk = recordCheck('api.concurrent_idempotency', 'Concurrent same-key requests share one workflow', 0.2, concurrent);
       normalRequest = requestId;
+      const crossTenantRead = await observe(async () => {
+        await api(fixture.otherMerchantKey, `/v1/erasure-requests/${requestId}`, { expected: 404 });
+      });
+      const crossTenant = {
+        ok: crossTenantPost.ok && crossTenantRead.ok,
+        evidence: crossTenantPost.evidence ?? crossTenantRead.evidence,
+      };
+      recordCheck('api.cross_tenant', 'Cross-tenant customer and request are hidden without mutation', 0.1, crossTenant);
       const alternate = await observe(async () => {
         const response = await api<ErasureResponse>(fixture.merchantKey,
           `/v1/customers/${fixture.normal.customerId}/erasure-requests`,
@@ -222,18 +235,37 @@ try {
     });
     let delayedRequest = '';
     let delayedViolations: string[] = [];
-    await test('pending asynchronous work is sanitized before completion', async () => {
+    await test('failed erasure retries safely and pending asynchronous work is sanitized before completion', async () => {
+      const retryKey = `delayed-${slot}`;
       const created = await observe(async () => {
-        delayedRequest = await requestErasure(fixture.merchantKey, fixture.delayed.customerId, `delayed-${slot}`);
+        await installTransientPaymentWriteFailure(fixture.delayed.paymentId);
+        delayedRequest = await requestErasure(fixture.merchantKey, fixture.delayed.customerId, retryKey);
       });
       const createdOk = recordCheck('async.request_accepted', 'Delayed-subject erasure request is accepted', 0.2, created);
-      const completed = await observe(async () => { await waitForCompletion(fixture.merchantKey, delayedRequest); });
-      const completedOk = recordCheck('async.completion_gate', 'Pending work prevents premature completion', 0.3,
-        completed, createdOk, 'the delayed-subject request was not accepted');
+      const failed = created.ok ? await observe(async () => {
+        const response = await waitForStatus(fixture.merchantKey, delayedRequest, 'failed');
+        if (!response.lastError || response.lastError.includes(fixture.delayed.email) ||
+          response.lastError.includes(fixture.delayed.name) || response.lastError.includes(fixture.delayed.canary)) {
+          throw new Error('failed request did not expose a safe operational error code');
+        }
+      }) : { ok: false, evidence: created.evidence };
+      await removeTransientPaymentWriteFailure();
+      const completed = failed.ok ? await observe(async () => {
+        const retried = await requestErasure(fixture.merchantKey, fixture.delayed.customerId, retryKey);
+        if (retried !== delayedRequest) throw new Error('retry created a second erasure workflow');
+        await waitForCompletion(fixture.merchantKey, delayedRequest);
+      }) : { ok: false, evidence: failed.evidence };
+      const completionGate = {
+        ok: failed.ok && completed.ok,
+        evidence: completed.evidence ?? failed.evidence,
+      };
+      const completedOk = recordCheck('async.completion_gate',
+        'Participant failure prevents completion and the same request converges when retried', 0.3,
+        completionGate, createdOk, 'the delayed-subject erasure request was not accepted');
       // The legacy binary suite stops this scenario at a failed request/completion. Do the same
       // here: collecting cross-store evidence would add enough time for background work to alter
       // later delayed/replay scenarios and would make the legacy score non-comparable.
-      if (!created.ok || !completed.ok) {
+      if (!created.ok || !failed.ok || !completed.ok) {
         recordCheck('async.pending_payloads', 'Pending work and its payloads are fully sanitized', 0.7,
           { ok: false, evidence: completed.evidence ?? created.evidence }, false,
           'the delayed-subject erasure did not complete');

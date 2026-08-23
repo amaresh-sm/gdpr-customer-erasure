@@ -8,6 +8,7 @@ interface ErasureResponse {
   id: string;
   customerId: string;
   status: 'pending' | 'processing' | 'failed' | 'completed';
+  lastError?: string | null;
   steps?: Array<{ participant: string; status: string }>;
 }
 
@@ -69,6 +70,109 @@ export async function requestErasure(apiKey: string, customerId: string, idempot
 export async function waitForCompletion(apiKey: string, requestId: string): Promise<ErasureResponse> {
   return await poll(async () => (await api<ErasureResponse>(apiKey, `/v1/erasure-requests/${requestId}`,
     { expected: 200 })).body, (body) => body.status === 'completed', `erasure request ${requestId}`, 160);
+}
+
+export async function waitForStatus(apiKey: string, requestId: string,
+                                    status: ErasureResponse['status']): Promise<ErasureResponse> {
+  return await poll(async () => (await api<ErasureResponse>(apiKey, `/v1/erasure-requests/${requestId}`,
+    { expected: 200 })).body, (body) => body.status === status, `erasure request ${requestId} to become ${status}`, 160);
+}
+
+/** Proves that every store claimed by the verifier actually contains the fixture subject before erasure. */
+export async function verifyFixtureCoverage(fixture: BenchmarkFixture): Promise<void> {
+  const subject = fixture.normal;
+  const relational = await pool.query<{ customers: string; addresses: string; contacts: string; methods: string; payments: string; invoices: string }>(
+    `SELECT
+       (SELECT count(*)::text FROM customers.customers WHERE merchant_id=$1 AND id=$2) customers,
+       (SELECT count(*)::text FROM customers.addresses WHERE merchant_id=$1 AND customer_id=$2) addresses,
+       (SELECT count(*)::text FROM customers.contacts WHERE merchant_id=$1 AND customer_id=$2) contacts,
+       (SELECT count(*)::text FROM customers.payment_method_refs WHERE merchant_id=$1 AND customer_id=$2) methods,
+       (SELECT count(*)::text FROM payments.payment_intents WHERE merchant_id=$1 AND customer_id=$2) payments,
+       (SELECT count(*)::text FROM payments.invoices WHERE merchant_id=$1 AND customer_id=$2) invoices`,
+    [fixture.merchantId, subject.customerId],
+  );
+  const row = relational.rows[0];
+  assert(row !== undefined && Object.values(row).every((count) => Number(count) > 0),
+    'fixture did not create every expected PostgreSQL relation');
+
+  const cache = await redis.get(`merchant:${fixture.merchantId}:customer:${subject.customerId}`);
+  assert(cache !== null && needleHits(cache, subject).length > 0, 'fixture did not create a Redis PII projection');
+
+  const document = await search.get({ index: CUSTOMER_INDEX, id: `${fixture.merchantId}:${subject.customerId}` });
+  const source = (document.body as { _source?: unknown })._source;
+  assert(source !== undefined && needleHits(source, subject).length > 0,
+    'fixture did not create an OpenSearch PII projection');
+
+  let minioPiiFound = false;
+  for (const objectName of await listObjectNames(`${fixture.merchantId}/`)) {
+    const object = await minio.getObject(DOCUMENT_BUCKET, objectName);
+    if (needleHits(`${objectName}\n${await streamText(object)}`, subject).length > 0) {
+      minioPiiFound = true;
+      break;
+    }
+  }
+  assert(minioPiiFound, 'fixture did not create a MinIO object containing subject PII');
+
+  const mailpit = await fetch(`${settings.mailpit}/api/v1/search?query=${encodeURIComponent(subject.email)}`);
+  assert(mailpit.ok, `fixture Mailpit search failed: ${mailpit.status}`);
+  const mailpitBody = await mailpit.json() as { messages_count?: number; messages?: unknown[] };
+  assert((mailpitBody.messages_count ?? mailpitBody.messages?.length ?? 0) > 0,
+    'fixture did not create a Mailpit message containing subject PII');
+
+  const delayed = await pool.query<{ jobs: string; webhooks: string; deliveries: string; dead_letters: string }>(
+    `SELECT
+       (SELECT count(*)::text FROM operations.jobs WHERE id=$1) jobs,
+       (SELECT count(*)::text FROM operations.provider_webhooks WHERE id=$2) webhooks,
+       (SELECT count(*)::text FROM operations.email_deliveries WHERE id=$3) deliveries,
+       (SELECT count(*)::text FROM operations.dead_letters WHERE source_id=$1::text) dead_letters`,
+    [fixture.delayedJobId, fixture.delayedWebhookId, fixture.delayedEmailDeliveryId],
+  );
+  const delayedRow = delayed.rows[0];
+  assert(delayedRow !== undefined && Object.values(delayedRow).every((count) => Number(count) > 0),
+    'fixture did not create every delayed-work PII surface');
+}
+
+/** Confirms that a rejected tenant-boundary probe left the target customer untouched. */
+export async function verifySubjectUnchanged(fixture: BenchmarkFixture, subject: SubjectFixture): Promise<void> {
+  const customer = await pool.query<{ email: string; name: string; phone: string; external_reference: string }>(
+    `SELECT email,name,phone,external_reference FROM customers.customers WHERE merchant_id=$1 AND id=$2`,
+    [fixture.merchantId, subject.customerId],
+  );
+  const row = customer.rows[0];
+  assert(row?.email === subject.email && row.name === subject.name && row.phone === subject.phone &&
+    row.external_reference === subject.externalReference, 'tenant-boundary probe changed the target customer');
+  const related = await pool.query<{ addresses: string; contacts: string; methods: string; payments: string; invoices: string }>(
+    `SELECT
+       (SELECT count(*)::text FROM customers.addresses WHERE merchant_id=$1 AND customer_id=$2) addresses,
+       (SELECT count(*)::text FROM customers.contacts WHERE merchant_id=$1 AND customer_id=$2) contacts,
+       (SELECT count(*)::text FROM customers.payment_method_refs WHERE merchant_id=$1 AND customer_id=$2) methods,
+       (SELECT count(*)::text FROM payments.payment_intents WHERE merchant_id=$1 AND customer_id=$2) payments,
+       (SELECT count(*)::text FROM payments.invoices WHERE merchant_id=$1 AND customer_id=$2) invoices`,
+    [fixture.merchantId, subject.customerId],
+  );
+  assert(related.rows[0] !== undefined && Object.values(related.rows[0]).every((count) => Number(count) > 0),
+    'tenant-boundary probe removed a target relationship');
+}
+
+const transientFaultFunction = 'operations.hidden_test_fail_payment_erasure';
+const transientFaultTrigger = 'hidden_test_fail_payment_erasure';
+
+/** Installs a one-purpose, temporary database fault at the retained-payment write boundary. */
+export async function installTransientPaymentWriteFailure(paymentId: string): Promise<void> {
+  await removeTransientPaymentWriteFailure();
+  await pool.query(`CREATE FUNCTION ${transientFaultFunction}() RETURNS trigger LANGUAGE plpgsql AS $$
+    BEGIN RAISE EXCEPTION USING ERRCODE='40001', MESSAGE='temporary_hidden_test_payment_write_failure'; END;
+  $$`);
+  await pool.query(`CREATE TRIGGER ${transientFaultTrigger}
+    BEFORE UPDATE OR DELETE ON payments.payment_intents
+    FOR EACH ROW WHEN (OLD.id = '${paymentId}'::uuid)
+    EXECUTE FUNCTION ${transientFaultFunction}()`);
+}
+
+/** Removes the isolated fault so the same durable request can resume. */
+export async function removeTransientPaymentWriteFailure(): Promise<void> {
+  await pool.query(`DROP TRIGGER IF EXISTS ${transientFaultTrigger} ON payments.payment_intents`);
+  await pool.query(`DROP FUNCTION IF EXISTS ${transientFaultFunction}()`);
 }
 
 async function collectPostgresViolations(fixture: BenchmarkFixture, subject: SubjectFixture): Promise<string[]> {
@@ -230,9 +334,21 @@ export async function verifyFinancialRetention(fixture: BenchmarkFixture): Promi
     row.status === fixture.normalFinancial.status, 'immutable payment facts changed');
   assert(row.postings === fixture.normalFinancial.postings && row.signed_balance === fixture.normalFinancial.signedBalance,
     'ledger postings were deleted or unbalanced');
-  const invoice = await pool.query<{ count: string }>(
-    `SELECT count(*)::text count FROM payments.invoices WHERE id=$1`, [fixture.normal.invoiceId]);
-  assert(invoice.rows[0]?.count === '1', 'legally retained invoice was deleted');
+  const invoice = await pool.query<{
+    subtotal: string; tax: string; total: string; quantity: string; unit_amount: string; line_total: string;
+  }>(
+    `SELECT i.subtotal::text,i.tax::text,i.total::text,l.quantity::text,l.unit_amount::text,l.total::text line_total
+       FROM payments.invoices i JOIN payments.invoice_lines l ON l.invoice_id=i.id WHERE i.id=$1 ORDER BY l.id LIMIT 1`,
+    [fixture.normal.invoiceId],
+  );
+  const invoiceRow = invoice.rows[0];
+  assert(invoiceRow !== undefined, 'legally retained invoice or invoice line was deleted');
+  assert(invoiceRow.subtotal === fixture.normalFinancial.invoiceSubtotal &&
+    invoiceRow.tax === fixture.normalFinancial.invoiceTax && invoiceRow.total === fixture.normalFinancial.invoiceTotal &&
+    invoiceRow.quantity === fixture.normalFinancial.invoiceLineQuantity &&
+    invoiceRow.unit_amount === fixture.normalFinancial.invoiceLineUnitAmount &&
+    invoiceRow.line_total === fixture.normalFinancial.invoiceLineTotal,
+  'retained invoice financial values changed');
 }
 
 export async function verifySurvivorUntouched(fixture: BenchmarkFixture): Promise<void> {
@@ -248,6 +364,12 @@ export async function verifySurvivorUntouched(fixture: BenchmarkFixture): Promis
     `SELECT count(*)::text count FROM customers.support_participants WHERE ticket_id=$1 AND customer_id=$2`,
     [fixture.normal.ticketId, fixture.survivor.customerId]);
   assert(participant.rows[0]?.count === '1', 'shared-ticket survivor participation was deleted');
+  const message = await pool.query<{ body: string }>(
+    `SELECT body FROM customers.support_messages WHERE ticket_id=$1 AND author_type='customer' AND author_id=$2`,
+    [fixture.normal.ticketId, fixture.survivor.customerId],
+  );
+  assert(message.rows[0]?.body === fixture.survivor.messageBody,
+    'shared-ticket survivor message was changed');
 }
 
 export async function releaseDelayedWork(fixture: BenchmarkFixture): Promise<void> {

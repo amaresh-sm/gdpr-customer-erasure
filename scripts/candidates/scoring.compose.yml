@@ -1,6 +1,12 @@
 # Evaluator-only override. The verifier talks to every dependency over the Compose network, so
 # exposing fixed host ports only makes independent candidate scores collide with one another.
 services:
+  # Evaluator-only execution environment. It is defined in the private override rather than the
+  # candidate-visible compose file, and hidden tests are mounted only by score.sh.
+  verifier:
+    build: .
+    working_dir: /srv/payflow
+    env_file: [.env.docker]
   postgres: { ports: !reset [] }
   redis: { ports: !reset [] }
   redpanda: { ports: !reset [] }

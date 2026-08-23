@@ -1,7 +1,8 @@
 # Merchant API
 
-All `/v1` routes require `Authorization: Bearer <api-key>`. The key resolves a merchant and a set
-of scopes. Resources belonging to another merchant are returned as not found.
+The merchant-facing routes below are served through the API gateway. They require
+`Authorization: Bearer <api-key>`. The key resolves a merchant and a set of scopes. Resources
+belonging to another merchant are returned as not found.
 
 ## Customer lifecycle
 
@@ -11,6 +12,7 @@ of scopes. Resources belonging to another merchant are returned as not found.
 - `POST /v1/customers/:id/addresses`
 - `POST /v1/customers/:id/contacts`
 - `POST /v1/customers/:id/payment-methods`
+- `GET /v1/customers/:id/payment-methods/:paymentMethodId`
 - `POST /v1/customers/:id/support-tickets`
 - `POST /v1/customer-imports`
 

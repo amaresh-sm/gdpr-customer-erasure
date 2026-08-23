@@ -48,8 +48,11 @@ wait_for_health() {
   local label=$3
   local attempt
   for attempt in $(seq 1 60); do
+    # Readiness must establish that the HTTP server is accepting connections; it must not turn a
+    # candidate's missing /health route into a harness-wide failure that prevents independent
+    # privacy checks from running. Any non-5xx HTTP response proves the process is reachable.
     if docker compose -p "$project" -f "$source_dir/docker-compose.yml" -f "$override_file" run --rm --no-deps \
-      verifier node -e "fetch('http://${service}:${port}/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))" >/dev/null 2>&1; then
+      verifier node -e "fetch('http://${service}:${port}/health').then((response) => process.exit(response.status < 500 ? 0 : 1)).catch(() => process.exit(1))" >/dev/null 2>&1; then
       return 0
     fi
     sleep 1

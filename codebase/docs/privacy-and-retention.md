@@ -1,8 +1,7 @@
 # Privacy erasure and retention
 
 PayFlow merchants may request permanent erasure of a customer when the merchant has established a
-valid privacy basis. This policy defines the product behavior for the local PayFlow platform. It is
-an engineering contract for the application and is not legal advice.
+valid privacy basis. This policy defines the product behavior for the local PayFlow platform.
 
 ## Data classes
 
