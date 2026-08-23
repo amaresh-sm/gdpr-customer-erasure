@@ -84,7 +84,7 @@ async function ensureImage(tag: string, dockerfile: string): Promise<string> {
 async function copyBaseline(source: string, destination: string): Promise<void> {
   await cp(source, destination, {
     recursive: true,
-    filter: (path) => !/(^|\/)(node_modules|dist|\.git|hidden_tests|reference_solution|candidates|calibration|internal|evaluator)(\/|$)/.test(path),
+    filter: (path) => !/(^|\/)(node_modules|dist|\.git|hidden_tests|reference_solution|candidates|calibration|internal|evaluator|hackerrank\.yml)(\/|$)/.test(path),
   });
 }
 
