@@ -1,0 +1,13 @@
+# id	patch	expected_check	repeat_required	contract
+tenant-request-read-leak	patches/tenant-request-read-leak.patch	api.cross_tenant	false	A merchant must not read another merchant's erasure request.
+canonical-workflow-duplicate	patches/canonical-workflow-duplicate.patch	api.customer_deduplication	true	Different idempotency keys for one subject must resolve to one canonical workflow.
+financial-invoice-lines-unsanitized	patches/financial-invoice-lines-unsanitized.patch	normal.postgres_payloads	false	Retained invoice lines must not retain customer-supplied identity text.
+operational-dead-letter-unsanitized	patches/operational-dead-letter-unsanitized.patch	async.pending_payloads	false	Retained dead-letter payloads and errors must be redacted.
+redis-projection-retained	patches/redis-projection-retained.patch	normal.redis	false	Redis must not retain the erased subject's identity or projection.
+opensearch-document-retained	patches/opensearch-document-retained.patch	normal.opensearch	false	OpenSearch must not retain the erased subject's document.
+object-storage-unsanitized	patches/object-storage-unsanitized.patch	normal.minio	false	Customer imports and retained documents must be scrubbed before completion.
+mailpit-message-retained	patches/mailpit-message-retained.patch	normal.mailpit	false	Application-owned provider mailbox copies must be removed.
+financial-facts-destroyed	patches/financial-facts-destroyed.patch	financial.retention	false	Erasure must preserve payment, invoice, and ledger financial facts.
+shared-survivor-redacted	patches/shared-survivor-redacted.patch	survivor.unchanged	false	Unrelated participants and their shared content must remain unchanged.
+participant-failure-marked-complete	patches/participant-failure-marked-complete.patch	async.completion_gate	false	A participant failure must not be reported as completed and the same request must retry safely.
+replay-suppression-omitted	patches/replay-suppression-omitted.patch	replay.no_reintroduction	false	Delayed and replayed work must not restore erased identity.

@@ -135,7 +135,7 @@ async function startLocalPortkeyProxy(projectRoot: string, envFile: string): Pro
 async function exportCandidate(source: string, destination: string): Promise<void> {
   await cp(source, destination, {
     recursive: true,
-    filter: (path) => !/(^|\/)(node_modules|dist|\.git|hidden_tests|reference_solution|candidates)(\/|$)/.test(path),
+    filter: (path) => !/(^|\/)(node_modules|dist|\.git|hidden_tests|reference_solution|candidates|internal|evaluator)(\/|$)/.test(path),
   });
 }
 

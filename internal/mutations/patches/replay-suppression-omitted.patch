@@ -1,0 +1,12 @@
+diff --git a/apps/privacy-service/src/handlers/quiescence.ts b/apps/privacy-service/src/handlers/quiescence.ts
+--- a/apps/privacy-service/src/handlers/quiescence.ts
++++ b/apps/privacy-service/src/handlers/quiescence.ts
+@@ -8,7 +8,7 @@ export async function quiesceSubject(request: ErasureRequestRecord): Promise<vo
+     await client.query(
+       `INSERT INTO privacy.erased_subjects(merchant_id,customer_id,surrogate_id,erasure_request_id)
+        VALUES($1,$2,$3,$4) ON CONFLICT(merchant_id,customer_id) DO NOTHING`,
+-      [request.merchant_id, request.customer_id, request.surrogate_id, request.id],
++      [request.merchant_id, request.surrogate_id, request.surrogate_id, request.id],
+     );
+     await client.query(
+       `UPDATE customers.customers SET status='erasure_pending',version=version+1,updated_at=now()

@@ -1,0 +1,18 @@
+diff --git a/apps/privacy-service/src/repository.ts b/apps/privacy-service/src/repository.ts
+--- a/apps/privacy-service/src/repository.ts
++++ b/apps/privacy-service/src/repository.ts
+@@ -75,3 +75,3 @@ export class PrivacyRepository {
+         [merchantId, customerId],
+       );
+-      if (customerRequest.rows[0]) return this.resumeIfEligible(client, customerRequest.rows[0]);
++      // Incorrectly treats a new idempotency key as a new workflow for the same customer.
+diff --git a/packages/database/migrations/002_privacy_erasure.sql b/packages/database/migrations/002_privacy_erasure.sql
+--- a/packages/database/migrations/002_privacy_erasure.sql
++++ b/packages/database/migrations/002_privacy_erasure.sql
+@@ -17,6 +17,5 @@ CREATE TABLE IF NOT EXISTS privacy.erasure_requests(
+   updated_at timestamptz NOT NULL DEFAULT now(),
+   started_at timestamptz,
+   completed_at timestamptz,
+-  UNIQUE(merchant_id,customer_id),
+   UNIQUE(merchant_id,idempotency_key)
+ );

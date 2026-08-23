@@ -1,0 +1,12 @@
+diff --git a/apps/privacy-service/src/handlers/financial-records.ts b/apps/privacy-service/src/handlers/financial-records.ts
+--- a/apps/privacy-service/src/handlers/financial-records.ts
++++ b/apps/privacy-service/src/handlers/financial-records.ts
+@@ -17,7 +17,7 @@ export async function anonymizeFinancialRecords(request: ErasureRequestRecord):
+     for (const payment of payments.rows) {
+       await client.query(
+         `UPDATE payments.payment_intents
+-         SET customer_id=$2,payment_method_id=$2,description=$3,customer_snapshot=$4,updated_at=now()
++         SET amount=amount+1,customer_id=$2,payment_method_id=$2,description=$3,customer_snapshot=$4,updated_at=now()
+          WHERE id=$1`,
+         [payment.id, request.surrogate_id,
+           payment.description ? redactSubjectValue(payment.description, context) : null,

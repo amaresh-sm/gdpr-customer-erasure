@@ -1,0 +1,12 @@
+diff --git a/apps/privacy-service/src/handlers/object-storage.ts b/apps/privacy-service/src/handlers/object-storage.ts
+--- a/apps/privacy-service/src/handlers/object-storage.ts
++++ b/apps/privacy-service/src/handlers/object-storage.ts
+@@ -21,6 +21,7 @@ async function readObject(key: string): Promise<Buffer | undefined> {
+ /** Deletes source imports and rewrites retained financial documents without customer identity. */
+ export async function sanitizeObjectStorage(request: ErasureRequestRecord): Promise<void> {
+   const context = request.subject_context as SubjectContext;
+   await ensureBucket();
++  if (request.id) return;
+   const manifests = await pool.query<{ id: string; object_key: string; document_type: string }>(
+     `SELECT id,object_key,document_type FROM operations.document_manifests
+      WHERE merchant_id=$1 AND customer_id=$2`, [request.merchant_id, request.customer_id],

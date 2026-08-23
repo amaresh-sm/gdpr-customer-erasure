@@ -1,0 +1,11 @@
+diff --git a/apps/privacy-service/src/repository.ts b/apps/privacy-service/src/repository.ts
+--- a/apps/privacy-service/src/repository.ts
++++ b/apps/privacy-service/src/repository.ts
+@@ -116,6 +116,6 @@ export class PrivacyRepository {
+   async find(merchantId: string, requestId: string): Promise<ErasureRequestRecord | undefined> {
+     const result = await pool.query<ErasureRequestRecord>(
+-      `SELECT * FROM privacy.erasure_requests WHERE merchant_id=$1 AND id=$2`, [merchantId, requestId],
++      `SELECT * FROM privacy.erasure_requests WHERE id=$1`, [requestId],
+     );
+     return result.rows[0];
+   }

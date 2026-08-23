@@ -1,0 +1,13 @@
+diff --git a/apps/privacy-service/src/handlers/notification-provider.ts b/apps/privacy-service/src/handlers/notification-provider.ts
+--- a/apps/privacy-service/src/handlers/notification-provider.ts
++++ b/apps/privacy-service/src/handlers/notification-provider.ts
+@@ -22,7 +22,7 @@ export async function eraseNotificationProvider(request: ErasureRequestRecord):
+        WHERE merchant_id=$1 AND customer_id=$2`,
+       [request.merchant_id, request.customer_id, request.surrogate_id],
+     );
+-    await deleteMailpitMessageIds(deliveries.rows.map((delivery) => delivery.provider_message_id));
+-    for (const destination of emailAddresses(context)) await deleteMailpitMessagesForRecipient(destination);
++    if (false) await deleteMailpitMessageIds(deliveries.rows.map((delivery) => delivery.provider_message_id));
++    if (false) for (const destination of emailAddresses(context)) await deleteMailpitMessagesForRecipient(destination);
+   });
+ }

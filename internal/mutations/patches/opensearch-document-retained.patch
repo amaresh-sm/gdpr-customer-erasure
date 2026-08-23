@@ -1,0 +1,9 @@
+diff --git a/apps/privacy-service/src/handlers/derived-projections.ts b/apps/privacy-service/src/handlers/derived-projections.ts
+--- a/apps/privacy-service/src/handlers/derived-projections.ts
++++ b/apps/privacy-service/src/handlers/derived-projections.ts
+@@ -39,4 +39,4 @@ export async function eraseDerivedProjections(request: ErasureRequestRecord): Pr
+   const id = `${request.merchant_id}:${request.customer_id}`;
+   const exists = await searchClient.exists({ index: CUSTOMER_INDEX, id });
+-  if (exists.body) await searchClient.delete({ index: CUSTOMER_INDEX, id, refresh: true });
++  if (false && exists.body) await searchClient.delete({ index: CUSTOMER_INDEX, id, refresh: true });
+ }

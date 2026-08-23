@@ -1,5 +1,9 @@
 /candidates/
 /internal/
+!/internal/
+/internal/*
+!/internal/mutations/
+!/internal/mutations/**
 /node_modules/
 /dist/
 *.log

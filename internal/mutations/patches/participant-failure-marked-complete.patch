@@ -1,0 +1,11 @@
+diff --git a/apps/privacy-service/src/worker.ts b/apps/privacy-service/src/worker.ts
+--- a/apps/privacy-service/src/worker.ts
++++ b/apps/privacy-service/src/worker.ts
+@@ -73,6 +73,6 @@ async function processRequest(request: ErasureRequestRecord): Promise<void> {
+     for (const participant of PARTICIPANTS) await runParticipant(request, participant);
+     await completeRequest(request);
+   } catch (error) {
+-    await failRequest(request, error);
++    await completeRequest(request);
+   }
+ }
