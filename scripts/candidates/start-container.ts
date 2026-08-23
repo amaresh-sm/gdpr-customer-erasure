@@ -106,16 +106,17 @@ async function dotenv(path: string): Promise<Record<string, string>> {
   const values: Record<string, string> = {};
   for (const raw of (await readFile(path, 'utf8')).split(/\r?\n/)) {
     if (!raw || raw.trimStart().startsWith('#')) continue;
-    const match = /^([A-Z0-9_]+)=([^\r\n]*)$/.exec(raw);
-    if (!match) throw new Error('Portkey environment file must contain only simple KEY=value entries');
+    const match = /^([A-Z0-9_]+)=([^\r\n]*?)(?:[ \t]+#.*)?$/.exec(raw);
+    if (!match) throw new Error('Portkey environment file must contain only simple KEY=value entries with optional inline comments');
     values[match[1]!] = match[2]!;
   }
   return values;
 }
 
 function routeAndProxyConfiguration(fileValues: Record<string, string>): { configuration: string; route: LaunchRecord['portkey_route'] } {
-  const values = { ...fileValues, ...Object.fromEntries(Object.entries(process.env).filter(([key]) => key.startsWith('PORTKEY_'))) };
-  const apiKey = values.PORTKEY_API_KEY ?? fileValues.OPENAI_API_KEY;
+  const overrides = Object.fromEntries(Object.entries(process.env).filter(([key, entry]) => key.startsWith('PORTKEY_') && Boolean(entry)));
+  const values = { ...fileValues, ...overrides };
+  const apiKey = values.PORTKEY_API_KEY || fileValues.OPENAI_API_KEY;
   const config = values.PORTKEY_CONFIG;
   const provider = values.PORTKEY_PROVIDER;
   if (!apiKey || apiKey.length < 12 || /\s/.test(apiKey)) throw new Error('Portkey generation requires PORTKEY_API_KEY');
@@ -123,7 +124,7 @@ function routeAndProxyConfiguration(fileValues: Record<string, string>): { confi
   const routeValue = config ?? provider!;
   if (routeValue.length > 512 || /[\x00-\x1f\x7f]/.test(routeValue)) throw new Error('Portkey route is invalid');
   const routeHeader = config ? 'x-portkey-config' : 'x-portkey-provider';
-  const baseUrl = values.PORTKEY_BASE_URL ?? fileValues.OPENAI_BASE_URL ?? 'https://api.portkey.ai/v1';
+  const baseUrl = values.PORTKEY_BASE_URL || fileValues.OPENAI_BASE_URL || 'https://api.portkey.ai/v1';
   const parsed = new URL(baseUrl);
   if (parsed.protocol !== 'https:' || parsed.username || parsed.password) throw new Error('PORTKEY_BASE_URL must be credential-free HTTPS');
   const upstream = `${parsed.origin}${parsed.pathname.replace(/\/$/, '')}${parsed.pathname.endsWith('/responses') ? '' : '/responses'}${parsed.search}`;

@@ -1,15 +1,13 @@
-# Implement durable customer erasure in PayFlow
-
-You maintain PayFlow, a production-shaped, multi-tenant payment platform whose customer identity
-is propagated through synchronous services, asynchronous workers, and several storage systems.
+# Implement customer erasure in PayFlow
+PayFlow is a multi-tenant payment platform. Customer information is used across the application, including payment operations, notifications, background processing, and supporting data stores.
 
 ## The problem
 
-PayFlow publishes a customer-erasure API contract, but the application does not yet carry out that
-contract. Implement it so an authenticated merchant can request erasure and observe durable
-progress. The behavior must remain correct under duplicate and concurrent requests, process
-restarts, dependency failures, delayed jobs and provider webhooks, old event delivery, tenant
-boundary probes, and arbitrary customer-supplied text.
+PayFlow’s documentation defines a customer-erasure API, but the feature has not been implemented yet.
+
+Build the feature so an authenticated merchant can request erasure of one of its customers and check the request status later. The request and its status must remain reliable if it is retried or if services restart.
+
+Follow the documented API and privacy requirements, and ensure the change does not break existing payment behavior.
 
 ## Requirement
 
@@ -20,29 +18,45 @@ methods, paths, authentication model, or response shapes:
 - `GET /v1/erasure-requests/:requestId`
 
 The precise API behavior is in `docs/privacy-api.md`, and the erasure/retention contract is in
-`docs/privacy-and-retention.md`. A request may report `completed` only when the subject's active
-personal data is gone and later in-flight work cannot restore it. Required financial facts and
-records belonging to other customers or merchants must remain correct and usable. Failed work must
-be observable and capable of converging safely when retried.
+`docs/privacy-and-retention.md`.
 
-The supplied customer UUID is itself part of the erasure boundary. After completion it may remain
-only in the minimal durable erasure-request and suppression records described by the retention
-policy. All other application-owned rows, payloads, cache entries, search documents, and object
-metadata must delete, null, or replace that UUID with an opaque replacement identifier.
+An erasure request can be marked `completed` only after the customer’s personal data has been removed from PayFlow’s active systems and delayed work, retries, webhooks, or replayed events cannot add it back.
 
-## What you're working with
+Keep valid financial records, such as payments, invoices, and ledger entries, but remove the erased customer’s identifying information from them. Do not affect other customers, merchants, or shared records that they still use.
 
-The public HTTP entry point is `apps/api-gateway/src/main.ts`. Service boundaries and data flows are
-documented in `docs/architecture.md`, `docs/domain-model.md`, and `docs/event-catalog.md`; operational
-and financial constraints are in `docs/operations.md` and `docs/financial-invariants.md`. The
-repository already provides PostgreSQL transaction primitives, authenticated merchant context,
-outbox/inbox messaging, background-worker patterns, and clients for Redis, OpenSearch, MinIO, and
-Kafka. You may add services, migrations, modules, and tests while preserving existing product
-behavior.
+Repeated requests for the same customer must not create competing erasure workflows. If a request cannot finish, it must not report `completed`.
 
-## Verifying
+The original customer UUID is also part of the customer’s identity. After erasure, it must not remain in normal application records, payloads, caches, search documents, files, or object metadata. Remove it, set it to `null`, or replace it with an unrelated opaque UUID where a retained record still needs a reference.
 
-Run `npm ci`, then `npm test`, `npm run typecheck`, `npm run lint`, and `npm run build`. Start the
-full local environment with `docker compose up --build -d`; `npm run scenario` exercises ordinary
-payment flows. Passing the visible checks is necessary but not sufficient: the graded suite
-exercises the complete public contract and distributed failure conditions described above.
+The original UUID may remain only in the minimal erasure-request and suppression records defined by the retention policy. Those records exist only to track the erasure and prevent delayed or replayed work from recreating the erased customer’s data.
+
+## Existing application components
+
+The API gateway entry point is `apps/api-gateway/src/main.ts`.
+
+For an overview of the existing services and customer-data flows, see `docs/architecture.md`, `docs/domain-model.md`, and `docs/event-catalog.md`. Operational and financial rules are documented in `docs/operations.md` and `docs/financial-invariants.md`.
+
+The codebase includes patterns for database transactions, merchant authentication, outbox/inbox messaging, background workers, and integrations with Redis, OpenSearch, MinIO, and Kafka. Extend those patterns where appropriate, and keep existing PayFlow behavior working.
+
+## Local verification
+
+Install dependencies and build the application:
+
+```bash
+npm ci
+npm run build
+```
+
+Start the full local PayFlow environment:
+
+```bash
+docker compose up --build -d
+```
+
+Run the existing representative payment scenarios:
+
+```bash
+npm run scenario
+```
+
+These scenarios are representative baseline checks. Ensure your implementation satisfies all documented requirements while preserving existing PayFlow behavior across its services.

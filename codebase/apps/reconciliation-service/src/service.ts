@@ -21,8 +21,10 @@ export class ReconciliationService {
          VALUES($1,$2,now()-interval '1 day',now(),$3,0,$3,$4,$5)`,
         [merchantId, settlementId, gross, transactions[0]?.currency ?? 'USD', feed],
       );
-      await addOutboxEvent(client, { eventType: EVENT_TYPES.SETTLEMENT_IMPORTED, aggregateType: 'merchant', aggregateId: merchantId,
-        merchantId, correlationId: uuid(), payload: { settlementId, transactionCount: transactions.length, gross } });
+      await addOutboxEvent(client, {
+        eventType: EVENT_TYPES.SETTLEMENT_IMPORTED, aggregateType: 'merchant', aggregateId: merchantId,
+        merchantId, correlationId: uuid(), payload: { settlementId, transactionCount: transactions.length, gross }
+      });
     });
     return { settlementId, imported: transactions.length };
   }
@@ -49,7 +51,7 @@ export class ReconciliationService {
         await client.query(
           `INSERT INTO payments.reconciliation_items(run_id,reference_type,reference_id,ledger_amount,provider_amount,status,detail)
            VALUES($1,'payment',$2,$3,$4,$5,$6)`, [runId, payment.id, ledgerAmount, providerAmount,
-            providerAmount === ledgerAmount ? 'matched' : 'mismatched', { providerPaymentId: payment.provider_payment_id }],
+          providerAmount === ledgerAmount ? 'matched' : 'mismatched', { providerPaymentId: payment.provider_payment_id }],
         );
       }
       const discrepancy = providerTotal - ledgerTotal;
@@ -57,8 +59,10 @@ export class ReconciliationService {
         `UPDATE payments.reconciliation_runs SET status=$2,ledger_total=$3,provider_total=$4,discrepancy=$5,completed_at=now() WHERE id=$1`,
         [runId, discrepancy === 0 ? 'matched' : 'mismatched', ledgerTotal, providerTotal, discrepancy],
       );
-      await addOutboxEvent(client, { eventType: EVENT_TYPES.RECONCILIATION_COMPLETED, aggregateType: 'merchant', aggregateId: merchantId,
-        merchantId, correlationId: uuid(), payload: { runId, ledgerTotal, providerTotal, discrepancy } });
+      await addOutboxEvent(client, {
+        eventType: EVENT_TYPES.RECONCILIATION_COMPLETED, aggregateType: 'merchant', aggregateId: merchantId,
+        merchantId, correlationId: uuid(), payload: { runId, ledgerTotal, providerTotal, discrepancy }
+      });
       return { id: runId, status: discrepancy === 0 ? 'matched' : 'mismatched', ledgerTotal, providerTotal, discrepancy };
     });
   }

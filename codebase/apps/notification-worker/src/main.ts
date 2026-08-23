@@ -82,8 +82,10 @@ async function deliverOne(): Promise<boolean> {
   const delivery = await claimDelivery();
   if (!delivery) return false;
   try {
-    const providerMessageId = await sendMailpitEmail({ messageKey: delivery.message_key, destination: delivery.destination,
-      subject: delivery.subject, textBody: delivery.text_body, htmlBody: delivery.html_body });
+    const providerMessageId = await sendMailpitEmail({
+      messageKey: delivery.message_key, destination: delivery.destination,
+      subject: delivery.subject, textBody: delivery.text_body, htmlBody: delivery.html_body
+    });
     await pool.query(
       `UPDATE operations.email_deliveries SET status='delivered',provider_message_id=$2,delivered_at=now(),last_error=NULL WHERE id=$1`,
       [delivery.id, providerMessageId ?? null],

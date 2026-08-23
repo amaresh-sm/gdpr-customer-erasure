@@ -19,8 +19,10 @@ export class InvoiceService {
     const total = subtotal + input.tax;
     const invoiceId = uuid();
     const number = `INV-${new Date().getUTCFullYear()}-${invoiceId.slice(0, 8).toUpperCase()}`;
-    const document = JSON.stringify({ invoiceId, number, customer, currency: input.currency, subtotal, tax: input.tax, total,
-      lines: input.lines, issuedAt: new Date().toISOString() });
+    const document = JSON.stringify({
+      invoiceId, number, customer, currency: input.currency, subtotal, tax: input.tax, total,
+      lines: input.lines, issuedAt: new Date().toISOString()
+    });
     await ensureBucket();
     const objectKey = `${merchantId}/invoices/${invoiceId}.json`;
     await objectStore.putObject(DOCUMENT_BUCKET, objectKey, document, Buffer.byteLength(document), { 'Content-Type': 'application/json' });
@@ -39,11 +41,15 @@ export class InvoiceService {
       await client.query(
         `INSERT INTO operations.document_manifests(merchant_id,customer_id,object_key,document_type,content_type,checksum,metadata)
          VALUES($1,$2,$3,'invoice','application/json',$4,$5)`, [merchantId, input.customerId, objectKey,
-          createHash('sha256').update(document).digest('hex'), { invoiceId, number }],
+        createHash('sha256').update(document).digest('hex'), { invoiceId, number }],
       );
-      await addOutboxEvent(client, { eventType: EVENT_TYPES.INVOICE_ISSUED, aggregateType: 'invoice', aggregateId: invoiceId,
-        merchantId, correlationId: uuid(), payload: { invoiceId, number, customerId: input.customerId,
-          customerEmail: customer.email, total, currency: input.currency, objectKey } });
+      await addOutboxEvent(client, {
+        eventType: EVENT_TYPES.INVOICE_ISSUED, aggregateType: 'invoice', aggregateId: invoiceId,
+        merchantId, correlationId: uuid(), payload: {
+          invoiceId, number, customerId: input.customerId,
+          customerEmail: customer.email, total, currency: input.currency, objectKey
+        }
+      });
     });
     return { id: invoiceId, number, status: 'issued', subtotal, tax: input.tax, total, currency: input.currency, objectKey };
   }

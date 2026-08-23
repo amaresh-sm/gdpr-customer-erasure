@@ -60,7 +60,9 @@ await new Promise<void>((resolve, reject) => {
 });
 assert.equal(storedObjects, Number(state.manifests), 'MinIO objects and document manifests differ');
 
-console.log(JSON.stringify({ status: 'verified', database: state, redis: { projectedCustomers },
-  opensearch: { customerDocuments: search.body.count }, minio: { storedObjects } }, null, 2));
+console.log(JSON.stringify({
+  status: 'verified', database: state, redis: { projectedCustomers },
+  opensearch: { customerDocuments: search.body.count }, minio: { storedObjects }
+}, null, 2));
 await redis.quit();
 await pool.end();

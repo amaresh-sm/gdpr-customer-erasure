@@ -12,6 +12,7 @@ source_dir="$run_dir/source"
 report_dir="$run_dir/reports"
 run_id=$(basename "$run_dir")
 project="candidate-${run_id//[^a-z0-9]/-}"
+override_file="$root_dir/scripts/candidates/scoring.compose.yml"
 
 if [[ ! -f "$source_dir/docker-compose.yml" ]]; then
   echo "candidate artifact is incomplete: expected source/docker-compose.yml" >&2
@@ -31,18 +32,39 @@ fi
 
 mkdir -p "$report_dir"
 cleanup() {
-  docker compose -p "$project" -f "$source_dir/docker-compose.yml" down -v --remove-orphans >/dev/null 2>&1 || true
+  docker compose -p "$project" -f "$source_dir/docker-compose.yml" -f "$override_file" down -v --remove-orphans >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 
 # Candidate services are built from source/ only. Hidden tests are mounted only into the one-off
 # verifier container after the candidate source has already been frozen by candidates:run.
-docker compose -p "$project" -f "$source_dir/docker-compose.yml" up --build -d
+docker compose -p "$project" -f "$source_dir/docker-compose.yml" -f "$override_file" up --build -d
+
+# Compose's "started" state is not application readiness. Probe over the private Compose network:
+# the evaluator deliberately publishes no host ports, so concurrent scores cannot collide.
+wait_for_health() {
+  local service=$1
+  local port=$2
+  local label=$3
+  local attempt
+  for attempt in $(seq 1 60); do
+    if docker compose -p "$project" -f "$source_dir/docker-compose.yml" -f "$override_file" run --rm --no-deps \
+      verifier node -e "fetch('http://${service}:${port}/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 1
+  done
+  echo "candidate stack did not become ready: $label" >&2
+  return 1
+}
+wait_for_health 'customer-service' '3001' 'customer-service'
+wait_for_health 'api-gateway' '3000' 'api-gateway'
 set +e
-docker compose -p "$project" -f "$source_dir/docker-compose.yml" run --rm --no-deps \
+docker compose -p "$project" -f "$source_dir/docker-compose.yml" -f "$override_file" run --rm --no-deps \
   -v "$root_dir/hidden_tests:/srv/payflow/hidden_tests:ro" \
   -v "$report_dir:/reports" \
   -e JUNIT_PATH=/reports/hidden.junit.xml \
+  -e ERASURE_SCORE_PATH=/reports/hidden.score.json \
   -e ERASURE_TEST_SLOT="$run_id" \
   verifier node --import tsx hidden_tests/run.ts 2>&1 | tee "$report_dir/hidden-scorer.log"
 score_status=${PIPESTATUS[0]}
@@ -51,6 +73,7 @@ set -e
 npx --prefix "$root_dir/codebase" tsx "$root_dir/scripts/candidates/record-score.ts" \
   --run-dir "$run_dir" \
   --junit "$report_dir/hidden.junit.xml" \
+  --score "$report_dir/hidden.score.json" \
   --verifier-ref "$(git -C "$root_dir" rev-parse HEAD)"
 
 exit "$score_status"

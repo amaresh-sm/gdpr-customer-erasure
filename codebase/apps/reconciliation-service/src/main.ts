@@ -7,8 +7,12 @@ import { startOutboxPublisher } from '../../../packages/messaging/src/publisher.
 import { ReconciliationService } from './service.js';
 
 process.env.SERVICE_NAME = 'reconciliation-service';
-const app = Fastify({ logger: { level: config().LOG_LEVEL, base: { service: 'reconciliation-service' },
-  redact: ['req.headers.authorization', '*.apiKey', '*.providerToken'] } });
+const app = Fastify({
+  logger: {
+    level: config().LOG_LEVEL, base: { service: 'reconciliation-service' },
+    redact: ['req.headers.authorization', '*.apiKey', '*.providerToken']
+  }
+});
 registerErrorHandler(app);
 const service = new ReconciliationService();
 app.get('/health', async () => ({ status: 'ok', service: 'reconciliation-service' }));

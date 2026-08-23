@@ -13,29 +13,39 @@ const kafka = consumer('payflow-projections-v1');
 
 async function ensureIndex(): Promise<void> {
   const exists = await searchClient.indices.exists({ index: CUSTOMER_INDEX });
-  if (!exists.body) await searchClient.indices.create({ index: CUSTOMER_INDEX, body: { mappings: { properties: {
-    merchantId: { type: 'keyword' }, customerId: { type: 'keyword' }, email: { type: 'keyword' }, name: { type: 'text' },
-    phone: { type: 'keyword' }, paymentStatus: { type: 'keyword' }, updatedAt: { type: 'date' },
-  } } } });
+  if (!exists.body) await searchClient.indices.create({
+    index: CUSTOMER_INDEX, body: {
+      mappings: {
+        properties: {
+          merchantId: { type: 'keyword' }, customerId: { type: 'keyword' }, email: { type: 'keyword' }, name: { type: 'text' },
+          phone: { type: 'keyword' }, paymentStatus: { type: 'keyword' }, updatedAt: { type: 'date' },
+        }
+      }
+    }
+  });
 }
 
 async function project(event: EventEnvelope): Promise<void> {
   const customerId = typeof event.payload.customerId === 'string' ? event.payload.customerId : event.aggregateType === 'customer' ? event.aggregateId : undefined;
   const cacheKey = customerId ? `merchant:${event.merchantId}:customer:${customerId}` : undefined;
   if (event.eventType === EVENT_TYPES.CUSTOMER_CREATED || event.eventType === EVENT_TYPES.CUSTOMER_UPDATED) {
-    const document = { merchantId: event.merchantId, customerId, email: event.payload.email, name: event.payload.name,
-      phone: event.payload.phone, updatedAt: event.occurredAt };
+    const document = {
+      merchantId: event.merchantId, customerId, email: event.payload.email, name: event.payload.name,
+      phone: event.payload.phone, updatedAt: event.occurredAt
+    };
     await searchClient.index({ index: CUSTOMER_INDEX, id: `${event.merchantId}:${customerId}`, body: document, refresh: false });
     if (cacheKey) await redis.set(cacheKey, JSON.stringify(document), 'EX', 3600);
   }
   if (cacheKey && event.eventType.startsWith('payment.')) {
-    await redis.hset(`${cacheKey}:activity`, { lastEvent: event.eventType, lastPaymentId: String(event.payload.paymentId ?? ''),
-      customerEmail: String(event.payload.customerEmail ?? ''), occurredAt: event.occurredAt });
+    await redis.hset(`${cacheKey}:activity`, {
+      lastEvent: event.eventType, lastPaymentId: String(event.payload.paymentId ?? ''),
+      customerEmail: String(event.payload.customerEmail ?? ''), occurredAt: event.occurredAt
+    });
   }
   await pool.query(
     `INSERT INTO operations.analytics_events(merchant_id,customer_id,anonymous_id,event_type,email,properties,occurred_at)
      VALUES($1,$2,$3,$4,$5,$6,$7)`, [event.merchantId, customerId ?? null, `anon_${event.aggregateId}`,
-      event.eventType, event.payload.email ?? event.payload.customerEmail ?? null, event.payload, event.occurredAt],
+  event.eventType, event.payload.email ?? event.payload.customerEmail ?? null, event.payload, event.occurredAt],
   );
 }
 

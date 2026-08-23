@@ -106,8 +106,13 @@ export interface CandidateRunManifest {
   scoring: {
     verifier_ref: string | null;
     junit_path: string | null;
+    score_path: string | null;
     scenarios_total: number | null;
     scenarios_passed: number | null;
+    weighted_score: number | null;
+    weighted_maximum: number | null;
+    hard_pass: boolean | null;
+    score_state: 'complete' | 'blocked' | null;
     report_sha256: string | null;
   };
 }

@@ -9,8 +9,12 @@ import { processProviderEvent } from './processor.js';
 
 process.env.SERVICE_NAME = 'webhook-worker';
 const eventSchema = z.object({ id: z.string().min(5), type: z.string().min(3), createdAt: z.string().datetime(), data: z.record(z.unknown()) });
-const app = Fastify({ logger: { level: config().LOG_LEVEL, base: { service: 'webhook-worker' },
-  redact: ['req.headers.authorization', '*.apiKey', '*.providerToken'] } });
+const app = Fastify({
+  logger: {
+    level: config().LOG_LEVEL, base: { service: 'webhook-worker' },
+    redact: ['req.headers.authorization', '*.apiKey', '*.providerToken']
+  }
+});
 registerErrorHandler(app);
 app.get('/health', async () => ({ status: 'ok', service: 'webhook-worker' }));
 app.post('/provider/webhooks', async (request, reply) => {

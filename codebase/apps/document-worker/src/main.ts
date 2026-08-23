@@ -6,8 +6,10 @@ import { logger } from '../../../packages/observability/src/logger.js';
 import { storeReceipt } from '../../webhook-worker/src/receipt.js';
 
 process.env.SERVICE_NAME = 'document-worker';
-type ReceiptJob = { merchantId: string; customerId: string; paymentId: string; amount: number;
-  currency: string; customerSnapshot: Record<string, unknown> };
+type ReceiptJob = {
+  merchantId: string; customerId: string; paymentId: string; amount: number;
+  currency: string; customerSnapshot: Record<string, unknown>
+};
 type Job = { id: string; merchant_id: string; payload: ReceiptJob; attempts: number; max_attempts: number };
 const workerId = `document-worker-${randomUUID()}`;
 const controller = new AbortController();
@@ -47,9 +49,11 @@ async function complete(job: Job & { attemptId: string }): Promise<void> {
 
 async function addReceiptEvent(client: import('pg').PoolClient, job: Job, objectKey: string): Promise<void> {
   const { addOutboxEvent } = await import('../../../packages/messaging/src/outbox.js');
-  await addOutboxEvent(client, { eventType: EVENT_TYPES.RECEIPT_GENERATED, aggregateType: 'payment_intent',
+  await addOutboxEvent(client, {
+    eventType: EVENT_TYPES.RECEIPT_GENERATED, aggregateType: 'payment_intent',
     aggregateId: job.payload.paymentId, merchantId: job.merchant_id, correlationId: randomUUID(),
-    payload: { paymentId: job.payload.paymentId, customerId: job.payload.customerId, objectKey } });
+    payload: { paymentId: job.payload.paymentId, customerId: job.payload.customerId, objectKey }
+  });
 }
 
 async function fail(job: Job & { attemptId: string }, error: unknown): Promise<void> {

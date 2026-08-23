@@ -6,9 +6,13 @@ import { PaymentRepository } from './repository.js';
 import { PaymentService } from './service.js';
 import { InvoiceService } from './invoices.js';
 
-const invoiceSchema = z.object({ customerId: z.string().uuid(), currency: z.string().length(3).transform((v) => v.toUpperCase()),
-  tax: z.number().int().nonnegative().default(0), lines: z.array(z.object({ description: z.string().min(1).max(500),
-    quantity: z.number().int().positive(), unitAmount: z.number().int().positive() })).min(1).max(100) });
+const invoiceSchema = z.object({
+  customerId: z.string().uuid(), currency: z.string().length(3).transform((v) => v.toUpperCase()),
+  tax: z.number().int().nonnegative().default(0), lines: z.array(z.object({
+    description: z.string().min(1).max(500),
+    quantity: z.number().int().positive(), unitAmount: z.number().int().positive()
+  })).min(1).max(100)
+});
 
 export async function paymentRoutes(app: FastifyInstance): Promise<void> {
   const service = new PaymentService();

@@ -5,8 +5,12 @@ import { startOutboxPublisher } from '../../../packages/messaging/src/publisher.
 import { paymentRoutes } from './routes.js';
 
 process.env.SERVICE_NAME = 'payment-service';
-const app = Fastify({ logger: { level: config().LOG_LEVEL, base: { service: 'payment-service' },
-  redact: ['req.headers.authorization', '*.apiKey', '*.providerToken'] } });
+const app = Fastify({
+  logger: {
+    level: config().LOG_LEVEL, base: { service: 'payment-service' },
+    redact: ['req.headers.authorization', '*.apiKey', '*.providerToken']
+  }
+});
 registerErrorHandler(app);
 await app.register(paymentRoutes);
 const controller = new AbortController();

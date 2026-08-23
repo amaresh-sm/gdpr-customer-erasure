@@ -1,0 +1,15 @@
+# Evaluator-only override. The verifier talks to every dependency over the Compose network, so
+# exposing fixed host ports only makes independent candidate scores collide with one another.
+services:
+  postgres: { ports: !reset [] }
+  redis: { ports: !reset [] }
+  redpanda: { ports: !reset [] }
+  minio: { ports: !reset [] }
+  opensearch: { ports: !reset [] }
+  mailpit: { ports: !reset [] }
+  customer-service: { ports: !reset [] }
+  payment-service: { ports: !reset [] }
+  mock-processor: { ports: !reset [] }
+  webhook-worker: { ports: !reset [] }
+  reconciliation-service: { ports: !reset [] }
+  api-gateway: { ports: !reset [] }

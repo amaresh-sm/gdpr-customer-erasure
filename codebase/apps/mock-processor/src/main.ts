@@ -7,10 +7,14 @@ process.env.SERVICE_NAME = 'mock-processor';
 const app = Fastify({ logger: true });
 const payments = new Map<string, { paymentId: string; merchantId: string; amount: number; currency: string; status: string }>();
 
-const paymentSchema = z.object({ merchantId: z.string().uuid(), paymentId: z.string().uuid(), amount: z.number().int().positive(),
-  currency: z.string().length(3), paymentMethodId: z.string().uuid(), webhookUrl: z.string().url() });
-const refundSchema = z.object({ refundId: z.string().uuid(), paymentId: z.string().uuid(), merchantId: z.string().uuid(),
-  amount: z.number().int().positive(), currency: z.string().length(3), reason: z.string(), webhookUrl: z.string().url() });
+const paymentSchema = z.object({
+  merchantId: z.string().uuid(), paymentId: z.string().uuid(), amount: z.number().int().positive(),
+  currency: z.string().length(3), paymentMethodId: z.string().uuid(), webhookUrl: z.string().url()
+});
+const refundSchema = z.object({
+  refundId: z.string().uuid(), paymentId: z.string().uuid(), merchantId: z.string().uuid(),
+  amount: z.number().int().positive(), currency: z.string().length(3), reason: z.string(), webhookUrl: z.string().url()
+});
 
 async function dispatch(webhookUrl: string, eventType: string, data: Record<string, unknown>, duplicate = false): Promise<void> {
   const payload = { id: `evt_${randomUUID()}`, type: eventType, createdAt: new Date().toISOString(), data };
@@ -33,8 +37,10 @@ app.post('/v1/payment-intents', async (request, reply) => {
   setTimeout(() => {
     const stored = payments.get(id);
     if (stored) stored.status = outcome;
-    void dispatch(input.webhookUrl, `payment.${outcome}`, { providerPaymentId: id, ...stored,
-      failureCode: outcome === 'failed' ? 'card_declined' : undefined }, request.headers['x-test-duplicate'] === 'true');
+    void dispatch(input.webhookUrl, `payment.${outcome}`, {
+      providerPaymentId: id, ...stored,
+      failureCode: outcome === 'failed' ? 'card_declined' : undefined
+    }, request.headers['x-test-duplicate'] === 'true');
   }, Number(request.headers['x-test-delay-ms'] ?? 250));
   return reply.code(202).send({ id, status: 'processing' });
 });

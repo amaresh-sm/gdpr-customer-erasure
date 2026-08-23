@@ -49,7 +49,9 @@ await transaction(async (client) => {
   }
 });
 await ensureBucket();
-console.log(JSON.stringify({ tenants: [
-  { merchantId: MERCHANT_ID, apiKey: RAW_API_KEY }, { merchantId: SECOND_MERCHANT_ID, apiKey: SECOND_API_KEY },
-] }));
+console.log(JSON.stringify({
+  tenants: [
+    { merchantId: MERCHANT_ID, apiKey: RAW_API_KEY }, { merchantId: SECOND_MERCHANT_ID, apiKey: SECOND_API_KEY },
+  ]
+}));
 await pool.end();

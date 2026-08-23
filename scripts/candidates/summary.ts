@@ -40,6 +40,9 @@ async function main(): Promise<void> {
     ['Peak memory', value(manifest.resources.peak_memory_bytes, (bytes) => `${bytes} bytes, approximately ${(bytes / 1024 / 1024).toFixed(0)} MiB`)],
     ['Run status', `${manifest.run.status}${manifest.run.exit_code === null ? '' : ` (exit ${manifest.run.exit_code})`}`],
     ['Hidden score', manifest.scoring.scenarios_total === null ? 'not yet scored' : `${manifest.scoring.scenarios_passed}/${manifest.scoring.scenarios_total}`],
+    ['Weighted diagnostic', manifest.scoring.score_state === null ? 'not yet scored'
+      : manifest.scoring.score_state === 'blocked' ? 'blocked during fixture provisioning'
+      : `${manifest.scoring.weighted_score?.toFixed(2)}/${manifest.scoring.weighted_maximum?.toFixed(2)}`],
   ];
   process.stdout.write(['| Metric | Value |', '| --- | ---: |', ...rows.map(([metric, item]) => `| ${metric} | ${item} |`), ''].join('\n'));
 }

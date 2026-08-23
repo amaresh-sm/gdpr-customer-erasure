@@ -34,21 +34,29 @@ async function paymentSucceeded(client: pg.PoolClient, event: ProviderEvent): Pr
      VALUES($1,$2,$3,$4,'succeeded') ON CONFLICT(provider_capture_id) DO NOTHING`,
     [row.merchant_id, paymentId, providerCaptureId, row.amount],
   );
-  await postJournal(client, { merchantId: row.merchant_id, referenceType: 'capture', referenceId: paymentId,
+  await postJournal(client, {
+    merchantId: row.merchant_id, referenceType: 'capture', referenceId: paymentId,
     description: `Capture ${paymentId}`, currency: row.currency, postings: [
       { accountCode: 'PROCESSOR_CLEARING', direction: 'debit', amount: Number(row.amount) },
       { accountCode: 'MERCHANT_PAYABLE', direction: 'credit', amount: Number(row.amount) },
-    ] });
+    ]
+  });
   await client.query(
     `INSERT INTO operations.jobs(queue,job_type,merchant_id,payload)
-     VALUES('documents','generate_receipt',$1,$2)`, [row.merchant_id, { merchantId: row.merchant_id,
-      customerId: row.customer_id, paymentId, amount: Number(row.amount), currency: row.currency,
-      customerSnapshot: row.customer_snapshot }],
+     VALUES('documents','generate_receipt',$1,$2)`, [row.merchant_id, {
+    merchantId: row.merchant_id,
+    customerId: row.customer_id, paymentId, amount: Number(row.amount), currency: row.currency,
+    customerSnapshot: row.customer_snapshot
+  }],
   );
   const correlationId = uuid();
-  await addOutboxEvent(client, { eventType: EVENT_TYPES.PAYMENT_SUCCEEDED, aggregateType: 'payment_intent', aggregateId: paymentId,
-    merchantId: row.merchant_id, correlationId, payload: { paymentId, customerId: row.customer_id, amount: Number(row.amount),
-      currency: row.currency, customerEmail: row.customer_snapshot.email, receiptStatus: 'pending' } });
+  await addOutboxEvent(client, {
+    eventType: EVENT_TYPES.PAYMENT_SUCCEEDED, aggregateType: 'payment_intent', aggregateId: paymentId,
+    merchantId: row.merchant_id, correlationId, payload: {
+      paymentId, customerId: row.customer_id, amount: Number(row.amount),
+      currency: row.currency, customerEmail: row.customer_snapshot.email, receiptStatus: 'pending'
+    }
+  });
 }
 
 async function paymentFailed(client: pg.PoolClient, event: ProviderEvent): Promise<void> {
@@ -60,10 +68,14 @@ async function paymentFailed(client: pg.PoolClient, event: ProviderEvent): Promi
   if (!result.rows[0]) return;
   await client.query(`UPDATE payments.payment_attempts SET status='failed',failure_code=$2 WHERE payment_intent_id=$1`,
     [paymentId, event.data.failureCode ?? 'unknown']);
-  await addOutboxEvent(client, { eventType: EVENT_TYPES.PAYMENT_FAILED, aggregateType: 'payment_intent', aggregateId: paymentId,
-    merchantId: result.rows[0].merchant_id, correlationId: uuid(), payload: { paymentId,
+  await addOutboxEvent(client, {
+    eventType: EVENT_TYPES.PAYMENT_FAILED, aggregateType: 'payment_intent', aggregateId: paymentId,
+    merchantId: result.rows[0].merchant_id, correlationId: uuid(), payload: {
+      paymentId,
       customerId: result.rows[0].customer_id, customerEmail: result.rows[0].customer_snapshot.email,
-      failureCode: event.data.failureCode ?? 'unknown' } });
+      failureCode: event.data.failureCode ?? 'unknown'
+    }
+  });
 }
 
 async function refundSucceeded(client: pg.PoolClient, event: ProviderEvent): Promise<void> {
@@ -81,12 +93,18 @@ async function refundSucceeded(client: pg.PoolClient, event: ProviderEvent): Pro
   const total = await client.query<{ total: string }>(`SELECT sum(amount)::text total FROM payments.refunds WHERE payment_intent_id=$1 AND status='succeeded'`, [row.payment_intent_id]);
   const status = Number(total.rows[0]!.total) === Number(row.payment_amount) ? 'refunded' : 'partially_refunded';
   await client.query(`UPDATE payments.payment_intents SET status=$2,version=version+1,updated_at=now() WHERE id=$1`, [row.payment_intent_id, status]);
-  await postJournal(client, { merchantId: row.merchant_id, referenceType: 'refund', referenceId: refundId,
+  await postJournal(client, {
+    merchantId: row.merchant_id, referenceType: 'refund', referenceId: refundId,
     description: `Refund ${refundId}`, currency: row.currency, postings: [
       { accountCode: 'MERCHANT_PAYABLE', direction: 'debit', amount: Number(row.amount) },
       { accountCode: 'PROCESSOR_CLEARING', direction: 'credit', amount: Number(row.amount) },
-    ] });
-  await addOutboxEvent(client, { eventType: EVENT_TYPES.PAYMENT_REFUNDED, aggregateType: 'refund', aggregateId: refundId,
-    merchantId: row.merchant_id, correlationId: uuid(), payload: { refundId, paymentId: row.payment_intent_id,
-      customerId: row.customer_id, customerEmail: row.customer_email, amount: Number(row.amount), currency: row.currency, paymentStatus: status } });
+    ]
+  });
+  await addOutboxEvent(client, {
+    eventType: EVENT_TYPES.PAYMENT_REFUNDED, aggregateType: 'refund', aggregateId: refundId,
+    merchantId: row.merchant_id, correlationId: uuid(), payload: {
+      refundId, paymentId: row.payment_intent_id,
+      customerId: row.customer_id, customerEmail: row.customer_email, amount: Number(row.amount), currency: row.currency, paymentStatus: status
+    }
+  });
 }

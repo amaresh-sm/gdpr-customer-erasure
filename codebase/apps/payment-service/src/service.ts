@@ -33,9 +33,13 @@ export class PaymentService {
          (merchant_id,payment_intent_id,provider_request_id,status,request_payload)
          VALUES($1,$2,$3,'pending',$4)`, [merchantId, paymentId, providerRequestId, input],
       );
-      await addOutboxEvent(client, { eventType: EVENT_TYPES.PAYMENT_INTENT_CREATED, aggregateType: 'payment_intent',
-        aggregateId: paymentId, merchantId, correlationId, payload: { paymentId, customerId: input.customerId,
-          amount: input.amount, currency: input.currency, customerEmail: customer.email } });
+      await addOutboxEvent(client, {
+        eventType: EVENT_TYPES.PAYMENT_INTENT_CREATED, aggregateType: 'payment_intent',
+        aggregateId: paymentId, merchantId, correlationId, payload: {
+          paymentId, customerId: input.customerId,
+          amount: input.amount, currency: input.currency, customerEmail: customer.email
+        }
+      });
       return { paymentId, providerRequestId };
     });
     if ('replay' in prepared) return { status: prepared.replay!.status, body: prepared.replay!.body as Record<string, unknown> };
@@ -43,18 +47,24 @@ export class PaymentService {
     try {
       const response = await fetch(`${config().PROCESSOR_URL}/v1/payment-intents`, {
         method: 'POST', headers: { 'content-type': 'application/json', 'x-request-id': prepared.providerRequestId! },
-        body: JSON.stringify({ merchantId, paymentId: prepared.paymentId, amount: input.amount, currency: input.currency,
-          paymentMethodId: input.paymentMethodId, webhookUrl: config().PROCESSOR_WEBHOOK_URL }),
+        body: JSON.stringify({
+          merchantId, paymentId: prepared.paymentId, amount: input.amount, currency: input.currency,
+          paymentMethodId: input.paymentMethodId, webhookUrl: config().PROCESSOR_WEBHOOK_URL
+        }),
       });
       if (!response.ok) throw new Error(`processor returned ${response.status}`);
       const provider = await response.json() as { id: string; status: string };
-      const body = { id: prepared.paymentId!, status: 'processing', amount: input.amount, currency: input.currency,
-        customerId: input.customerId, providerPaymentId: provider.id };
+      const body = {
+        id: prepared.paymentId!, status: 'processing', amount: input.amount, currency: input.currency,
+        customerId: input.customerId, providerPaymentId: provider.id
+      };
       await transaction(async (client) => {
         await client.query(`UPDATE payments.payment_intents SET provider_payment_id=$2,updated_at=now() WHERE id=$1`, [prepared.paymentId, provider.id]);
         await client.query(`UPDATE payments.payment_attempts SET status='submitted',response_payload=$2 WHERE provider_request_id=$1`, [prepared.providerRequestId, provider]);
-        await addOutboxEvent(client, { eventType: EVENT_TYPES.PAYMENT_PROCESSING, aggregateType: 'payment_intent',
-          aggregateId: prepared.paymentId!, merchantId, correlationId, payload: body });
+        await addOutboxEvent(client, {
+          eventType: EVENT_TYPES.PAYMENT_PROCESSING, aggregateType: 'payment_intent',
+          aggregateId: prepared.paymentId!, merchantId, correlationId, payload: body
+        });
         await completeIdempotency(client, merchantId, 'create-payment', idempotencyKey, 202, body);
       });
       return { status: 202, body };
@@ -64,8 +74,10 @@ export class PaymentService {
         await client.query(`UPDATE payments.payment_intents SET status='failed',updated_at=now() WHERE id=$1`, [prepared.paymentId]);
         await client.query(`UPDATE payments.payment_attempts SET status='failed',failure_code='processor_unavailable',failure_message=$2 WHERE provider_request_id=$1`,
           [prepared.providerRequestId, error instanceof Error ? error.message : String(error)]);
-        await addOutboxEvent(client, { eventType: EVENT_TYPES.PAYMENT_FAILED, aggregateType: 'payment_intent',
-          aggregateId: prepared.paymentId!, merchantId, correlationId, payload: body });
+        await addOutboxEvent(client, {
+          eventType: EVENT_TYPES.PAYMENT_FAILED, aggregateType: 'payment_intent',
+          aggregateId: prepared.paymentId!, merchantId, correlationId, payload: body
+        });
         await completeIdempotency(client, merchantId, 'create-payment', idempotencyKey, 502, body);
       });
       return { status: 502, body };
@@ -95,8 +107,10 @@ export class PaymentService {
     try {
       const response = await fetch(`${config().PROCESSOR_URL}/v1/payment-intents/${row.provider_payment_id}/refunds`, {
         method: 'POST', headers: { 'content-type': 'application/json', 'x-request-id': refundId },
-        body: JSON.stringify({ refundId, paymentId, merchantId, amount: input.amount, currency: row.currency,
-          reason: input.reason, webhookUrl: config().PROCESSOR_WEBHOOK_URL }),
+        body: JSON.stringify({
+          refundId, paymentId, merchantId, amount: input.amount, currency: row.currency,
+          reason: input.reason, webhookUrl: config().PROCESSOR_WEBHOOK_URL
+        }),
       });
       if (!response.ok) throw new Error(`processor returned ${response.status}`);
       const provider = await response.json() as { id: string };
