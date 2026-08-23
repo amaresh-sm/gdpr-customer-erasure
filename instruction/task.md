@@ -58,7 +58,7 @@ Run the representative payment scenarios, then confirm the local environment is 
 
 ```bash
 npm run scenario
-npm run check:runtime
+docker compose --profile tools run --rm runtime-check
 ```
 
 These scenarios are representative baseline checks. Ensure your implementation satisfies all
