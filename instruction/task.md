@@ -51,12 +51,15 @@ Start the full local PayFlow environment:
 
 ```bash
 docker compose up --build -d
+docker compose --profile tools run --rm seed
 ```
 
-Run the existing representative payment scenarios:
+Run the representative payment scenarios, then confirm the local environment is healthy:
 
 ```bash
 npm run scenario
+npm run check:runtime
 ```
 
-These scenarios are representative baseline checks. Ensure your implementation satisfies all documented requirements while preserving existing PayFlow behavior across its services.
+These scenarios are representative baseline checks. Ensure your implementation satisfies all
+documented requirements while preserving existing PayFlow behavior across its services.
