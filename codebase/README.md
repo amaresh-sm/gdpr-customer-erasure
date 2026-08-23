@@ -1,48 +1,46 @@
-# Implement durable customer erasure in PayFlow
+# PayFlow
 
-You maintain PayFlow, a production-shaped, multi-tenant payment platform whose customer identity
-is propagated through synchronous services, asynchronous workers, and several storage systems.
+PayFlow is a multi-tenant payment platform for merchants. It supports customer profiles,
+tokenized payment methods, payment processing, refunds, invoices, ledger postings, provider
+webhooks, notifications, reconciliation, and privacy operations.
 
-## The problem
+## Local development
 
-PayFlow publishes a customer-erasure API contract, but the application does not yet carry out that
-contract. Implement it so an authenticated merchant can request erasure and observe durable
-progress. The behavior must remain correct under duplicate and concurrent requests, process
-restarts, dependency failures, delayed jobs and provider webhooks, old event delivery, tenant
-boundary probes, and arbitrary customer-supplied text.
+Install dependencies and build the application:
 
-## Requirement
+```bash
+npm ci
+npm run build
+```
 
-Implement these fixed public entry points through the API gateway; do not change their HTTP
-methods, paths, authentication model, or response shapes:
+Start the local environment, seed it with development data, and run an ordinary payment flow:
 
-- `POST /v1/customers/:customerId/erasure-requests`
-- `GET /v1/erasure-requests/:requestId`
+```bash
+docker compose up --build -d
+docker compose --profile tools run --rm seed
+npm run scenario
+```
 
-The precise API behavior is in `docs/privacy-api.md`, and the erasure/retention contract is in
-`docs/privacy-and-retention.md`. A request may report `completed` only when the subject's active
-personal data is gone and later in-flight work cannot restore it. Required financial facts and
-records belonging to other customers or merchants must remain correct and usable. Failed work must
-be observable and capable of converging safely when retried.
+Check that the local services are available:
 
-The supplied customer UUID is itself part of the erasure boundary. After completion it may remain
-only in the minimal durable erasure-request and suppression records described by the retention
-policy. All other application-owned rows, payloads, cache entries, search documents, and object
-metadata must delete, null, or replace that UUID with an opaque replacement identifier.
+```bash
+npm run smoke
+npm run check:runtime
+```
 
-## What you're working with
+The API gateway is available at `http://localhost:3000`. Service and infrastructure ports are
+listed in `docker-compose.yml`.
 
-The public HTTP entry point is `apps/api-gateway/src/main.ts`. Service boundaries and data flows are
-documented in `docs/architecture.md`, `docs/domain-model.md`, and `docs/event-catalog.md`; operational
-and financial constraints are in `docs/operations.md` and `docs/financial-invariants.md`. The
-repository already provides PostgreSQL transaction primitives, authenticated merchant context,
-outbox/inbox messaging, background-worker patterns, and clients for Redis, OpenSearch, MinIO, and
-Kafka. You may add services, migrations, modules, and tests while preserving existing product
-behavior.
+## Documentation
 
-## Verifying
-
-Run `npm ci`, then `npm test`, `npm run typecheck`, `npm run lint`, and `npm run build`. Start the
-full local environment with `docker compose up --build -d`; `npm run scenario` exercises ordinary
-payment flows. Passing the visible checks is necessary but not sufficient: the graded suite
-exercises the complete public contract and distributed failure conditions described above.
+- `docs/product-overview.md` — product overview and local environment
+- `docs/architecture.md` — service boundaries and data flow
+- `docs/domain-model.md` — core data model
+- `docs/event-catalog.md` — application events and consumers
+- `docs/api.md` — existing public APIs
+- `docs/privacy-api.md` — customer-erasure API
+- `docs/privacy-and-retention.md` — privacy and retention rules
+- `docs/operations.md` — operational procedures
+- `docs/financial-invariants.md` — financial correctness rules
+- `docs/security.md` — authentication and tenant isolation
+- `docs/runtime-checks.md` — local runtime checks
