@@ -5,9 +5,8 @@
 ```text
 api-gateway
   |-- customer-service ------ PostgreSQL(customers) + Redis
-  |-- payment-service ------- PostgreSQL(payments) + MinIO
-  |      `-- mock-processor -- delayed signed webhooks
-  |-- reconciliation-service -- immutable ledger + provider settlements
+  |-- payment-service ------- PostgreSQL(payments) + provider sandbox + reconciliation
+  |      `-- delayed signed webhooks and immutable provider settlements
   |-- privacy-service ------- durable erasure workflow + participant registry
   |
   `-- Kafka/Redpanda

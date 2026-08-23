@@ -1,10 +1,8 @@
 import { createHmac, randomUUID } from 'node:crypto';
-import Fastify from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { config } from '../../../packages/config/src/index.js';
 
-process.env.SERVICE_NAME = 'mock-processor';
-const app = Fastify({ logger: true });
 const payments = new Map<string, { paymentId: string; merchantId: string; amount: number; currency: string; status: string }>();
 
 const paymentSchema = z.object({ merchantId: z.string().uuid(), paymentId: z.string().uuid(), amount: z.number().int().positive(),
@@ -12,7 +10,7 @@ const paymentSchema = z.object({ merchantId: z.string().uuid(), paymentId: z.str
 const refundSchema = z.object({ refundId: z.string().uuid(), paymentId: z.string().uuid(), merchantId: z.string().uuid(),
   amount: z.number().int().positive(), currency: z.string().length(3), reason: z.string(), webhookUrl: z.string().url() });
 
-async function dispatch(webhookUrl: string, eventType: string, data: Record<string, unknown>, duplicate = false): Promise<void> {
+async function dispatch(app: FastifyInstance, webhookUrl: string, eventType: string, data: Record<string, unknown>, duplicate = false): Promise<void> {
   const payload = { id: `evt_${randomUUID()}`, type: eventType, createdAt: new Date().toISOString(), data };
   const body = JSON.stringify(payload);
   const signature = createHmac('sha256', config().PROCESSOR_WEBHOOK_SECRET).update(body).digest('hex');
@@ -24,8 +22,9 @@ async function dispatch(webhookUrl: string, eventType: string, data: Record<stri
   if (duplicate) await deliver();
 }
 
-app.get('/health', async () => ({ status: 'ok', service: 'mock-processor' }));
-app.post('/v1/payment-intents', async (request, reply) => {
+/** Registers the local provider sandbox within the payment deployable. */
+export async function registerProviderSandboxRoutes(app: FastifyInstance): Promise<void> {
+  app.post('/v1/payment-intents', async (request, reply) => {
   const input = paymentSchema.parse(request.body);
   const id = `pi_${randomUUID()}`;
   const outcome = request.headers['x-test-outcome'] === 'failed' ? 'failed' : 'succeeded';
@@ -33,22 +32,22 @@ app.post('/v1/payment-intents', async (request, reply) => {
   setTimeout(() => {
     const stored = payments.get(id);
     if (stored) stored.status = outcome;
-    void dispatch(input.webhookUrl, `payment.${outcome}`, { providerPaymentId: id, ...stored,
+    void dispatch(app, input.webhookUrl, `payment.${outcome}`, { providerPaymentId: id, ...stored,
       failureCode: outcome === 'failed' ? 'card_declined' : undefined }, request.headers['x-test-duplicate'] === 'true');
   }, Number(request.headers['x-test-delay-ms'] ?? 250));
   return reply.code(202).send({ id, status: 'processing' });
-});
-app.post('/v1/payment-intents/:id/refunds', async (request, reply) => {
+  });
+  app.post('/v1/payment-intents/:id/refunds', async (request, reply) => {
   const { id } = z.object({ id: z.string().min(4) }).parse(request.params);
   const input = refundSchema.parse(request.body);
   const payment = payments.get(id);
   if (!payment || payment.status !== 'succeeded') return reply.code(409).send({ error: 'payment_not_refundable' });
   const providerRefundId = `re_${randomUUID()}`;
-  setTimeout(() => void dispatch(input.webhookUrl, 'refund.succeeded', { providerPaymentId: id, providerRefundId, ...input }), 250);
+  setTimeout(() => void dispatch(app, input.webhookUrl, 'refund.succeeded', { providerPaymentId: id, providerRefundId, ...input }), 250);
   return reply.code(202).send({ id: providerRefundId, status: 'pending' });
-});
-app.get('/v1/settlements', async () => ({
+  });
+  app.get('/v1/settlements', async () => ({
   generatedAt: new Date().toISOString(),
   transactions: [...payments.entries()].filter(([, value]) => value.status === 'succeeded').map(([providerPaymentId, value]) => ({ providerPaymentId, ...value })),
-}));
-await app.listen({ host: '0.0.0.0', port: 4000 });
+  }));
+}

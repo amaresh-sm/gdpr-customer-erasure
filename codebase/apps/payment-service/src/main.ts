@@ -3,6 +3,8 @@ import { registerErrorHandler } from '../../../packages/http/src/errors.js';
 import { config } from '../../../packages/config/src/index.js';
 import { startOutboxPublisher } from '../../../packages/messaging/src/publisher.js';
 import { paymentRoutes } from './routes.js';
+import { registerProviderSandboxRoutes } from './provider-sandbox-routes.js';
+import { registerReconciliationRoutes } from './reconciliation-routes.js';
 
 process.env.SERVICE_NAME = 'payment-service';
 const app = Fastify({
@@ -14,6 +16,8 @@ const app = Fastify({
 registerErrorHandler(app);
 await app.register(paymentRoutes);
 const controller = new AbortController();
+await registerProviderSandboxRoutes(app, controller.signal);
+await registerReconciliationRoutes(app);
 void startOutboxPublisher(controller.signal);
 await app.listen({ host: '0.0.0.0', port: 3002 });
 for (const signal of ['SIGTERM', 'SIGINT'] as const) process.on(signal, () => { controller.abort(); void app.close(); });

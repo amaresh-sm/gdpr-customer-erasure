@@ -3,7 +3,7 @@ import { EVENT_TYPES } from '../../../packages/contracts/src/events.js';
 import { config } from '../../../packages/config/src/index.js';
 import { transaction } from '../../../packages/database/src/pool.js';
 import { addOutboxEvent } from '../../../packages/messaging/src/outbox.js';
-import { ReconciliationRepository, type ProviderTransaction } from './repository.js';
+import { ReconciliationRepository, type ProviderTransaction } from './reconciliation-repository.js';
 
 export class ReconciliationService {
   constructor(private readonly repository = new ReconciliationRepository()) {}

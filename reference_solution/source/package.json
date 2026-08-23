@@ -22,12 +22,10 @@
     "start:gateway": "tsx apps/api-gateway/src/main.ts",
     "start:customers": "tsx apps/customer-service/src/main.ts",
     "start:payments": "tsx apps/payment-service/src/main.ts",
-    "start:processor": "tsx apps/mock-processor/src/main.ts",
     "start:webhooks": "tsx apps/webhook-worker/src/main.ts",
     "start:projections": "tsx apps/projection-worker/src/main.ts",
     "start:notifications": "tsx apps/notification-worker/src/main.ts",
     "start:documents": "tsx apps/document-worker/src/main.ts",
-    "start:reconciliation": "tsx apps/reconciliation-service/src/main.ts",
     "start:privacy": "tsx apps/privacy-service/src/main.ts"
   },
   "dependencies": {

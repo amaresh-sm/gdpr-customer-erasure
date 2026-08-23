@@ -1,15 +1,10 @@
 import { createHmac, randomUUID } from 'node:crypto';
-import Fastify from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { config } from '../../../packages/config/src/index.js';
-import { pool } from '../../../packages/database/src/pool.js';
-import { ProviderSandboxRepository } from './repository.js';
+import { ProviderSandboxRepository } from './provider-sandbox-repository.js';
 
-process.env.SERVICE_NAME = 'mock-processor';
-const app = Fastify({ logger: true });
-const repository = new ProviderSandboxRepository();
 const processingDelayMs = 250;
-const controller = new AbortController();
 
 const paymentSchema = z.object({
   merchantId: z.string().uuid(), paymentId: z.string().uuid(), amount: z.number().int().positive(),
@@ -21,6 +16,7 @@ const refundSchema = z.object({
 });
 
 async function dispatch(
+  app: FastifyInstance,
   webhookUrl: string,
   eventId: string,
   eventType: string,
@@ -38,11 +34,11 @@ async function dispatch(
   if (!response.ok) throw new Error(`webhook endpoint returned ${response.status}`);
 }
 
-async function deliverAvailable(): Promise<boolean> {
+async function deliverAvailable(app: FastifyInstance, repository: ProviderSandboxRepository): Promise<boolean> {
   const payment = await repository.claimPaymentCallback();
   if (payment) {
     try {
-      await dispatch(payment.webhook_url, `evt_payment_${payment.id}`, 'payment.succeeded', {
+      await dispatch(app, payment.webhook_url, `evt_payment_${payment.id}`, 'payment.succeeded', {
         providerPaymentId: payment.id,
         paymentId: payment.payment_id,
         merchantId: payment.merchant_id,
@@ -60,7 +56,7 @@ async function deliverAvailable(): Promise<boolean> {
   const refund = await repository.claimRefundCallback();
   if (!refund) return false;
   try {
-    await dispatch(refund.webhook_url, `evt_refund_${refund.id}`, 'refund.succeeded', {
+    await dispatch(app, refund.webhook_url, `evt_refund_${refund.id}`, 'refund.succeeded', {
       providerPaymentId: refund.provider_payment_id,
       providerRefundId: refund.id,
       refundId: refund.refund_id,
@@ -78,10 +74,10 @@ async function deliverAvailable(): Promise<boolean> {
   return true;
 }
 
-async function runDispatcher(signal: AbortSignal): Promise<void> {
+async function runDispatcher(app: FastifyInstance, repository: ProviderSandboxRepository, signal: AbortSignal): Promise<void> {
   while (!signal.aborted) {
     try {
-      const delivered = await deliverAvailable();
+      const delivered = await deliverAvailable(app, repository);
       if (!delivered) await new Promise((resolve) => setTimeout(resolve, 100));
     } catch (error) {
       app.log.warn({ error }, 'provider dispatcher dependency unavailable');
@@ -90,22 +86,25 @@ async function runDispatcher(signal: AbortSignal): Promise<void> {
   }
 }
 
-app.get('/health', async () => ({ status: 'ok', service: 'mock-processor' }));
-app.post('/v1/payment-intents', async (request, reply) => {
+/** Registers the local provider sandbox within the payment deployable. */
+export async function registerProviderSandboxRoutes(app: FastifyInstance, signal: AbortSignal): Promise<void> {
+  const repository = new ProviderSandboxRepository();
+  void runDispatcher(app, repository, signal);
+  app.post('/v1/payment-intents', async (request, reply) => {
   const input = paymentSchema.parse(request.body);
   const id = `pi_${randomUUID()}`;
   await repository.createPayment(id, input, processingDelayMs);
   return reply.code(202).send({ id, status: 'processing' });
-});
-app.post('/v1/payment-intents/:id/refunds', async (request, reply) => {
+  });
+  app.post('/v1/payment-intents/:id/refunds', async (request, reply) => {
   const { id } = z.object({ id: z.string().min(4) }).parse(request.params);
   const input = refundSchema.parse(request.body);
   if (!await repository.paymentIsRefundable(id)) return reply.code(409).send({ error: 'payment_not_refundable' });
   const providerRefundId = `re_${randomUUID()}`;
   await repository.createRefund(providerRefundId, id, input, processingDelayMs);
   return reply.code(202).send({ id: providerRefundId, status: 'pending' });
-});
-app.get('/v1/settlements', async () => ({
+  });
+  app.get('/v1/settlements', async () => ({
   generatedAt: new Date().toISOString(),
   transactions: (await repository.settlements()).map((payment) => ({
     providerPaymentId: payment.provider_payment_id,
@@ -114,10 +113,5 @@ app.get('/v1/settlements', async () => ({
     amount: Number(payment.amount),
     currency: payment.currency,
   })),
-}));
-
-void runDispatcher(controller.signal);
-await app.listen({ host: '0.0.0.0', port: 4000 });
-for (const signal of ['SIGTERM', 'SIGINT'] as const) {
-  process.on(signal, () => { controller.abort(); void app.close(); void pool.end(); });
+  }));
 }

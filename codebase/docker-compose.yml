@@ -124,23 +124,7 @@ services:
       migrator: {condition: service_completed_successfully}
       redpanda: {condition: service_healthy}
       minio: {condition: service_healthy}
-      mock-processor: {condition: service_healthy}
     ports: ["3002:3002"]
-
-  mock-processor:
-    build: .
-    command: ["npm", "run", "start:processor"]
-    env_file: [.env.docker]
-    environment:
-      SERVICE_NAME: mock-processor
-    depends_on:
-      migrator: {condition: service_completed_successfully}
-    ports: ["4000:4000"]
-    healthcheck:
-      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:4000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
-      interval: 3s
-      timeout: 3s
-      retries: 20
 
   webhook-worker:
     build: .
@@ -188,17 +172,6 @@ services:
       minio: {condition: service_healthy}
       redpanda: {condition: service_healthy}
 
-  reconciliation-service:
-    build: .
-    command: ["npm", "run", "start:reconciliation"]
-    env_file: [.env.docker]
-    environment:
-      SERVICE_NAME: reconciliation-service
-    depends_on:
-      migrator: {condition: service_completed_successfully}
-      mock-processor: {condition: service_healthy}
-    ports: ["3004:3004"]
-
   api-gateway:
     build: .
     command: ["npm", "run", "start:gateway"]
@@ -208,7 +181,6 @@ services:
     depends_on:
       customer-service: {condition: service_started}
       payment-service: {condition: service_started}
-      reconciliation-service: {condition: service_started}
     ports: ["3000:3000"]
 
 volumes:

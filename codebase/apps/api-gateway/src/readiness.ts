@@ -21,7 +21,6 @@ export async function readiness(settings: Config): Promise<{ ready: boolean; dep
   const dependencies = await Promise.all([
     check('customer-service', settings.CUSTOMER_SERVICE_URL),
     check('payment-service', settings.PAYMENT_SERVICE_URL),
-    check('reconciliation-service', settings.RECONCILIATION_SERVICE_URL),
   ]);
   return { ready: dependencies.every((dependency) => dependency.ready), dependencies };
 }

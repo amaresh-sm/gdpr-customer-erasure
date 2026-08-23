@@ -5,9 +5,8 @@
 ```text
 api-gateway
   |-- customer-service ------ PostgreSQL(customers) + Redis
-  |-- payment-service ------- PostgreSQL(payments) + provider adapter
-  |      `-- sandbox processor -- delayed signed webhooks
-  |-- reconciliation-service -- immutable ledger + provider settlements
+  |-- payment-service ------- PostgreSQL(payments) + provider sandbox + reconciliation
+  |      `-- delayed signed webhooks and immutable provider settlements
   |
   `-- Kafka/Redpanda
          |-- projection-worker ---- Redis + OpenSearch
@@ -23,10 +22,10 @@ Cross-context reads occur through HTTP or versioned events, not by reaching into
 tables. SQL is kept in repositories and transaction-focused domain modules so locking and ledger
 behavior remain explicit without mixing persistence into HTTP or process entrypoints.
 
-The sandbox processor is an external-provider substitute for local development. It uses an
-isolated `provider_sandbox` schema in the local PostgreSQL instance, persists accepted operations,
-and retries signed webhook delivery after restarts. Production deployments would replace it with a
-remote provider adapter; application code talks to both through the same HTTP client.
+The payments deployable includes a local provider sandbox for development and its reconciliation
+module. The sandbox uses an isolated `provider_sandbox` schema, persists accepted operations, and
+retries signed webhook delivery after restarts. Production deployments would replace the sandbox
+module with a remote provider adapter while preserving the client contract.
 
 Receipt creation deliberately crosses an asynchronous boundary. The webhook worker commits the
 capture, ledger entry, payment event, and document job together. The document worker claims jobs

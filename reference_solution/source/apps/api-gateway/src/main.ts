@@ -25,5 +25,5 @@ await app.register(proxy, { upstream: settings.CUSTOMER_SERVICE_URL, prefix: '/v
 await app.register(proxy, { upstream: settings.PAYMENT_SERVICE_URL, prefix: '/v1/payments', rewritePrefix: '/v1/payments' });
 await app.register(proxy, { upstream: settings.PAYMENT_SERVICE_URL, prefix: '/v1/refunds', rewritePrefix: '/v1/refunds' });
 await app.register(proxy, { upstream: settings.PAYMENT_SERVICE_URL, prefix: '/v1/invoices', rewritePrefix: '/v1/invoices' });
-await app.register(proxy, { upstream: settings.RECONCILIATION_SERVICE_URL, prefix: '/v1/reconciliation', rewritePrefix: '/v1/reconciliation' });
+await app.register(proxy, { upstream: settings.PAYMENT_SERVICE_URL, prefix: '/v1/reconciliation', rewritePrefix: '/v1/reconciliation' });
 await app.listen({ host: '0.0.0.0', port: 3000 });

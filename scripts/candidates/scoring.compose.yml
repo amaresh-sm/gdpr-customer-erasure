@@ -15,7 +15,5 @@ services:
   mailpit: { ports: !reset [] }
   customer-service: { ports: !reset [] }
   payment-service: { ports: !reset [] }
-  mock-processor: { ports: !reset [] }
   webhook-worker: { ports: !reset [] }
-  reconciliation-service: { ports: !reset [] }
   api-gateway: { ports: !reset [] }
