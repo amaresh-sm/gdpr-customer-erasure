@@ -17,7 +17,7 @@ between MinIO objects and PostgreSQL manifests.
 - API transactions persist domain rows and outbox events atomically.
 - Several publisher replicas may compete safely using row locks and `SKIP LOCKED`. Claimed outbox
   rows have expiring leases so a publisher crash cannot strand an event in `publishing`.
-- Kafka consumers deduplicate with `operations.inbox_events` before changing projections.
+- Redpanda consumers deduplicate with `operations.inbox_events` before changing projections.
 - Provider webhooks are signature-checked and deduplicated by provider event ID.
 - Workers use time-limited leases. An expired lease returns unfinished work to the retry queue so
   a restarted worker can continue it safely.

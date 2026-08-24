@@ -8,7 +8,7 @@ api-gateway
   |-- payment-service ------- PostgreSQL(payments) + provider sandbox + reconciliation
   |      `-- delayed signed webhooks and immutable provider settlements
   |
-  `-- Kafka/Redpanda
+  `-- Redpanda (Kafka-compatible event broker)
          |-- projection-worker ---- Redis + OpenSearch
          |-- notification-worker -- PostgreSQL delivery queue -> Mailpit provider
          |-- webhook-worker ------- inbox -> payment state machine
@@ -48,6 +48,6 @@ environment: its SMTP/API mailbox is operational state, not an end user's extern
 - Bounded contexts do not query one another's schemas; their cooperating API and worker
   deployables may share the schema owned by that context.
 - Ledger postings are append-only and balanced per transaction.
-- Provider webhook IDs, API idempotency keys, and Kafka event IDs are independently deduplicated.
+- Provider webhook IDs, API idempotency keys, and Redpanda event IDs are independently deduplicated.
 - Search, caches, analytics, and notifications are projections, not sources of financial truth.
 - Replay must rebuild projections without changing financial state.
