@@ -34,7 +34,7 @@ interface LaunchRecord {
 
 const root = resolve(process.cwd());
 const generationImage = 'payflow-candidate-generation-rootless:v4';
-const egressImage = 'payflow-codex-egress:v2';
+const egressImage = 'payflow-codex-egress:v3';
 const proxyImage = 'payflow-provider-proxy:v1';
 const innerImages = [
   'node:22-bookworm-slim',

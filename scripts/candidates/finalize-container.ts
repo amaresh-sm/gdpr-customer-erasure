@@ -134,8 +134,8 @@ async function main(): Promise<void> {
   metadata.isolation.host_mount_assertion = measured(true, 'trusted launcher: candidate source was the only host bind mount and was read-only; edits occurred in a private named volume');
   metadata.isolation.network_mode = measured(
     launch.provider === 'codex-login'
-      ? 'private internal network to allowlisted Codex and npm-registry egress only'
-      : 'private internal network to strict Portkey Responses proxy plus npm-registry egress only',
+      ? 'private internal network with public HTTPS egress proxy; private and local destinations blocked'
+      : 'private internal network with strict Portkey Responses proxy and public HTTPS egress; private and local destinations blocked',
     'trusted Docker network launcher',
   );
   metadata.credential_safety.location = measured(
