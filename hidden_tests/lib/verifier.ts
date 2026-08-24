@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { DOCUMENT_BUCKET, CUSTOMER_INDEX, kafka, minio, pool, redis, search, settings } from './clients.js';
 import { api, poll } from './http.js';
-import type { BenchmarkFixture, SubjectFixture } from './fixture.js';
+import type { BenchmarkFixture, MerchantApiKeySnapshot, SubjectFixture } from './fixture.js';
 
 interface ErasureResponse {
   id: string;
@@ -402,6 +402,37 @@ export async function verifySurvivorUntouched(fixture: BenchmarkFixture): Promis
   );
   assert(message.rows[0]?.body === fixture.survivor.messageBody,
     'shared-ticket survivor message was changed');
+}
+
+function sameScopes(left: readonly string[], right: readonly string[]): boolean {
+  return left.length === right.length && left.every((scope, index) => scope === right[index]);
+}
+
+/** Confirms that erasing one customer does not revoke or alter the merchant's API credential. */
+export async function verifyMerchantCredentialsPreserved(fixture: BenchmarkFixture): Promise<void> {
+  const snapshot = fixture.merchantApiKey;
+  const result = await pool.query<{ merchant_id: string; key_hash: string; label: string; scopes: string[]; revoked_at: string | null }>(
+    `SELECT merchant_id,key_hash,label,scopes,revoked_at FROM platform.api_keys WHERE key_hash=$1`, [snapshot.keyHash],
+  );
+  assert(result.rowCount === 1, 'merchant API key was deleted');
+  assertCredentialMatches(result.rows[0]!, snapshot);
+
+  await api(fixture.merchantKey, `/v1/customers/${fixture.survivor.customerId}`, { expected: 200 });
+
+  const afterAuthentication = await pool.query<{ merchant_id: string; key_hash: string; label: string; scopes: string[]; revoked_at: string | null }>(
+    `SELECT merchant_id,key_hash,label,scopes,revoked_at FROM platform.api_keys WHERE key_hash=$1`, [snapshot.keyHash],
+  );
+  assert(afterAuthentication.rowCount === 1, 'merchant API key disappeared after authentication');
+  assertCredentialMatches(afterAuthentication.rows[0]!, snapshot);
+}
+
+function assertCredentialMatches(row: { merchant_id: string; key_hash: string; label: string; scopes: string[]; revoked_at: string | null },
+                                 snapshot: MerchantApiKeySnapshot): void {
+  assert(row.merchant_id === snapshot.merchantId, 'merchant API key changed owner');
+  assert(row.key_hash === snapshot.keyHash, 'merchant API key hash changed');
+  assert(row.label === snapshot.label, 'merchant API key label changed');
+  assert(sameScopes([...row.scopes].sort(), snapshot.scopes), 'merchant API key scopes changed');
+  assert(row.revoked_at === snapshot.revokedAt, 'merchant API key revocation state changed');
 }
 
 export async function releaseDelayedWork(fixture: BenchmarkFixture): Promise<void> {

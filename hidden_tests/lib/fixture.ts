@@ -16,10 +16,19 @@ export interface SubjectFixture {
   invoiceId: string;
 }
 
+export interface MerchantApiKeySnapshot {
+  merchantId: string;
+  keyHash: string;
+  label: string;
+  scopes: string[];
+  revokedAt: string | null;
+}
+
 export interface BenchmarkFixture {
   slot: string;
   merchantId: string;
   merchantKey: string;
+  merchantApiKey: MerchantApiKeySnapshot;
   otherMerchantId: string;
   otherMerchantKey: string;
   normal: SubjectFixture;
@@ -43,7 +52,7 @@ export interface BenchmarkFixture {
   };
 }
 
-async function provisionMerchant(slot: string, suffix: string): Promise<{ id: string; key: string }> {
+async function provisionMerchant(slot: string, suffix: string): Promise<{ id: string; key: string; apiKey: MerchantApiKeySnapshot }> {
   const id = fixtureUuid(`${slot}:merchant:${suffix}`);
   const key = `pf_hidden_${suffix}_${createHash('sha256').update(slot).digest('hex').slice(0, 20)}`;
   await pool.query(`INSERT INTO platform.merchants(id,name,default_currency) VALUES($1,$2,'USD') ON CONFLICT(id) DO NOTHING`,
@@ -54,6 +63,12 @@ async function provisionMerchant(slot: string, suffix: string): Promise<{ id: st
      ON CONFLICT(key_hash) DO UPDATE SET scopes=EXCLUDED.scopes`,
     [id, createHash('sha256').update(key).digest('hex')],
   );
+  const apiKey = await pool.query<{ merchant_id: string; key_hash: string; label: string; scopes: string[]; revoked_at: string | null }>(
+    `SELECT merchant_id,key_hash,label,scopes,revoked_at FROM platform.api_keys WHERE key_hash=$1`,
+    [createHash('sha256').update(key).digest('hex')],
+  );
+  const snapshot = apiKey.rows[0];
+  if (!snapshot) throw new Error('fixture merchant API key was not created');
   for (const [code, name, type] of [['PROCESSOR_CLEARING', 'Processor clearing', 'asset'],
     ['MERCHANT_PAYABLE', 'Merchant payable', 'liability']] as const) {
     await pool.query(
@@ -61,7 +76,10 @@ async function provisionMerchant(slot: string, suffix: string): Promise<{ id: st
        VALUES($1,$2,$3,$4,'USD') ON CONFLICT(merchant_id,code,currency) DO NOTHING`, [id, code, name, type],
     );
   }
-  return { id, key };
+  return { id, key, apiKey: {
+    merchantId: snapshot.merchant_id, keyHash: snapshot.key_hash, label: snapshot.label,
+    scopes: [...snapshot.scopes].sort(), revokedAt: snapshot.revoked_at,
+  } };
 }
 
 async function createSubject(apiKey: string, slot: string, label: string): Promise<SubjectFixture> {
@@ -191,7 +209,7 @@ export async function seedFixture(slot: string): Promise<BenchmarkFixture> {
   );
   const invoice = invoiceFinancial.rows[0];
   if (!invoice) throw new Error('normal invoice financial snapshot was not created');
-  return { slot, merchantId: merchant.id, merchantKey: merchant.key, otherMerchantId: other.id,
+  return { slot, merchantId: merchant.id, merchantKey: merchant.key, merchantApiKey: merchant.apiKey, otherMerchantId: other.id,
     otherMerchantKey: other.key, normal, delayed, survivor: { customerId: survivor.body.id, ...survivorData, messageBody: survivorMessageBody },
     delayedWebhookId: webhookId, delayedJobId, delayedEmailDeliveryId, normalFinancial: { amount: row.amount, currency: row.currency,
       status: row.status, postings: row.postings, signedBalance: row.signed_balance,

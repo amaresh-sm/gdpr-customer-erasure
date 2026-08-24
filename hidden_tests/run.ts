@@ -4,7 +4,7 @@ import { closeClients } from './lib/clients.js';
 import { seedFixture, type BenchmarkFixture } from './lib/fixture.js';
 import { assertNoErasureViolations, collectErasureViolations, installTransientPaymentWriteFailure,
   releaseDelayedWork, removeTransientPaymentWriteFailure, replayHistoricalPiiEvent, requestErasure,
-  verifyFinancialRetention, verifyFixtureCoverage, verifySubjectUnchanged, verifySurvivorUntouched,
+  verifyFinancialRetention, verifyFixtureCoverage, verifyMerchantCredentialsPreserved, verifySubjectUnchanged, verifySurvivorUntouched,
   waitForCompletion, waitForStatus } from './lib/verifier.js';
 import { api } from './lib/http.js';
 
@@ -150,7 +150,7 @@ async function writeScoreReport(): Promise<void> {
   const report: ScoreReport = blocked
     ? { schema_version: 1, state: 'blocked', hard_pass: false, earned: null, maximum: scoreMaximum, checks, diagnostics,
       blocked_reason: 'fixture provisioning failed; candidate score is not comparable' }
-    : { schema_version: 1, state: 'complete', hard_pass: results.length === 8 && results.every((result) => !result.error),
+    : { schema_version: 1, state: 'complete', hard_pass: results.length === 9 && results.every((result) => !result.error),
       earned: Number(checks.reduce((total, check) => total + check.earned, 0).toFixed(4)), maximum: scoreMaximum, checks, diagnostics };
   await writeFile(process.env.ERASURE_SCORE_PATH ?? 'hidden.score.json', `${JSON.stringify(report, null, 2)}\n`, 'utf8');
 }
@@ -247,6 +247,11 @@ try {
       const survivor = await observe(async () => { await verifySurvivorUntouched(fixture); });
       if (!financial.ok) throw new Error(financial.evidence);
       if (!survivor.ok) throw new Error(survivor.evidence);
+    });
+    await test('merchant credentials remain usable after customer erasure', async () => {
+      const credentials = await observe(async () => { await verifyMerchantCredentialsPreserved(fixture); });
+      recordCheck('security.merchant_credentials_preserved', 'Merchant API credential remains active and unchanged', 0, credentials);
+      if (!credentials.ok) throw new Error(credentials.evidence);
     });
     let delayedRequest = '';
     let delayedViolations: string[] = [];
