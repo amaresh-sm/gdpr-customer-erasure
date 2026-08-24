@@ -76,6 +76,7 @@ export interface BenchmarkFixture {
   otherMerchantId: string;
   otherMerchantKey: string;
   normal: SubjectFixture;
+  refund: SubjectFixture;
   delayed: SubjectFixture;
   survivor: { customerId: string; email: string; name: string; phone: string; externalReference: string; messageBody: string };
   delayedWebhookId: string;
@@ -309,6 +310,7 @@ export async function seedFixture(slot: string): Promise<BenchmarkFixture> {
   const merchant = await provisionMerchant(slot, 'primary');
   const other = await provisionMerchant(slot, 'other');
   const normal = await createSubject(merchant.key, slot, 'normal');
+  const refund = await createSubject(merchant.key, slot, 'refund');
   const delayed = await createSubject(merchant.key, slot, 'delayed');
   const survivor = await createSubject(merchant.key, slot, 'survivor');
   await pool.query(`INSERT INTO customers.support_participants(ticket_id,customer_id) VALUES($1,$2)`,
@@ -340,6 +342,14 @@ export async function seedFixture(slot: string): Promise<BenchmarkFixture> {
   (value) => typeof value === 'string' && value.includes(normal.email), 'normal Redis projection');
   await poll(async () => (await search.exists({ index: CUSTOMER_INDEX, id: `${merchant.id}:${normal.customerId}` })).body,
   (exists) => exists === true, 'normal OpenSearch projection');
+
+  const refundPayment = await api<{ id: string }>(merchant.key, '/v1/payments', { method: 'POST', expected: 202,
+    headers: { 'idempotency-key': `refund-payment-${slot}` }, body: { customerId: refund.customerId,
+      paymentMethodId: refund.paymentMethodId, amount: 6200, currency: 'USD', description: `Order for ${refund.name}` } });
+  refund.paymentId = refundPayment.body.id;
+  await poll(async () => (await pool.query<{ status: string }>(
+    `SELECT status FROM payments.payment_intents WHERE id=$1`, [refund.paymentId])).rows[0]?.status,
+  (status) => status === 'succeeded', 'refund-subject payment success');
 
   const delayedPaymentId = fixtureUuid(`${slot}:delayed-payment`);
   const providerPaymentId = `pi_hidden_${createHash('sha256').update(slot).digest('hex').slice(0, 16)}`;
@@ -406,7 +416,7 @@ export async function seedFixture(slot: string): Promise<BenchmarkFixture> {
   return { slot, merchantId: merchant.id, merchantKey: merchant.key, merchantApiKey: merchant.apiKey,
     platformSurvivor: { merchant: merchant.identity, admin, secondaryKey: secondaryKey.key,
       secondaryApiKey: secondaryKey.snapshot, payment: survivorPayment }, otherMerchantId: other.id,
-    otherMerchantKey: other.key, normal, delayed, survivor: { ...survivor, messageBody: survivorMessageBody },
+    otherMerchantKey: other.key, normal, refund, delayed, survivor: { ...survivor, messageBody: survivorMessageBody },
     delayedWebhookId: webhookId, delayedJobId, delayedEmailDeliveryId, normalFinancial: { amount: row.amount, currency: row.currency,
       status: row.status, postings: row.postings, signedBalance: row.signed_balance,
       invoiceSubtotal: invoice.subtotal, invoiceTax: invoice.tax, invoiceTotal: invoice.total,

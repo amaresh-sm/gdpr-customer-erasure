@@ -383,6 +383,66 @@ export async function verifyFinancialRetention(fixture: BenchmarkFixture): Promi
   'retained invoice financial values changed');
 }
 
+/** Runs a legitimate refund after completion and proves it cannot recreate erased customer data. */
+export async function verifyPostErasureRefund(fixture: BenchmarkFixture): Promise<void> {
+  const subject = fixture.refund;
+  const requestId = await requestErasure(
+    fixture.merchantKey,
+    subject.customerId,
+    `post-erasure-refund-${fixture.slot}`,
+  );
+  await waitForCompletion(fixture.merchantKey, requestId);
+
+  const amount = 2300;
+  const reason = `Refund requested by ${subject.name} ${subject.email} ${subject.canary}`;
+  const response = await api<{ id: string }>(fixture.merchantKey, `/v1/payments/${subject.paymentId}/refunds`, {
+    method: 'POST', expected: 202, body: { amount, reason },
+  });
+  const refundId = response.body.id;
+  assert(typeof refundId === 'string', 'refund response omitted its identifier');
+
+  await poll(async () => (await pool.query<{ status: string }>(
+    `SELECT status FROM payments.refunds WHERE id=$1`, [refundId],
+  )).rows[0]?.status, (status) => status === 'succeeded', 'post-erasure refund completion', 160);
+
+  const refund = await pool.query<{ amount: string; status: string; reason: string; customer_email: string | null }>(
+    `SELECT amount::text,status,reason,customer_email FROM payments.refunds WHERE id=$1`, [refundId],
+  );
+  const refundRow = refund.rows[0];
+  assert(refundRow !== undefined, 'post-erasure refund was not retained');
+  assert(refundRow.amount === String(amount) && refundRow.status === 'succeeded',
+    'post-erasure refund did not settle for the requested amount');
+  assert(needleHits({ reason: refundRow.reason, customerEmail: refundRow.customer_email }, subject).length === 0,
+    'post-erasure refund retained customer identity');
+
+  const ledger = await pool.query<{ entries: string; postings: string; signed_balance: string }>(
+    `SELECT
+       (SELECT count(*)::text FROM payments.ledger_entries WHERE reference_type='refund' AND reference_id=$1) entries,
+       (SELECT count(*)::text FROM payments.ledger_entries e JOIN payments.ledger_postings p ON p.entry_id=e.id
+          WHERE e.reference_type='refund' AND e.reference_id=$1) postings,
+       (SELECT COALESCE(sum(CASE WHEN p.direction='debit' THEN p.amount ELSE -p.amount END),0)::text
+          FROM payments.ledger_entries e JOIN payments.ledger_postings p ON p.entry_id=e.id
+          WHERE e.reference_type='refund' AND e.reference_id=$1) signed_balance`,
+    [refundId],
+  );
+  assert(ledger.rows[0]?.entries === '1' && ledger.rows[0]?.postings === '2' && ledger.rows[0]?.signed_balance === '0',
+    'post-erasure refund did not produce exactly one balanced financial entry');
+
+  const deliveryEvidence = await pool.query<{ webhooks: string; outbox: string }>(
+    `SELECT
+       (SELECT count(*)::text FROM operations.provider_webhooks
+          WHERE payload #>> '{data,refundId}'=$1 AND status='processed') webhooks,
+       (SELECT count(*)::text FROM operations.outbox_events
+          WHERE payload->>'refundId'=$1) outbox`,
+    [refundId],
+  );
+  assert(deliveryEvidence.rows[0]?.webhooks === '1' && deliveryEvidence.rows[0]?.outbox === '1',
+    'post-erasure refund did not reach its provider and event-delivery stages');
+
+  const violations = await collectErasureViolations(fixture, subject);
+  assertNoErasureViolations(violations, 'post-erasure refund');
+}
+
 export async function verifySurvivorUntouched(fixture: BenchmarkFixture): Promise<void> {
   const result = await pool.query<{ email: string; name: string; phone: string; external_reference: string }>(
     `SELECT email,name,phone,external_reference FROM customers.customers WHERE merchant_id=$1 AND id=$2`,

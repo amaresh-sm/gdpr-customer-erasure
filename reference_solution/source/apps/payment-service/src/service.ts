@@ -5,6 +5,7 @@ import { config } from '../../../packages/config/src/index.js';
 import { pool, transaction } from '../../../packages/database/src/pool.js';
 import { addOutboxEvent } from '../../../packages/messaging/src/outbox.js';
 import { providerSandboxBehavior } from '../../../packages/payments/src/provider-sandbox-behavior.js';
+import { erasedSubjectByAnyId } from '../../../packages/privacy/src/subjects.js';
 import { completeIdempotency, requestHash, reserveIdempotency } from './idempotency.js';
 
 type CustomerSnapshot = { id: string; email: string; name: string; phone?: string | null; status: string };
@@ -76,8 +77,8 @@ export class PaymentService {
   }
 
   async refund(merchantId: string, paymentId: string, input: CreateRefund): Promise<Record<string, unknown>> {
-    const payment = await pool.query<{ amount: string; currency: string; status: string; provider_payment_id: string; customer_snapshot: CustomerSnapshot }>(
-      `SELECT amount,currency,status,provider_payment_id,customer_snapshot FROM payments.payment_intents
+    const payment = await pool.query<{ amount: string; currency: string; status: string; provider_payment_id: string; customer_id: string; customer_snapshot: CustomerSnapshot }>(
+      `SELECT amount,currency,status,provider_payment_id,customer_id,customer_snapshot FROM payments.payment_intents
        WHERE merchant_id=$1 AND id=$2`, [merchantId, paymentId],
     );
     const row = payment.rows[0];
@@ -91,15 +92,18 @@ export class PaymentService {
       throw Object.assign(new Error('refund exceeds captured amount'), { statusCode: 409 });
     }
     const refundId = uuid();
+    const suppression = await erasedSubjectByAnyId(merchantId, row.customer_id);
+    const reason = suppression ? '[redacted]' : input.reason;
+    const customerEmail = suppression ? null : row.customer_snapshot.email;
     await pool.query(
       `INSERT INTO payments.refunds(id,merchant_id,payment_intent_id,amount,reason,status,customer_email)
-       VALUES($1,$2,$3,$4,$5,'pending',$6)`, [refundId, merchantId, paymentId, input.amount, input.reason, row.customer_snapshot.email],
+       VALUES($1,$2,$3,$4,$5,'pending',$6)`, [refundId, merchantId, paymentId, input.amount, reason, customerEmail],
     );
     try {
       const response = await fetch(`${config().PROCESSOR_URL}/v1/payment-intents/${row.provider_payment_id}/refunds`, {
         method: 'POST', headers: { 'content-type': 'application/json', 'x-request-id': refundId },
         body: JSON.stringify({ refundId, paymentId, merchantId, amount: input.amount, currency: row.currency,
-          reason: input.reason, webhookUrl: config().PROCESSOR_WEBHOOK_URL }),
+          reason, webhookUrl: config().PROCESSOR_WEBHOOK_URL }),
       });
       if (!response.ok) throw new Error(`processor returned ${response.status}`);
       const provider = await response.json() as { id: string };
