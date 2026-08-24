@@ -20,6 +20,15 @@ between MinIO objects and PostgreSQL manifests.
 - Document jobs use exponential retry and retain each attempt.
 - Terminal webhook or job failures are copied to `operations.dead_letters` for operator review.
 - Redis and OpenSearch are disposable projections. Replaying the domain topic rebuilds them.
+
+## Provider sandbox scenarios
+
+The local provider sandbox uses payment-method tokens to make development flows deterministic. A
+token beginning with `tok_sandbox_decline_` produces a declined payment; one beginning with
+`tok_sandbox_timeout_` persists the provider operation but returns an unavailable response before
+its later webhook. Add `_duplicate_` to exercise duplicate delivery, or `_out_of_order_` to deliver
+an obsolete `payment.processing` webhook after the terminal event. These tokens are local sandbox
+fixtures only; production provider adapters use their provider's test-mode facilities instead.
 - Privacy requests checkpoint an explicit participant registry. Completed steps are not repeated
   after a participant failure, and stale customer events are suppressed by a minimal durable
   erased-subject record.

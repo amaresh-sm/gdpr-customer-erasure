@@ -6,6 +6,8 @@ export interface ProviderPaymentInput {
   amount: number;
   currency: string;
   paymentMethodId: string;
+  outcome: 'succeeded' | 'declined' | 'timeout';
+  deliveryMode: 'standard' | 'duplicate' | 'stale_processing';
   webhookUrl: string;
 }
 
@@ -26,6 +28,9 @@ export interface PaymentCallback {
   currency: string;
   webhook_url: string;
   webhook_attempts: number;
+  event_type: 'payment.succeeded' | 'payment.failed';
+  delivery_mode: 'standard' | 'duplicate' | 'stale_processing';
+  failure_code: string | null;
 }
 
 export interface RefundCallback {
@@ -53,10 +58,11 @@ export class ProviderSandboxRepository {
   async createPayment(id: string, input: ProviderPaymentInput, delayMs: number): Promise<void> {
     await pool.query(
       `INSERT INTO provider_sandbox.payment_intents
-       (id,payment_id,merchant_id,amount,currency,payment_method_id,webhook_url,status,available_at,next_delivery_at)
-       VALUES($1,$2,$3,$4,$5,$6,$7,'processing',now()+($8 || ' milliseconds')::interval,
-              now()+($8 || ' milliseconds')::interval)`,
-      [id, input.paymentId, input.merchantId, input.amount, input.currency, input.paymentMethodId, input.webhookUrl, delayMs],
+       (id,payment_id,merchant_id,amount,currency,payment_method_id,webhook_url,status,outcome,delivery_mode,failure_code,available_at,next_delivery_at)
+       VALUES($1,$2,$3,$4,$5,$6,$7,'processing',$8,$9,$10,now()+($11 || ' milliseconds')::interval,
+              now()+($11 || ' milliseconds')::interval)`,
+      [id, input.paymentId, input.merchantId, input.amount, input.currency, input.paymentMethodId, input.webhookUrl,
+        input.outcome, input.deliveryMode, input.outcome === 'declined' ? 'card_declined' : null, delayMs],
     );
   }
 
@@ -82,12 +88,14 @@ export class ProviderSandboxRepository {
     return await transaction(async (client) => {
       const result = await client.query<PaymentCallback>(
         `UPDATE provider_sandbox.payment_intents
-         SET status='succeeded',webhook_attempts=webhook_attempts+1,
+         SET status=CASE WHEN outcome='declined' THEN 'failed' ELSE 'succeeded' END,webhook_attempts=webhook_attempts+1,
              next_delivery_at=now()+interval '30 seconds',last_delivery_error=NULL,updated_at=now()
          WHERE id=(SELECT id FROM provider_sandbox.payment_intents
            WHERE webhook_delivered_at IS NULL AND available_at<=now() AND next_delivery_at<=now()
            ORDER BY next_delivery_at,created_at FOR UPDATE SKIP LOCKED LIMIT 1)
-         RETURNING id,payment_id,merchant_id,amount::text,currency,webhook_url,webhook_attempts`,
+         RETURNING id,payment_id,merchant_id,amount::text,currency,webhook_url,webhook_attempts,
+           CASE WHEN outcome='declined' THEN 'payment.failed' ELSE 'payment.succeeded' END event_type,
+           delivery_mode,failure_code`,
       );
       return result.rows[0];
     });

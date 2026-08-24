@@ -8,7 +8,10 @@ const processingDelayMs = 250;
 
 const paymentSchema = z.object({
   merchantId: z.string().uuid(), paymentId: z.string().uuid(), amount: z.number().int().positive(),
-  currency: z.string().length(3), paymentMethodId: z.string().uuid(), webhookUrl: z.string().url(),
+  currency: z.string().length(3), paymentMethodId: z.string().uuid(),
+  outcome: z.enum(['succeeded','declined','timeout']),
+  deliveryMode: z.enum(['standard','duplicate','stale_processing']),
+  webhookUrl: z.string().url(),
 });
 const refundSchema = z.object({
   refundId: z.string().uuid(), paymentId: z.string().uuid(), merchantId: z.string().uuid(),
@@ -38,13 +41,20 @@ async function deliverAvailable(app: FastifyInstance, repository: ProviderSandbo
   const payment = await repository.claimPaymentCallback();
   if (payment) {
     try {
-      await dispatch(app, payment.webhook_url, `evt_payment_${payment.id}`, 'payment.succeeded', {
+      const eventId = `evt_payment_${payment.id}`;
+      const data = {
         providerPaymentId: payment.id,
         paymentId: payment.payment_id,
         merchantId: payment.merchant_id,
         amount: Number(payment.amount),
         currency: payment.currency,
-      });
+        ...(payment.failure_code ? { failureCode: payment.failure_code } : {}),
+      };
+      await dispatch(app, payment.webhook_url, eventId, payment.event_type, data);
+      if (payment.delivery_mode === 'duplicate') await dispatch(app, payment.webhook_url, eventId, payment.event_type, data);
+      if (payment.delivery_mode === 'stale_processing') {
+        await dispatch(app, payment.webhook_url, `evt_processing_${payment.id}`, 'payment.processing', data);
+      }
       await repository.markPaymentCallbackDelivered(payment.id);
     } catch (error) {
       app.log.warn({ error, providerPaymentId: payment.id }, 'payment webhook delivery deferred');
@@ -94,6 +104,7 @@ export async function registerProviderSandboxRoutes(app: FastifyInstance, signal
   const input = paymentSchema.parse(request.body);
   const id = `pi_${randomUUID()}`;
   await repository.createPayment(id, input, processingDelayMs);
+  if (input.outcome === 'timeout') return reply.code(504).send({ error: 'provider_response_delayed' });
   return reply.code(202).send({ id, status: 'processing' });
   });
   app.post('/v1/payment-intents/:id/refunds', async (request, reply) => {

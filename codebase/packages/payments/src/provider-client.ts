@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { config } from '../../config/src/index.js';
+import type { ProviderOutcome, WebhookDeliveryMode } from './provider-sandbox-behavior.js';
 
 const providerPaymentSchema = z.object({
   id: z.string().min(4),
@@ -43,6 +44,8 @@ export class PaymentProviderClient {
     amount: number;
     currency: string;
     paymentMethodId: string;
+    outcome: ProviderOutcome;
+    deliveryMode: WebhookDeliveryMode;
     webhookUrl: string;
   }): Promise<ProviderPayment> {
     return await this.post('/v1/payment-intents', input, input.requestId, providerPaymentSchema);

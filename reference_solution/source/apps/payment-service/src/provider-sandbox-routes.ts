@@ -3,10 +3,15 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { config } from '../../../packages/config/src/index.js';
 
-const payments = new Map<string, { paymentId: string; merchantId: string; amount: number; currency: string; status: string }>();
+const payments = new Map<string, {
+  paymentId: string; merchantId: string; amount: number; currency: string; status: string;
+  outcome: 'succeeded' | 'declined' | 'timeout'; deliveryMode: 'standard' | 'duplicate' | 'stale_processing';
+}>();
 
 const paymentSchema = z.object({ merchantId: z.string().uuid(), paymentId: z.string().uuid(), amount: z.number().int().positive(),
-  currency: z.string().length(3), paymentMethodId: z.string().uuid(), webhookUrl: z.string().url() });
+  currency: z.string().length(3), paymentMethodId: z.string().uuid(),
+  outcome: z.enum(['succeeded','declined','timeout']),
+  deliveryMode: z.enum(['standard','duplicate','stale_processing']), webhookUrl: z.string().url() });
 const refundSchema = z.object({ refundId: z.string().uuid(), paymentId: z.string().uuid(), merchantId: z.string().uuid(),
   amount: z.number().int().positive(), currency: z.string().length(3), reason: z.string(), webhookUrl: z.string().url() });
 
@@ -27,14 +32,21 @@ export async function registerProviderSandboxRoutes(app: FastifyInstance): Promi
   app.post('/v1/payment-intents', async (request, reply) => {
   const input = paymentSchema.parse(request.body);
   const id = `pi_${randomUUID()}`;
-  const outcome = request.headers['x-test-outcome'] === 'failed' ? 'failed' : 'succeeded';
-  payments.set(id, { paymentId: input.paymentId, merchantId: input.merchantId, amount: input.amount, currency: input.currency, status: 'processing' });
+  const terminalStatus = input.outcome === 'declined' ? 'failed' : 'succeeded';
+  payments.set(id, { paymentId: input.paymentId, merchantId: input.merchantId, amount: input.amount, currency: input.currency,
+    status: 'processing', outcome: input.outcome, deliveryMode: input.deliveryMode });
   setTimeout(() => {
     const stored = payments.get(id);
-    if (stored) stored.status = outcome;
-    void dispatch(app, input.webhookUrl, `payment.${outcome}`, { providerPaymentId: id, ...stored,
-      failureCode: outcome === 'failed' ? 'card_declined' : undefined }, request.headers['x-test-duplicate'] === 'true');
-  }, Number(request.headers['x-test-delay-ms'] ?? 250));
+    if (!stored) return;
+    stored.status = terminalStatus;
+    const eventType = `payment.${terminalStatus}`;
+    const data = { providerPaymentId: id, ...stored, failureCode: terminalStatus === 'failed' ? 'card_declined' : undefined };
+    void (async () => {
+      await dispatch(app, input.webhookUrl, eventType, data, stored.deliveryMode === 'duplicate');
+      if (stored.deliveryMode === 'stale_processing') await dispatch(app, input.webhookUrl, 'payment.processing', data);
+    })();
+  }, 250);
+  if (input.outcome === 'timeout') return reply.code(504).send({ error: 'provider_response_delayed' });
   return reply.code(202).send({ id, status: 'processing' });
   });
   app.post('/v1/payment-intents/:id/refunds', async (request, reply) => {

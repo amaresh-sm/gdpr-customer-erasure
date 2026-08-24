@@ -28,6 +28,15 @@ between MinIO objects and PostgreSQL manifests.
   settles due work and retries signed callbacks with backoff, including after provider restarts.
 - Redis and OpenSearch are disposable projections. Replaying the domain topic rebuilds them.
 
+## Provider sandbox scenarios
+
+The local provider sandbox uses payment-method tokens to make development flows deterministic. A
+token beginning with `tok_sandbox_decline_` produces a declined payment; one beginning with
+`tok_sandbox_timeout_` persists the provider operation but returns an unavailable response before
+its later webhook. Add `_duplicate_` to exercise duplicate delivery, or `_out_of_order_` to deliver
+an obsolete `payment.processing` webhook after the terminal event. These tokens are local sandbox
+fixtures only; production provider adapters use their provider's test-mode facilities instead.
+
 ## Financial incident checks
 
 Run the runtime check first. For manual inspection, group ledger postings by entry and sum debits as

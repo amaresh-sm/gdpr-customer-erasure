@@ -10,12 +10,20 @@ type ProviderEvent = { id: string; type: string; data: Record<string, unknown> }
 export async function processProviderEvent(webhookId: string, event: ProviderEvent): Promise<void> {
   await transaction(async (client) => {
     await advisoryLock(client, String(event.data.providerPaymentId ?? event.id));
-    if (event.type === 'payment.succeeded') await paymentSucceeded(client, event);
+    if (event.type === 'payment.processing') await paymentProcessing(client, event);
+    else if (event.type === 'payment.succeeded') await paymentSucceeded(client, event);
     else if (event.type === 'payment.failed') await paymentFailed(client, event);
     else if (event.type === 'refund.succeeded') await refundSucceeded(client, event);
     else throw new Error(`unsupported provider event ${event.type}`);
     await client.query(`UPDATE operations.provider_webhooks SET status='processed',processed_at=now() WHERE id=$1`, [webhookId]);
   });
+}
+
+/** An obsolete processing webhook is accepted but must never regress terminal payment state. */
+async function paymentProcessing(client: pg.PoolClient, event: ProviderEvent): Promise<void> {
+  const paymentId = String(event.data.paymentId);
+  const result = await client.query(`SELECT id FROM payments.payment_intents WHERE id=$1 FOR UPDATE`, [paymentId]);
+  if (!result.rowCount) throw new Error(`payment ${paymentId} not found`);
 }
 
 async function paymentSucceeded(client: pg.PoolClient, event: ProviderEvent): Promise<void> {

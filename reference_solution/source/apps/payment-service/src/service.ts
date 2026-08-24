@@ -4,6 +4,7 @@ import { EVENT_TYPES } from '../../../packages/contracts/src/events.js';
 import { config } from '../../../packages/config/src/index.js';
 import { pool, transaction } from '../../../packages/database/src/pool.js';
 import { addOutboxEvent } from '../../../packages/messaging/src/outbox.js';
+import { providerSandboxBehavior } from '../../../packages/payments/src/provider-sandbox-behavior.js';
 import { completeIdempotency, requestHash, reserveIdempotency } from './idempotency.js';
 
 type CustomerSnapshot = { id: string; email: string; name: string; phone?: string | null; status: string };
@@ -15,7 +16,8 @@ export class PaymentService {
     const hash = requestHash(input);
     const customer = await this.fetchCustomer(authorization, input.customerId);
     if (customer.status !== 'active') throw Object.assign(new Error('customer is not active'), { statusCode: 409 });
-    await this.fetchPaymentMethod(authorization, input.customerId, input.paymentMethodId);
+    const paymentMethod = await this.fetchPaymentMethod(merchantId, input.customerId, input.paymentMethodId);
+    const sandboxBehavior = providerSandboxBehavior(paymentMethod.providerToken);
     const correlationId = uuid();
     const prepared = await transaction(async (client) => {
       const replay = await reserveIdempotency(client, merchantId, 'create-payment', idempotencyKey, hash);
@@ -44,7 +46,8 @@ export class PaymentService {
       const response = await fetch(`${config().PROCESSOR_URL}/v1/payment-intents`, {
         method: 'POST', headers: { 'content-type': 'application/json', 'x-request-id': prepared.providerRequestId! },
         body: JSON.stringify({ merchantId, paymentId: prepared.paymentId, amount: input.amount, currency: input.currency,
-          paymentMethodId: input.paymentMethodId, webhookUrl: config().PROCESSOR_WEBHOOK_URL }),
+          paymentMethodId: input.paymentMethodId, outcome: sandboxBehavior.outcome,
+          deliveryMode: sandboxBehavior.deliveryMode, webhookUrl: config().PROCESSOR_WEBHOOK_URL }),
       });
       if (!response.ok) throw new Error(`processor returned ${response.status}`);
       const provider = await response.json() as { id: string; status: string };
@@ -115,10 +118,13 @@ export class PaymentService {
     return await response.json() as CustomerSnapshot;
   }
 
-  private async fetchPaymentMethod(authorization: string, customerId: string, paymentMethodId: string): Promise<void> {
-    const response = await fetch(`${config().CUSTOMER_SERVICE_URL}/v1/customers/${customerId}/payment-methods/${paymentMethodId}`,
-      { headers: { authorization } });
+  private async fetchPaymentMethod(merchantId: string, customerId: string, paymentMethodId: string): Promise<{ providerToken: string }> {
+    const response = await fetch(`${config().CUSTOMER_SERVICE_URL}/internal/customers/${customerId}/payment-methods/${paymentMethodId}`,
+      { headers: { 'x-internal-service-token': config().INTERNAL_SERVICE_TOKEN, 'x-merchant-id': merchantId } });
     if (response.status === 404) throw Object.assign(new Error('payment method not found for customer'), { statusCode: 422 });
     if (!response.ok) throw Object.assign(new Error('customer service unavailable'), { statusCode: 503 });
+    const method = await response.json() as { provider_token?: unknown };
+    if (typeof method.provider_token !== 'string') throw Object.assign(new Error('payment method is invalid'), { statusCode: 422 });
+    return { providerToken: method.provider_token };
   }
 }

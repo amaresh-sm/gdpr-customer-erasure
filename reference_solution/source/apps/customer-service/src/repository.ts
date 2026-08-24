@@ -42,6 +42,15 @@ export class CustomerRepository {
     return result.rows[0] as Record<string, unknown> | undefined;
   }
 
+  async findPaymentMethodForProvider(merchantId: string, customerId: string, paymentMethodId: string): Promise<Record<string, unknown> | undefined> {
+    const result = await pool.query(
+      `SELECT id,customer_id,provider_token,status FROM customers.payment_method_refs
+       WHERE merchant_id=$1 AND customer_id=$2 AND id=$3`,
+      [merchantId, customerId, paymentMethodId],
+    );
+    return result.rows[0] as Record<string, unknown> | undefined;
+  }
+
   async update(client: pg.PoolClient, merchantId: string, customerId: string,
                version: number, fields: { email?: string | undefined; name?: string | undefined; phone?: string | null | undefined }): Promise<CustomerRow | undefined> {
     const result = await client.query<CustomerRow>(

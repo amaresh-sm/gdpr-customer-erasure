@@ -14,6 +14,7 @@
     "migrate": "tsx packages/database/src/migrate.ts",
     "seed": "tsx scripts/seed.ts",
     "scenario": "tsx scripts/generate-scenario.ts",
+    "provider:check": "tsx scripts/provider-sandbox-check.ts",
     "smoke": "tsx scripts/smoke.ts",
     "check:runtime": "tsx scripts/check-runtime.ts",
     "start:gateway": "tsx apps/api-gateway/src/main.ts",

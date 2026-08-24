@@ -195,7 +195,9 @@ async function main(): Promise<void> {
   const model = value('--model');
   const reasoning = value('--thinking');
   if (!['low', 'medium', 'high', 'xhigh', 'ultra'].includes(reasoning)) throw new Error('unsupported --thinking value');
-  if (provider === 'codex-login' && !['gpt-5.6-sol', 'gpt-5.6-terra'].includes(model)) throw new Error('Codex login supports gpt-5.6-sol and gpt-5.6-terra only');
+  if (provider === 'codex-login' && !['gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna'].includes(model)) {
+    throw new Error('Codex login supports gpt-5.6-sol, gpt-5.6-terra, and gpt-5.6-luna only');
+  }
   const timeoutSeconds = Number(value('--timeout-seconds', '14400'));
   if (!Number.isInteger(timeoutSeconds) || timeoutSeconds < 1 || timeoutSeconds > 14400) throw new Error('--timeout-seconds must be 1..14400');
   const baselineRef = value('--baseline-ref', 'HEAD');

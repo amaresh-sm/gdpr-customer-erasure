@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { authenticate } from '../../../packages/auth/src/api-key.js';
+import { config } from '../../../packages/config/src/index.js';
 import { createCustomerSchema } from '../../../packages/contracts/src/domain.js';
 import { transaction } from '../../../packages/database/src/pool.js';
 import { CustomerRepository } from './repository.js';
@@ -67,6 +68,15 @@ export async function customerRoutes(app: FastifyInstance): Promise<void> {
     const principal = await authenticate(request, 'customers:read');
     const { id, paymentMethodId } = z.object({ id: z.string().uuid(), paymentMethodId: z.string().uuid() }).parse(request.params);
     return await repository.findPaymentMethod(principal.merchantId, id, paymentMethodId) ??
+      reply.code(404).send({ error: 'payment_method_not_found' });
+  });
+  app.get('/internal/customers/:id/payment-methods/:paymentMethodId', async (request, reply) => {
+    if (request.headers['x-internal-service-token'] !== config().INTERNAL_SERVICE_TOKEN) {
+      return reply.code(401).send({ error: 'internal_authentication_required' });
+    }
+    const { id, paymentMethodId } = z.object({ id: z.string().uuid(), paymentMethodId: z.string().uuid() }).parse(request.params);
+    const merchantId = z.string().uuid().parse(request.headers['x-merchant-id']);
+    return await repository.findPaymentMethodForProvider(merchantId, id, paymentMethodId) ??
       reply.code(404).send({ error: 'payment_method_not_found' });
   });
   app.post('/v1/customers/:id/support-tickets', async (request, reply) => {

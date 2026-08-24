@@ -10,6 +10,10 @@ docker compose --profile tools run --rm runtime-check
 
 `npm run smoke` checks the health endpoints for the gateway and key application services.
 
+`npm run provider:check` exercises declined payment, accepted-but-unacknowledged payment,
+duplicate callback, and stale callback behavior. Run it after the local services and seed data are
+ready.
+
 `runtime-check` checks that the sample payment activity was processed consistently. It confirms
 that outbox publishing, provider callbacks, webhooks, background jobs, and email delivery have
 finished; no dead letters remain; ledger entries balance; reconciliation matches; successful
