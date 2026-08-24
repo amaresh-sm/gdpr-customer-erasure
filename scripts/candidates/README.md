@@ -5,6 +5,16 @@ starts a durable Docker model container. The model receives only the copied `cod
 public task prompt; it cannot mount `hidden_tests/`, `reference_solution/`, calibration records, or
 other candidates. The container continues after the calling terminal returns.
 
+The model container owns a private rootless Docker daemon, so the public `docker compose` commands
+work without mounting the host Docker socket. Candidate source is mounted read-only, copied to a
+private named-volume workspace, and exported by the trusted finalizer after generation completes.
+The completed container remains in an idle handoff state until that export succeeds. The
+fixed PayFlow runtime images are streamed into the private daemon by the launcher. Dependency
+traffic is restricted to the npm registry, while model traffic uses the configured Codex or
+Portkey gateway. The outer container uses Docker's privileged mode only to support rootless
+Docker-in-Docker inside the Docker Desktop/Rancher Desktop VM; no host socket or evaluator file is
+available inside it.
+
 ```bash
 npm run candidates:run -- \
   --model gpt-5.6-sol \

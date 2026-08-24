@@ -21,5 +21,11 @@ if (launch.state !== 'running' || !launch.model_container) {
   child.stdout.on('data', (chunk: Buffer) => output.push(chunk));
   const [code] = await once(child, 'close') as [number | null, NodeJS.Signals | null];
   if (code !== 0) throw new Error('generation container is unavailable; it may already have been finalized');
-  process.stdout.write(`${JSON.stringify(JSON.parse(Buffer.concat(output).toString('utf8')), null, 2)}\n`);
+  const state = JSON.parse(Buffer.concat(output).toString('utf8')) as Record<string, unknown>;
+  if (state.Running) {
+    const marker = spawn('docker', ['exec', launch.model_container, 'test', '-f', '/tmp/generation-finished'], { stdio: 'ignore' });
+    const [markerCode] = await once(marker, 'close') as [number | null, NodeJS.Signals | null];
+    state.GenerationComplete = markerCode === 0;
+  }
+  process.stdout.write(`${JSON.stringify(state, null, 2)}\n`);
 }

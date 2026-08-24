@@ -1,7 +1,11 @@
 import http from 'node:http';
 import net from 'node:net';
 
-const allowedHosts = new Set(['auth.openai.com', 'chatgpt.com']);
+const allowedHosts = new Set([
+  'auth.openai.com',
+  'chatgpt.com',
+  'registry.npmjs.org',
+]);
 
 function reject(socket, status = '403 Forbidden') {
   socket.end(`HTTP/1.1 ${status}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`);
