@@ -1,9 +1,10 @@
 # Private mutation certification
 
-This directory is evaluator-only and is ignored by Git. It contains deliberately
-incorrect, minimal patches against `reference_solution/source`. These patches
-are never copied into a candidate workspace, image, package, or calibration
-artifact.
+This evaluator-only directory is versioned with the repository. It contains
+deliberately incorrect, minimal patches against `reference_solution/source`.
+The patches are never copied into a candidate workspace, image, package, or
+calibration artifact. Generated run reports under `internal/mutation-runs/`
+are ignored by Git.
 
 `mutations.tsv` is the contract matrix. Each row names one source-level defect
 and the exact structured hidden-score check it is expected to fail.

@@ -4,7 +4,8 @@ import { closeClients } from './lib/clients.js';
 import { seedFixture, type BenchmarkFixture } from './lib/fixture.js';
 import { assertNoErasureViolations, collectErasureViolations, installTransientPaymentWriteFailure,
   releaseDelayedWork, removeTransientPaymentWriteFailure, replayHistoricalPiiEvent, requestErasure,
-  verifyFinancialRetention, verifyFixtureCoverage, verifyMerchantCredentialsPreserved, verifySubjectUnchanged, verifySurvivorUntouched,
+  verifyFinancialRetention, verifyFixtureCoverage, verifyMerchantCredentialsPreserved, verifyMerchantIdentityAndAdminPreserved,
+  verifySecondaryMerchantCredentialsPreserved, verifySubjectUnchanged, verifySurvivorUntouched, verifyUnrelatedPaymentArtifactsPreserved,
   waitForCompletion, waitForStatus } from './lib/verifier.js';
 import { api } from './lib/http.js';
 
@@ -150,7 +151,7 @@ async function writeScoreReport(): Promise<void> {
   const report: ScoreReport = blocked
     ? { schema_version: 1, state: 'blocked', hard_pass: false, earned: null, maximum: scoreMaximum, checks, diagnostics,
       blocked_reason: 'fixture provisioning failed; candidate score is not comparable' }
-    : { schema_version: 1, state: 'complete', hard_pass: results.length === 9 && results.every((result) => !result.error),
+    : { schema_version: 1, state: 'complete', hard_pass: results.length === 10 && results.every((result) => !result.error),
       earned: Number(checks.reduce((total, check) => total + check.earned, 0).toFixed(4)), maximum: scoreMaximum, checks, diagnostics };
   await writeFile(process.env.ERASURE_SCORE_PATH ?? 'hidden.score.json', `${JSON.stringify(report, null, 2)}\n`, 'utf8');
 }
@@ -244,14 +245,25 @@ try {
       const normalClean = checks.filter((check) => check.id.startsWith('normal.')).every((check) => check.state === 'pass');
       recordCheck('financial.retention', 'Financial facts remain intact after a successful erasure', 1, financial,
         normalClean, 'normal-subject PII was not fully removed');
-      const survivor = await observe(async () => { await verifySurvivorUntouched(fixture); });
       if (!financial.ok) throw new Error(financial.evidence);
-      if (!survivor.ok) throw new Error(survivor.evidence);
     });
     await test('merchant credentials remain usable after customer erasure', async () => {
       const credentials = await observe(async () => { await verifyMerchantCredentialsPreserved(fixture); });
       recordCheck('security.merchant_credentials_preserved', 'Merchant API credential remains active and unchanged', 0, credentials);
       if (!credentials.ok) throw new Error(credentials.evidence);
+    });
+    await test('customer erasure preserves unrelated customer and merchant-platform survivors', async () => {
+      const shared = await observe(async () => { await verifySurvivorUntouched(fixture); });
+      const merchant = await observe(async () => { await verifyMerchantIdentityAndAdminPreserved(fixture); });
+      const credentials = await observe(async () => { await verifySecondaryMerchantCredentialsPreserved(fixture); });
+      const artifacts = await observe(async () => { await verifyUnrelatedPaymentArtifactsPreserved(fixture); });
+      recordCheck('scope.unrelated_customer_and_shared_record', 'Unrelated customer and shared record remain unchanged', 0.2, shared);
+      recordCheck('scope.merchant_identity_and_admin', 'Merchant identity and administrator remain unchanged', 0.1, merchant);
+      recordCheck('scope.merchant_credentials', 'Independent merchant credential remains active and usable', 0.1, credentials);
+      recordCheck('scope.unrelated_payment_notification_document', 'Unrelated payment, notification, and receipt remain unchanged', 0.2, artifacts);
+      if (![shared.ok, merchant.ok, credentials.ok, artifacts.ok].every(Boolean)) {
+        throw new Error([shared.evidence, merchant.evidence, credentials.evidence, artifacts.evidence].filter(Boolean).join('; '));
+      }
     });
     let delayedRequest = '';
     let delayedViolations: string[] = [];
@@ -329,7 +341,7 @@ try {
     await test('survivor remains unchanged after replay and delayed work', async () => {
       const survivor = await observe(async () => { await verifySurvivorUntouched(fixture); });
       const replaySafe = checks.find((check) => check.id === 'replay.no_reintroduction')?.state === 'pass';
-      recordCheck('survivor.unchanged', 'Unrelated shared records remain unchanged', 0.6, survivor,
+      recordCheck('security.survivor_unchanged_after_delayed_replay', 'Unrelated shared record remains unchanged after delayed work and replay', 0, survivor,
         replaySafe, 'replay safety was not established');
       if (!survivor.ok) throw new Error(survivor.evidence);
     });

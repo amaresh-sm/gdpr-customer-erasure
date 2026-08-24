@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { DOCUMENT_BUCKET, CUSTOMER_INDEX, kafka, minio, pool, redis, search, settings } from './clients.js';
 import { api, poll } from './http.js';
@@ -424,6 +424,91 @@ export async function verifyMerchantCredentialsPreserved(fixture: BenchmarkFixtu
   );
   assert(afterAuthentication.rowCount === 1, 'merchant API key disappeared after authentication');
   assertCredentialMatches(afterAuthentication.rows[0]!, snapshot);
+}
+
+/** Confirms merchant-level identity and its unrelated administrator survive a customer-scoped erasure. */
+export async function verifyMerchantIdentityAndAdminPreserved(fixture: BenchmarkFixture): Promise<void> {
+  const snapshot = fixture.platformSurvivor;
+  const merchant = await pool.query<{ id: string; name: string; status: string; default_currency: string }>(
+    `SELECT id,name,status,default_currency FROM platform.merchants WHERE id=$1`, [snapshot.merchant.id],
+  );
+  const merchantRow = merchant.rows[0];
+  assert(merchantRow !== undefined, 'merchant record was deleted');
+  assert(merchantRow.id === snapshot.merchant.id && merchantRow.name === snapshot.merchant.name &&
+    merchantRow.status === snapshot.merchant.status && merchantRow.default_currency === snapshot.merchant.defaultCurrency,
+  'merchant identity or configuration changed');
+
+  const admin = await pool.query<{
+    id: string; merchant_id: string; email: string; display_name: string; role: string; status: string;
+  }>(`SELECT id,merchant_id,email,display_name,role,status FROM platform.admins WHERE id=$1`, [snapshot.admin.id]);
+  const adminRow = admin.rows[0];
+  assert(adminRow !== undefined, 'merchant administrator was deleted');
+  assert(adminRow.id === snapshot.admin.id && adminRow.merchant_id === snapshot.admin.merchantId &&
+    adminRow.email === snapshot.admin.email && adminRow.display_name === snapshot.admin.displayName &&
+    adminRow.role === snapshot.admin.role && adminRow.status === snapshot.admin.status,
+  'merchant administrator changed');
+}
+
+/** Confirms a second merchant credential remains active and can still read merchant data. */
+export async function verifySecondaryMerchantCredentialsPreserved(fixture: BenchmarkFixture): Promise<void> {
+  const survivor = fixture.platformSurvivor;
+  const result = await pool.query<{ merchant_id: string; key_hash: string; label: string; scopes: string[]; revoked_at: string | null }>(
+    `SELECT merchant_id,key_hash,label,scopes,revoked_at FROM platform.api_keys WHERE key_hash=$1`, [survivor.secondaryApiKey.keyHash],
+  );
+  assert(result.rowCount === 1, 'secondary merchant API key was deleted');
+  assertCredentialMatches(result.rows[0]!, survivor.secondaryApiKey);
+  await api(survivor.secondaryKey, `/v1/customers/${fixture.survivor.customerId}`, { expected: 200 });
+  await api(survivor.secondaryKey, `/v1/payments/${survivor.payment.paymentId}`, { expected: 200 });
+}
+
+/** Confirms unrelated payment, receipt, and notification artifacts are not removed or rewritten. */
+export async function verifyUnrelatedPaymentArtifactsPreserved(fixture: BenchmarkFixture): Promise<void> {
+  const snapshot = fixture.platformSurvivor.payment;
+  const payment = await pool.query<{
+    amount: string; currency: string; status: string; captures: string; postings: string; signed_balance: string;
+  }>(
+    `SELECT p.amount::text,p.currency,p.status,
+       (SELECT count(*)::text FROM payments.captures c WHERE c.payment_intent_id=p.id) captures,
+       (SELECT count(*)::text FROM payments.ledger_entries e JOIN payments.ledger_postings lp ON lp.entry_id=e.id
+          WHERE e.reference_id=p.id) postings,
+       (SELECT COALESCE(sum(CASE WHEN lp.direction='debit' THEN lp.amount ELSE -lp.amount END),0)::text
+          FROM payments.ledger_entries e JOIN payments.ledger_postings lp ON lp.entry_id=e.id WHERE e.reference_id=p.id) signed_balance
+     FROM payments.payment_intents p WHERE p.id=$1`,
+    [snapshot.paymentId],
+  );
+  const paymentRow = payment.rows[0];
+  assert(paymentRow !== undefined, 'unrelated payment was deleted');
+  assert(paymentRow.amount === snapshot.amount && paymentRow.currency === snapshot.currency && paymentRow.status === snapshot.status &&
+    paymentRow.captures === snapshot.captureCount && paymentRow.postings === snapshot.postingCount &&
+    paymentRow.signed_balance === snapshot.signedBalance,
+  'unrelated payment or financial history changed');
+
+  const manifest = await pool.query<{ object_key: string; checksum: string }>(
+    `SELECT object_key,checksum FROM operations.document_manifests WHERE object_key=$1`, [snapshot.objectKey],
+  );
+  assert(manifest.rowCount === 1 && manifest.rows[0]?.checksum === snapshot.documentChecksum,
+    'unrelated receipt manifest was deleted or changed');
+  const receipt = await minio.getObject(DOCUMENT_BUCKET, snapshot.objectKey);
+  const receiptChecksum = createHash('sha256').update(await streamText(receipt)).digest('hex');
+  assert(receiptChecksum === snapshot.documentChecksum, 'unrelated receipt object was deleted or changed');
+
+  const delivery = await pool.query<{
+    id: string; destination: string; template: string; subject: string; text_body: string; html_body: string; provider_message_id: string | null;
+  }>(
+    `SELECT id,destination,template,subject,text_body,html_body,provider_message_id
+     FROM operations.email_deliveries WHERE id=$1 AND status='delivered'`, [snapshot.deliveryId],
+  );
+  const deliveryRow = delivery.rows[0];
+  assert(deliveryRow !== undefined, 'unrelated notification delivery was deleted or changed state');
+  assert(deliveryRow.id === snapshot.deliveryId && deliveryRow.destination === snapshot.destination &&
+    deliveryRow.template === snapshot.template && deliveryRow.subject === snapshot.subject &&
+    deliveryRow.text_body === snapshot.textBody && deliveryRow.html_body === snapshot.htmlBody &&
+    deliveryRow.provider_message_id === snapshot.providerMessageId,
+  'unrelated notification delivery changed');
+  const mailpit = await fetch(`${settings.mailpit}/api/v1/search?query=${encodeURIComponent(snapshot.destination)}`);
+  assert(mailpit.ok, `Mailpit search failed: ${mailpit.status}`);
+  const body = await mailpit.json() as { messages_count?: number; messages?: unknown[] };
+  assert((body.messages_count ?? body.messages?.length ?? 0) > 0, 'unrelated provider message was deleted');
 }
 
 function assertCredentialMatches(row: { merchant_id: string; key_hash: string; label: string; scopes: string[]; revoked_at: string | null },
