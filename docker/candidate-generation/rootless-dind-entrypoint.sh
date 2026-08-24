@@ -35,32 +35,35 @@ docker info >/dev/null
 touch /tmp/rootless-docker-ready
 while [ ! -f /tmp/generation.start ]; do sleep 1; done
 
-prompt=/workspace/source/.benchmark/generation_prompt.md
+prompt=/workspace/source/.payflow-task.md
 if [ ! -r "$prompt" ]; then
   echo "candidate generation prompt is unavailable" >&2
   exit 64
 fi
+prompt_copy=/tmp/payflow-task.md
+cp "$prompt" "$prompt_copy"
+rm -f "$prompt"
 
 set +e
-case "${BENCHMARK_PROVIDER:-codex-login}" in
+case "${PAYFLOW_GENERATION_PROVIDER:-codex-login}" in
   codex-login)
-    timeout --signal=TERM --kill-after=30s "${BENCHMARK_TIMEOUT_SECONDS}s" codex exec --json --color never --ephemeral --ignore-user-config --ignore-rules \
+    timeout --signal=TERM --kill-after=30s "${PAYFLOW_GENERATION_TIMEOUT_SECONDS}s" codex exec --json --color never --ephemeral --ignore-user-config --ignore-rules \
       --skip-git-repo-check --dangerously-bypass-approvals-and-sandbox \
-      -m "$BENCHMARK_MODEL" -c "model_reasoning_effort=\"$BENCHMARK_REASONING_EFFORT\"" \
-      -c 'approval_policy="never"' -C /workspace/source - < "$prompt"
+      -m "$PAYFLOW_GENERATION_MODEL" -c "model_reasoning_effort=\"$PAYFLOW_GENERATION_REASONING_EFFORT\"" \
+      -c 'approval_policy="never"' -C /workspace/source - < "$prompt_copy"
     result=$?
     ;;
   portkey)
-    timeout --signal=TERM --kill-after=30s "${BENCHMARK_TIMEOUT_SECONDS}s" codex exec --json --color never --ephemeral --ignore-user-config --ignore-rules \
+    timeout --signal=TERM --kill-after=30s "${PAYFLOW_GENERATION_TIMEOUT_SECONDS}s" codex exec --json --color never --ephemeral --ignore-user-config --ignore-rules \
       --skip-git-repo-check --dangerously-bypass-approvals-and-sandbox \
-      -m "$BENCHMARK_MODEL" -c "model_reasoning_effort=\"$BENCHMARK_REASONING_EFFORT\"" \
+      -m "$PAYFLOW_GENERATION_MODEL" -c "model_reasoning_effort=\"$PAYFLOW_GENERATION_REASONING_EFFORT\"" \
       -c 'approval_policy="never"' -c 'model_provider="payflow_proxy"' \
       -c 'model_providers.payflow_proxy={ name="Trusted PayFlow provider", base_url="http://provider-proxy:8081/v1", wire_api="responses", requires_openai_auth=false, supports_websockets=false, supports_standalone_web_search=false }' \
-      -C /workspace/source - < "$prompt"
+      -C /workspace/source - < "$prompt_copy"
     result=$?
     ;;
   *)
-    echo "unsupported benchmark provider" >&2
+    echo "unsupported generation provider" >&2
     result=64
     ;;
 esac

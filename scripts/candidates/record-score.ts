@@ -10,7 +10,7 @@ function argument(name: string): string {
   return value;
 }
 
-/** Copies private scorer reports and attaches binary plus weighted results to metadata.json. */
+/** Copies private scorer reports and attaches the normalized score to metadata.json. */
 async function main(): Promise<void> {
   const runDirectory = argument('--run-dir');
   const junitSource = argument('--junit');
@@ -32,6 +32,10 @@ async function main(): Promise<void> {
   if (score.state === 'complete' && (!Number.isFinite(score.earned) || !Number.isFinite(score.maximum))) {
     throw new Error('complete score report did not contain numeric score values');
   }
+  if (score.maximum !== 1) throw new Error('score report maximum must be normalized to 1.0');
+  if (score.state === 'complete' && (score.earned! < 0 || score.earned! > 1)) {
+    throw new Error('complete score report was outside the normalized 0.0–1.0 range');
+  }
   const manifest = JSON.parse(await readFile(metadataPath, 'utf8')) as CandidateRunManifest;
   const target = join(runDirectory, 'reports', 'hidden.junit.xml');
   const scoreTarget = join(runDirectory, 'reports', 'hidden.score.json');
@@ -43,8 +47,8 @@ async function main(): Promise<void> {
     score_path: 'reports/hidden.score.json',
     scenarios_total: scenariosTotal,
     scenarios_passed: scenariosTotal - failures,
-    weighted_score: score.earned,
-    weighted_maximum: score.maximum,
+    score: score.earned,
+    score_maximum: score.maximum,
     hard_pass: score.hard_pass,
     score_state: score.state,
     report_sha256: createHash('sha256').update(report).digest('hex'),

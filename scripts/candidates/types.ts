@@ -109,8 +109,8 @@ export interface CandidateRunManifest {
     score_path: string | null;
     scenarios_total: number | null;
     scenarios_passed: number | null;
-    weighted_score: number | null;
-    weighted_maximum: number | null;
+    score: number | null;
+    score_maximum: 1 | null;
     hard_pass: boolean | null;
     score_state: 'complete' | 'blocked' | null;
     report_sha256: string | null;

@@ -33,7 +33,7 @@ interface LaunchRecord {
 }
 
 const root = resolve(process.cwd());
-const generationImage = 'payflow-candidate-generation-rootless:v4';
+const generationImage = 'payflow-candidate-generation-rootless:v5';
 const egressImage = 'payflow-codex-egress:v3';
 const proxyImage = 'payflow-provider-proxy:v1';
 const innerImages = [
@@ -196,8 +196,8 @@ async function main(): Promise<void> {
   const reasoning = value('--thinking');
   if (!['low', 'medium', 'high', 'xhigh', 'ultra'].includes(reasoning)) throw new Error('unsupported --thinking value');
   if (provider === 'codex-login' && !['gpt-5.6-sol', 'gpt-5.6-terra'].includes(model)) throw new Error('Codex login supports gpt-5.6-sol and gpt-5.6-terra only');
-  const timeoutSeconds = Number(value('--timeout-seconds', '5400'));
-  if (!Number.isInteger(timeoutSeconds) || timeoutSeconds < 1 || timeoutSeconds > 7200) throw new Error('--timeout-seconds must be 1..7200');
+  const timeoutSeconds = Number(value('--timeout-seconds', '14400'));
+  if (!Number.isInteger(timeoutSeconds) || timeoutSeconds < 1 || timeoutSeconds > 14400) throw new Error('--timeout-seconds must be 1..14400');
   const baselineRef = value('--baseline-ref', 'HEAD');
   const baselineDirectory = resolve(value('--codebase-dir', 'codebase'));
   const promptFile = resolve(value('--prompt-file', 'instruction/task.md'));
@@ -212,8 +212,9 @@ async function main(): Promise<void> {
   await mkdir(join(runDirectory, 'reports'), { recursive: true });
   await writeFile(join(trustedDirectory, 'generation_prompt.md'), prompt);
   await copyBaseline(baselineDirectory, sourceDirectory);
-  await mkdir(join(sourceDirectory, '.benchmark'), { recursive: true });
-  await writeFile(join(sourceDirectory, '.benchmark', 'generation_prompt.md'), `${prompt}\n\nWork only inside this supplied codebase. Implement the task, then run the public checks that are available locally.\n`);
+  // The rootless entrypoint consumes and removes this launcher-only file before Codex starts.
+  // It is never present in the candidate's exported source tree.
+  await writeFile(join(sourceDirectory, '.payflow-task.md'), `${prompt}\n\nWork only inside this supplied codebase. Implement the task, then run the public checks that are available locally.\n`);
 
   const suffix = randomUUID().replaceAll('-', '');
   const network = `payflow-generation-${suffix}`;
@@ -266,7 +267,7 @@ async function main(): Promise<void> {
       '--mount', `type=volume,src=${dockerVolume},dst=/home/rootless/.local/share/docker`,
       '--mount', `type=volume,src=${workspaceVolume},dst=/workspace`,
       '--pids-limit', '4096', '--memory', '10g', '--memory-swap', '10g', '--cpus', '5', '--ulimit', 'nofile=8192:8192', '--log-driver', 'local',
-      '--env', 'HOME=/home/rootless', '--env', 'CODEX_HOME=/codex-home', '--env', `BENCHMARK_PROVIDER=${provider}`, '--env', `BENCHMARK_MODEL=${model}`, '--env', `BENCHMARK_REASONING_EFFORT=${reasoning}`, '--env', `BENCHMARK_TIMEOUT_SECONDS=${timeoutSeconds}`];
+      '--env', 'HOME=/home/rootless', '--env', 'CODEX_HOME=/codex-home', '--env', `PAYFLOW_GENERATION_PROVIDER=${provider}`, '--env', `PAYFLOW_GENERATION_MODEL=${model}`, '--env', `PAYFLOW_GENERATION_REASONING_EFFORT=${reasoning}`, '--env', `PAYFLOW_GENERATION_TIMEOUT_SECONDS=${timeoutSeconds}`];
     modelArgs.push('--env', 'HTTPS_PROXY=http://artifact-egress:8082', '--env', 'HTTP_PROXY=http://artifact-egress:8082', '--env', 'ALL_PROXY=http://artifact-egress:8082', '--env', 'NO_PROXY=localhost,127.0.0.1,provider-proxy');
     modelArgs.push('--mount', `type=bind,src=${sourceDirectory},dst=/input,readonly`, '--workdir', '/workspace', generationImage);
     await required('docker', modelArgs);

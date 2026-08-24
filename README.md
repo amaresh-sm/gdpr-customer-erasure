@@ -17,6 +17,6 @@ Never give a candidate this repository. A candidate run receives only a fresh co
 `instruction/task.md` and `codebase/`. The scorer freezes that copy, starts its Docker project from
 `source/`, and mounts `hidden_tests/` read-only into the one-off verifier container only.
 
-Use `scripts/candidates/run.ts` to create a captured candidate artifact and
+Use `npm run candidates:run` to create a rootless isolated candidate artifact and
 `scripts/candidates/score.sh` to score it after generation. See
 [`scripts/candidates/README.md`](scripts/candidates/README.md) for the exact commands.

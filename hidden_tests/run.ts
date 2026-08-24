@@ -25,8 +25,14 @@ interface ScoreReport {
   state: 'complete' | 'blocked';
   hard_pass: boolean;
   earned: number | null;
-  maximum: 8;
+  maximum: 1;
   checks: DiagnosticCheck[];
+  diagnostics: {
+    passed_checks: number;
+    failed_checks: number;
+    blocked_checks: number;
+    blocked_check_ids: string[];
+  };
   blocked_reason?: string | undefined;
 }
 
@@ -39,6 +45,8 @@ interface ErasureResponse {
 const results: TestResult[] = [];
 const checks: DiagnosticCheck[] = [];
 let fixture: BenchmarkFixture;
+const scoreMaximum = 1 as const;
+const rawWeightTotal = 8;
 // A correct workflow completes well inside this bound. Keep the guard outside the
 // individual polling helpers so any hung candidate participant is reported as a
 // scenario failure rather than preventing later independent checks from running.
@@ -62,8 +70,9 @@ async function observe(operation: () => Promise<void>): Promise<{ ok: boolean; e
   }
 }
 
-function recordCheck(id: string, label: string, maximum: number, observed: { ok: boolean; evidence?: string | undefined },
+function recordCheck(id: string, label: string, rawWeight: number, observed: { ok: boolean; evidence?: string | undefined },
                      eligible = true, ineligibleReason = 'a prerequisite safety check failed'): boolean {
+  const maximum = Number((rawWeight / rawWeightTotal).toFixed(4));
   if (!eligible) {
     checks.push({ id, label, maximum, earned: 0, state: 'blocked', evidence: ineligibleReason });
     return false;
@@ -132,11 +141,17 @@ async function writeReport(): Promise<void> {
 async function writeScoreReport(): Promise<void> {
   const fixtureResult = results.find((result) => result.name === 'deterministic fixture provisions cross-store PII');
   const blocked = Boolean(fixtureResult?.error);
+  const diagnostics = {
+    passed_checks: checks.filter((check) => check.state === 'pass').length,
+    failed_checks: checks.filter((check) => check.state === 'fail').length,
+    blocked_checks: checks.filter((check) => check.state === 'blocked').length,
+    blocked_check_ids: checks.filter((check) => check.state === 'blocked').map((check) => check.id),
+  };
   const report: ScoreReport = blocked
-    ? { schema_version: 1, state: 'blocked', hard_pass: false, earned: null, maximum: 8, checks,
+    ? { schema_version: 1, state: 'blocked', hard_pass: false, earned: null, maximum: scoreMaximum, checks, diagnostics,
       blocked_reason: 'fixture provisioning failed; candidate score is not comparable' }
     : { schema_version: 1, state: 'complete', hard_pass: results.length === 8 && results.every((result) => !result.error),
-      earned: Number(checks.reduce((total, check) => total + check.earned, 0).toFixed(2)), maximum: 8, checks };
+      earned: Number(checks.reduce((total, check) => total + check.earned, 0).toFixed(4)), maximum: scoreMaximum, checks, diagnostics };
   await writeFile(process.env.ERASURE_SCORE_PATH ?? 'hidden.score.json', `${JSON.stringify(report, null, 2)}\n`, 'utf8');
 }
 

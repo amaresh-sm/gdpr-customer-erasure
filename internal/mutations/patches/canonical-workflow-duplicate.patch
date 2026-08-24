@@ -1,11 +1,16 @@
 diff --git a/apps/privacy-service/src/repository.ts b/apps/privacy-service/src/repository.ts
 --- a/apps/privacy-service/src/repository.ts
 +++ b/apps/privacy-service/src/repository.ts
-@@ -75,3 +75,3 @@ export class PrivacyRepository {
+@@ -72,7 +72,7 @@ export class PrivacyRepository {
+       const customerRequest = await client.query<ErasureRequestRecord>(
+         `SELECT * FROM privacy.erasure_requests WHERE merchant_id=$1 AND customer_id=$2 FOR UPDATE`,
          [merchantId, customerId],
        );
 -      if (customerRequest.rows[0]) return this.resumeIfEligible(client, customerRequest.rows[0]);
-+      // Incorrectly treats a new idempotency key as a new workflow for the same customer.
++      // Incorrect: a different idempotency key may create a second workflow for this customer.
+ 
+       const customer = await client.query(
+         `SELECT * FROM customers.customers WHERE merchant_id=$1 AND id=$2 FOR UPDATE`, [merchantId, customerId],
 diff --git a/packages/database/migrations/002_privacy_erasure.sql b/packages/database/migrations/002_privacy_erasure.sql
 --- a/packages/database/migrations/002_privacy_erasure.sql
 +++ b/packages/database/migrations/002_privacy_erasure.sql

@@ -3,7 +3,7 @@ import { mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { parseCodexJsonl } from '../scripts/candidates/telemetry.js';
+import { parseCodexJsonl } from '../scripts/codex-telemetry.js';
 
 test('candidate telemetry records token totals, redacted tool trajectory, and terminal evidence', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'candidate-telemetry-'));

@@ -27,6 +27,7 @@ lookup_mutation() {
 run_one() (
   set -euo pipefail
   local id=$1
+  local attempt=$2
   local row patch_rel expected_check repeat_required contract
   local work_dir report_dir source_dir project health_attempt verifier_status
   local -a compose
@@ -43,8 +44,8 @@ run_one() (
 
   work_dir=$(mktemp -d "${TMPDIR:-/tmp}/payflow-mutation.${id}.XXXXXX")
   source_dir="$work_dir/source"
-  report_dir="$run_root/$id"
-  project="mutation-${id//[^a-z0-9]/-}-${run_stamp_lower}"
+  report_dir="$run_root/$id/attempt-$attempt"
+  project="mutation-${id//[^a-z0-9]/-}-${run_stamp_lower}-${attempt}"
   compose=(docker compose -p "$project" -f "$source_dir/docker-compose.yml" -f "$override_file")
   mkdir -p "$report_dir"
 
@@ -64,7 +65,7 @@ run_one() (
     }
   fi
   {
-    printf 'id=%s\ncontract=%s\nexpected_check=%s\nrepeat_required=%s\n' "$id" "$contract" "$expected_check" "$repeat_required"
+    printf 'id=%s\nattempt=%s\ncontract=%s\nexpected_check=%s\nrepeat_required=%s\n' "$id" "$attempt" "$contract" "$expected_check" "$repeat_required"
     shasum -a 256 "$reference_source/docker-compose.yml"
     if [[ -n "$patch_rel" ]]; then shasum -a 256 "$mutation_dir/$patch_rel"; fi
     git -C "$root_dir" rev-parse HEAD
@@ -89,7 +90,7 @@ run_one() (
     -v "$report_dir:/reports" \
     -e JUNIT_PATH=/reports/hidden.junit.xml \
     -e ERASURE_SCORE_PATH=/reports/hidden.score.json \
-    -e ERASURE_TEST_SLOT="mutation-${id}-${run_stamp}" \
+    -e ERASURE_TEST_SLOT="mutation-${id}-${run_stamp}-${attempt}" \
     verifier node --import tsx hidden_tests/run.ts </dev/null >"$report_dir/hidden-scorer.log" 2>&1
   verifier_status=$?
   set -e
@@ -105,13 +106,43 @@ run_one() (
     | tee "$report_dir/assertion.txt"
 )
 
+repeat_count() {
+  local value=$1
+  if [[ ! "$value" =~ ^[1-9][0-9]*$ ]]; then
+    echo "repeat count must be a positive integer: $value" >&2
+    exit 64
+  fi
+  printf '%s\n' "$value"
+}
+
 record_run() {
-  local status
-  set +e
-  run_one "$1"
-  status=$?
-  set -e
-  if (( status != 0 )); then matrix_status=1; fi
+  local id=$1
+  local repeats=1
+  local row repeat_required attempt status
+  if [[ "$id" == 'reference' ]]; then
+    repeats=$(repeat_count "${REFERENCE_RUNS:-5}")
+  else
+    row=$(lookup_mutation "$id") || { echo "unknown mutation: $id" >&2; matrix_status=1; return; }
+    IFS=$'\t' read -r _ _ _ repeat_required _ <<< "$row"
+    if [[ "$repeat_required" == 'true' ]]; then
+      repeats=$(repeat_count "${MUTATION_REPEAT_RUNS:-5}")
+    fi
+  fi
+  for attempt in $(seq 1 "$repeats"); do
+    set +e
+    run_one "$id" "$attempt"
+    status=$?
+    set -e
+    if (( status != 0 )); then matrix_status=1; fi
+  done
+}
+
+write_matrix_digest() {
+  local digest_path="$run_root/matrix.sha256"
+  find "$run_root" -type f \( -name assertion.json -o -name provenance.txt -o -name hidden.score.json \) -print0 \
+    | sort -z \
+    | xargs -0 shasum -a 256 >"$digest_path"
+  printf 'Mutation certification digest: %s\n' "$digest_path"
 }
 
 matrix_status=0
@@ -130,4 +161,5 @@ else
 fi
 
 echo "Mutation reports: $run_root"
+write_matrix_digest
 exit "$matrix_status"

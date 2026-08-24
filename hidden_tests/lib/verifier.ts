@@ -95,6 +95,25 @@ export async function verifyFixtureCoverage(fixture: BenchmarkFixture): Promise<
   assert(row !== undefined && Object.values(row).every((count) => Number(count) > 0),
     'fixture did not create every expected PostgreSQL relation');
 
+  const postgresPayloads = await pool.query<Record<string, unknown>>(
+    `SELECT
+       (SELECT to_jsonb(c) FROM customers.customers c WHERE c.merchant_id=$1 AND c.id=$2) customer,
+       (SELECT to_jsonb(t) FROM customers.support_tickets t WHERE t.merchant_id=$1 AND t.id=$3) support_ticket,
+       (SELECT to_jsonb(m) FROM customers.support_messages m
+          WHERE m.merchant_id=$1 AND m.ticket_id=$3 AND m.author_id=$2 ORDER BY m.id LIMIT 1) support_message,
+       (SELECT jsonb_build_object('intent',to_jsonb(p),'attempt',to_jsonb(a))
+          FROM payments.payment_intents p JOIN payments.payment_attempts a ON a.payment_intent_id=p.id
+          WHERE p.merchant_id=$1 AND p.id=$4 ORDER BY a.id LIMIT 1) payment_attempt,
+       (SELECT jsonb_build_object('invoice',to_jsonb(i),'line',to_jsonb(l))
+          FROM payments.invoices i JOIN payments.invoice_lines l ON l.invoice_id=i.id
+          WHERE i.merchant_id=$1 AND i.id=$5 ORDER BY l.id LIMIT 1) invoice_line`,
+    [fixture.merchantId, subject.customerId, subject.ticketId, subject.paymentId, subject.invoiceId],
+  );
+  const payloadRow = postgresPayloads.rows[0];
+  assert(payloadRow !== undefined && Object.values(payloadRow)
+    .every((value) => value !== null && needleHits(value, subject).length > 0),
+  'fixture did not create PII in every claimed PostgreSQL payload surface');
+
   const cache = await redis.get(`merchant:${fixture.merchantId}:customer:${subject.customerId}`);
   assert(cache !== null && needleHits(cache, subject).length > 0, 'fixture did not create a Redis PII projection');
 
@@ -130,6 +149,19 @@ export async function verifyFixtureCoverage(fixture: BenchmarkFixture): Promise<
   const delayedRow = delayed.rows[0];
   assert(delayedRow !== undefined && Object.values(delayedRow).every((count) => Number(count) > 0),
     'fixture did not create every delayed-work PII surface');
+
+  const delayedPayloads = await pool.query<Record<string, unknown>>(
+    `SELECT
+       (SELECT to_jsonb(j) FROM operations.jobs j WHERE j.id=$1) job,
+       (SELECT to_jsonb(a) FROM payments.payment_attempts a WHERE a.payment_intent_id=$2 ORDER BY a.id LIMIT 1) payment_attempt,
+       (SELECT to_jsonb(d) FROM operations.email_deliveries d WHERE d.id=$3) delivery,
+       (SELECT to_jsonb(l) FROM operations.dead_letters l WHERE l.source_id=$1::text ORDER BY l.id LIMIT 1) dead_letter`,
+    [fixture.delayedJobId, fixture.delayed.paymentId, fixture.delayedEmailDeliveryId],
+  );
+  const delayedPayloadRow = delayedPayloads.rows[0];
+  assert(delayedPayloadRow !== undefined && Object.values(delayedPayloadRow)
+    .every((value) => value !== null && needleHits(value, fixture.delayed).length > 0),
+  'fixture did not create PII in every claimed delayed-work payload surface');
 }
 
 /** Confirms that a rejected tenant-boundary probe left the target customer untouched. */
