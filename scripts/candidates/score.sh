@@ -13,6 +13,7 @@ report_dir="$run_dir/reports"
 run_id=$(basename "$run_dir")
 project="candidate-${run_id//[^a-z0-9]/-}"
 override_file="$root_dir/scripts/candidates/scoring.compose.yml"
+export PAYFLOW_EVALUATOR_DIR="$root_dir/evaluator/provider-simulator"
 
 if [[ ! -f "$source_dir/docker-compose.yml" ]]; then
   echo "candidate artifact is incomplete: expected source/docker-compose.yml" >&2

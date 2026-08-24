@@ -13,6 +13,8 @@ mailpit-message-retained	patches/mailpit-message-retained.patch	normal.mailpit	f
 financial-facts-destroyed	patches/financial-facts-destroyed.patch	financial.retention	false	Erasure must preserve payment, invoice, and ledger financial facts.
 post-erasure-refund-stored-pii	patches/post-erasure-refund-stored-pii.patch	financial.post_erasure_refund	false	A refund created after erasure must not retain customer identity in the financial record.
 post-erasure-refund-provider-pii	patches/post-erasure-refund-provider-pii.patch	financial.post_erasure_refund	false	A refund created after erasure must not send customer-supplied identity to the payment provider.
+post-erasure-refund-failure-pii	patches/post-erasure-refund-failure-pii.patch	financial.post_erasure_refund_failure_retry	false	A failed post-erasure refund must not restore customer identity in the retained failure record.
+post-erasure-refund-failure-not-observable	patches/post-erasure-refund-failure-not-observable.patch	financial.post_erasure_refund_failure_retry	false	A provider failure must remain durably observable before a refund is retried.
 shared-survivor-redacted	patches/shared-survivor-redacted.patch	scope.unrelated_customer_and_shared_record	false	Unrelated participants and their shared content must remain unchanged.
 participant-failure-marked-complete	patches/participant-failure-marked-complete.patch	async.completion_gate	false	A participant failure must not be reported as completed and the same request must retry safely.
 replay-suppression-omitted	patches/replay-suppression-omitted.patch	replay.no_reintroduction	false	Delayed and replayed work must not restore erased identity.

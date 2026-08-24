@@ -5,7 +5,7 @@ import { seedFixture, type BenchmarkFixture } from './lib/fixture.js';
 import { assertNoErasureViolations, collectErasureViolations, installTransientPaymentWriteFailure,
   releaseDelayedWork, removeTransientPaymentWriteFailure, replayHistoricalPiiEvent, requestErasure,
   verifyFinancialRetention, verifyFixtureCoverage, verifyMerchantCredentialsPreserved, verifyMerchantIdentityAndAdminPreserved,
-  verifyPostErasureRefund, verifySecondaryMerchantCredentialsPreserved, verifySubjectUnchanged, verifySurvivorUntouched, verifyUnrelatedPaymentArtifactsPreserved,
+  verifyPostErasureRefund, verifyPostErasureRefundFailureRetry, verifySecondaryMerchantCredentialsPreserved, verifySubjectUnchanged, verifySurvivorUntouched, verifyUnrelatedPaymentArtifactsPreserved,
   waitForCompletion, waitForStatus } from './lib/verifier.js';
 import { api } from './lib/http.js';
 
@@ -151,7 +151,7 @@ async function writeScoreReport(): Promise<void> {
   const report: ScoreReport = blocked
     ? { schema_version: 1, state: 'blocked', hard_pass: false, earned: null, maximum: scoreMaximum, checks, diagnostics,
       blocked_reason: 'fixture provisioning failed; candidate score is not comparable' }
-    : { schema_version: 1, state: 'complete', hard_pass: results.length === 11 && results.every((result) => !result.error),
+    : { schema_version: 1, state: 'complete', hard_pass: results.length === 12 && results.every((result) => !result.error),
       earned: Number(checks.reduce((total, check) => total + check.earned, 0).toFixed(4)), maximum: scoreMaximum, checks, diagnostics };
   await writeFile(process.env.ERASURE_SCORE_PATH ?? 'hidden.score.json', `${JSON.stringify(report, null, 2)}\n`, 'utf8');
 }
@@ -232,7 +232,7 @@ try {
     await test('normal subject PII is absent from every active store', async () => {
       const violations = await collectErasureViolations(fixture, fixture.normal);
       const grouped = classifyNormalViolations(violations);
-      recordCheck('normal.postgres_relational', 'Primary relational records are removed or rekeyed', 0.4, noViolations(grouped.relational));
+      recordCheck('normal.postgres_relational', 'Primary relational records are removed or rekeyed', 0.3, noViolations(grouped.relational));
       recordCheck('normal.postgres_payloads', 'Embedded and operational PostgreSQL PII is redacted', 0.8, noViolations(grouped.payload));
       recordCheck('normal.redis', 'Redis no longer contains subject PII', 0.15, noViolations(grouped.redis));
       recordCheck('normal.opensearch', 'OpenSearch no longer contains subject PII', 0.15, noViolations(grouped.search));
@@ -243,7 +243,7 @@ try {
     await test('financial truth and shared unrelated records are retained', async () => {
       const financial = await observe(async () => { await verifyFinancialRetention(fixture); });
       const normalClean = checks.filter((check) => check.id.startsWith('normal.')).every((check) => check.state === 'pass');
-      recordCheck('financial.retention', 'Financial facts remain intact after a successful erasure', 0.8, financial,
+      recordCheck('financial.retention', 'Financial facts remain intact after a successful erasure', 0.7, financial,
         normalClean, 'normal-subject PII was not fully removed');
       if (!financial.ok) throw new Error(financial.evidence);
     });
@@ -252,6 +252,12 @@ try {
       recordCheck('financial.post_erasure_refund',
         'A later refund remains balanced without restoring customer identity', 0.4, refund);
       if (!refund.ok) throw new Error(refund.evidence);
+    });
+    await test('failed post-erasure refunds remain private and retry safely', async () => {
+      const refundRetry = await observe(async () => { await verifyPostErasureRefundFailureRetry(fixture); });
+      recordCheck('financial.post_erasure_refund_failure_retry',
+        'A failed post-erasure refund stays private and a later retry remains balanced', 0.2, refundRetry);
+      if (!refundRetry.ok) throw new Error(refundRetry.evidence);
     });
     await test('merchant credentials remain usable after customer erasure', async () => {
       const credentials = await observe(async () => { await verifyMerchantCredentialsPreserved(fixture); });

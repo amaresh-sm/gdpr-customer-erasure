@@ -11,6 +11,7 @@ run_stamp_lower=${run_stamp_lower/Z/z}
 run_root="$root_dir/internal/mutation-runs/$run_stamp"
 override_file="$root_dir/internal/compose-no-host-ports.yml"
 reference_source="$root_dir/reference_solution/source"
+export PAYFLOW_EVALUATOR_DIR="$root_dir/evaluator/provider-simulator"
 
 if [[ ! -d "$reference_source" || ! -d "$root_dir/hidden_tests" ]]; then
   echo 'reference source or hidden tests are unavailable' >&2

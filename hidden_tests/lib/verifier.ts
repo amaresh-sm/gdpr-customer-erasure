@@ -443,6 +443,70 @@ export async function verifyPostErasureRefund(fixture: BenchmarkFixture): Promis
   assertNoErasureViolations(violations, 'post-erasure refund');
 }
 
+/** Proves a provider rejection and a later refund retry cannot preserve or reintroduce erased identity. */
+export async function verifyPostErasureRefundFailureRetry(fixture: BenchmarkFixture): Promise<void> {
+  const subject = fixture.refundRetry;
+  const requestId = await requestErasure(
+    fixture.merchantKey,
+    subject.customerId,
+    `post-erasure-refund-retry-${fixture.slot}`,
+  );
+  await waitForCompletion(fixture.merchantKey, requestId);
+
+  const failedAmount = 2399;
+  const reason = `Retry ${subject.email} ${subject.canary}`;
+  await api(fixture.merchantKey, `/v1/payments/${subject.paymentId}/refunds`, {
+    method: 'POST', expected: 502, body: { amount: failedAmount, reason },
+  });
+  await poll(async () => (await pool.query<{ count: string }>(
+    `SELECT count(*)::text count FROM payments.refunds WHERE payment_intent_id=$1 AND amount=$2 AND status='failed'`,
+    [subject.paymentId, failedAmount],
+  )).rows[0]?.count, (count) => count === '1', 'failed post-erasure refund persistence', 80);
+
+  const failedRefund = await pool.query<{ reason: string; customer_email: string | null }>(
+    `SELECT reason,customer_email FROM payments.refunds
+     WHERE payment_intent_id=$1 AND amount=$2 AND status='failed'`, [subject.paymentId, failedAmount],
+  );
+  assert(failedRefund.rowCount === 1, 'failed refund was not observable exactly once');
+  assert(needleHits(failedRefund.rows[0], subject).length === 0,
+    'failed post-erasure refund retained customer identity');
+
+  const providerResponse = await fetch('http://provider-simulator:3002/_evaluator/refund-attempts', {
+    signal: AbortSignal.timeout(5_000),
+  });
+  assert(providerResponse.ok, 'provider simulator did not expose the failed refund attempt');
+  const providerAttempts = await providerResponse.json() as { attempts?: Array<{ body?: { amount?: number } }> };
+  const failedAttempt = providerAttempts.attempts?.filter((attempt) => attempt.body?.amount === failedAmount) ?? [];
+  assert(failedAttempt.length === 1, 'provider did not observe exactly one failed refund attempt');
+  assert(needleHits(failedAttempt[0], subject).length === 0,
+    'failed post-erasure provider request contained customer identity');
+
+  const retryAmount = 1300;
+  const retry = await api<{ id: string }>(fixture.merchantKey, `/v1/payments/${subject.paymentId}/refunds`, {
+    method: 'POST', expected: 202, body: { amount: retryAmount, reason },
+  });
+  assert(typeof retry.body.id === 'string', 'refund retry response omitted its identifier');
+  await poll(async () => (await pool.query<{ status: string }>(
+    `SELECT status FROM payments.refunds WHERE id=$1`, [retry.body.id],
+  )).rows[0]?.status, (status) => status === 'succeeded', 'post-erasure refund retry completion', 160);
+
+  const retryLedger = await pool.query<{ entries: string; postings: string; signed_balance: string }>(
+    `SELECT
+       (SELECT count(*)::text FROM payments.ledger_entries WHERE reference_type='refund' AND reference_id=$1) entries,
+       (SELECT count(*)::text FROM payments.ledger_entries e JOIN payments.ledger_postings p ON p.entry_id=e.id
+          WHERE e.reference_type='refund' AND e.reference_id=$1) postings,
+       (SELECT COALESCE(sum(CASE WHEN p.direction='debit' THEN p.amount ELSE -p.amount END),0)::text
+          FROM payments.ledger_entries e JOIN payments.ledger_postings p ON p.entry_id=e.id
+          WHERE e.reference_type='refund' AND e.reference_id=$1) signed_balance`,
+    [retry.body.id],
+  );
+  assert(retryLedger.rows[0]?.entries === '1' && retryLedger.rows[0]?.postings === '2' && retryLedger.rows[0]?.signed_balance === '0',
+    'refund retry did not produce exactly one balanced financial entry');
+
+  const violations = await collectErasureViolations(fixture, subject);
+  assertNoErasureViolations(violations, 'post-erasure refund failure and retry');
+}
+
 export async function verifySurvivorUntouched(fixture: BenchmarkFixture): Promise<void> {
   const result = await pool.query<{ email: string; name: string; phone: string; external_reference: string }>(
     `SELECT email,name,phone,external_reference FROM customers.customers WHERE merchant_id=$1 AND id=$2`,

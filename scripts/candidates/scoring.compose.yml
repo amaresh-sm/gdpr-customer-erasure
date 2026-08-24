@@ -7,6 +7,15 @@ services:
     build: .
     working_dir: /srv/payflow
     env_file: [.env.docker]
+  provider-simulator:
+    image: node:22-bookworm-slim
+    working_dir: /opt/provider
+    command: ["node", "/opt/provider/server.mjs"]
+    environment:
+      PROCESSOR_WEBHOOK_SECRET: processor-webhook-secret
+      EVALUATOR_REFUND_FAILURE_AMOUNT: "2399"
+    volumes:
+      - ${PAYFLOW_EVALUATOR_DIR}:/opt/provider:ro
   postgres: { ports: !reset [] }
   redis: { ports: !reset [] }
   redpanda: { ports: !reset [] }
@@ -14,6 +23,9 @@ services:
   opensearch: { ports: !reset [] }
   mailpit: { ports: !reset [] }
   customer-service: { ports: !reset [] }
-  payment-service: { ports: !reset [] }
+  payment-service:
+    ports: !reset []
+    environment:
+      PROCESSOR_URL: http://provider-simulator:3002
   webhook-worker: { ports: !reset [] }
   api-gateway: { ports: !reset [] }
