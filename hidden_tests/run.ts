@@ -285,7 +285,7 @@ try {
         await installTransientPaymentWriteFailure(fixture.delayed.paymentId);
         delayedRequest = await requestErasure(fixture.merchantKey, fixture.delayed.customerId, retryKey);
       });
-      const createdOk = recordCheck('async.request_accepted', 'Delayed-subject erasure request is accepted', 0.2, created);
+      const createdOk = recordCheck('async.request_accepted', 'Delayed-subject erasure request is accepted', 0.1, created);
       const failed = created.ok ? await observe(async () => {
         const response = await waitForStatus(fixture.merchantKey, delayedRequest, 'failed');
         if (!response.lastError || response.lastError.includes(fixture.delayed.email) ||
@@ -310,14 +310,14 @@ try {
       // here: collecting cross-store evidence would add enough time for background work to alter
       // later delayed/replay scenarios and would make the legacy score non-comparable.
       if (!created.ok || !failed.ok || !completed.ok) {
-        recordCheck('async.pending_payloads', 'Pending work and its payloads are fully sanitized', 0.7,
+        recordCheck('async.pending_payloads', 'Pending work and its payloads are fully sanitized', 0.8,
           { ok: false, evidence: completed.evidence ?? created.evidence }, false,
           'the delayed-subject erasure did not complete');
         throw new Error([created.evidence, completed.evidence].filter(Boolean).join('; ') || 'pending-work verification failed');
       }
       const delayedSnapshot = await collectErasureViolations(fixture, fixture.delayed);
       const delayedClean = noViolations(delayedSnapshot);
-      recordCheck('async.pending_payloads', 'Pending work and its payloads are fully sanitized', 0.7, delayedClean,
+      recordCheck('async.pending_payloads', 'Pending work and its payloads are fully sanitized', 0.8, delayedClean,
         completedOk, 'the delayed-subject erasure did not complete');
       delayedViolations = delayedSnapshot;
       if (!delayedClean.ok) throw new Error(delayedClean.evidence ?? 'pending-work verification failed');
