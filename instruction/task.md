@@ -34,9 +34,10 @@ The original UUID may remain only in the minimal erasure-request and suppression
 
 The API gateway entry point is `apps/api-gateway/src/main.ts`.
 
-For an overview of the existing services and customer-data flows, see `docs/architecture.md`, `docs/domain-model.md`, and `docs/event-catalog.md`. Operational and financial rules are documented in `docs/operations.md` and `docs/financial-invariants.md`.
+Privacy, retention, and financial requirements are documented in
+`docs/privacy-and-retention.md`.
 
-The codebase includes patterns for database transactions, merchant authentication, outbox/inbox messaging, background workers, and integrations with Redis, OpenSearch, MinIO, and Kafka. Extend those patterns where appropriate, and keep existing PayFlow behavior working.
+The codebase includes patterns for database transactions, merchant authentication, outbox/inbox messaging, background workers, and integrations with Redis, OpenSearch, MinIO, and Redpanda. Extend those patterns where appropriate, and keep existing PayFlow behavior working.
 
 ## Local verification
 
