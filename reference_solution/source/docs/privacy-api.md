@@ -1,8 +1,9 @@
 # Privacy erasure API
 
-Privacy erasure is an asynchronous merchant operation exposed through the API gateway.
+Merchants request customer erasure through the API gateway. The cleanup continues in the
+background.
 
-## Create or resume an erasure request
+## Start or resume an erasure request
 
 ```http
 POST /v1/customers/{customerId}/erasure-requests
@@ -11,7 +12,7 @@ Idempotency-Key: <8-200 characters>
 ```
 
 The API key requires the `privacy:erase` scope. The request has no body. A valid request returns
-`202 Accepted` with the durable request resource:
+`202 Accepted` with a saved erasure request:
 
 ```json
 {
@@ -27,28 +28,28 @@ The API key requires the `privacy:erase` scope. The request has no body. A valid
 ```
 
 Reusing an idempotency key for the same customer returns the same request. Reusing it for a
-different customer returns `409 Conflict`. A second key for a customer with an existing erasure
-returns that customer's existing request rather than starting a competing workflow.
+different customer returns `409 Conflict`. If the customer already has an erasure request, a new
+key returns that existing request instead of starting another workflow.
 
-An absent customer returns `404`. Cross-merchant identifiers are intentionally indistinguishable
-from absent identifiers and also return `404` without mutation.
+If the customer does not exist, return `404`. An ID belonging to another merchant also returns
+`404`; it must not reveal anything or change any data.
 
-## Inspect an erasure request
+## Check an erasure request
 
 ```http
 GET /v1/erasure-requests/{requestId}
 Authorization: Bearer <merchant-api-key>
 ```
 
-The response uses one of these public states:
+An erasure request has one of these statuses:
 
 - `pending`: accepted and awaiting work.
-- `processing`: one or more required participants are running.
-- `failed`: the last attempt failed; `lastError` is a stable non-sensitive error code and the
-  request remains safe to retry.
-- `completed`: every required participant has converged and delayed work cannot restore PII.
+- `processing`: one or more cleanup steps are running.
+- `failed`: the last attempt failed. `lastError` is a stable error code that contains no customer
+  data, and the request is safe to retry.
+- `completed`: all required cleanup work has finished and delayed work cannot restore PII.
 
-Requests belonging to another merchant return `404`.
+An erasure request belonging to another merchant returns `404`.
 
-The service may retry failed requests automatically. Reposting the same request is also allowed and
-must preserve its identity and completed work.
+The service may retry failed requests automatically. Reposting the same request is also allowed;
+it must keep the same request ID and preserve work that already finished.

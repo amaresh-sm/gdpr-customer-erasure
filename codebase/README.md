@@ -1,8 +1,9 @@
 # PayFlow
 
-PayFlow is a multi-tenant payment platform for merchants. It supports customer profiles,
-tokenized payment methods, payment processing, refunds, invoices, ledger postings, provider
-webhooks, notifications, reconciliation, and privacy operations.
+PayFlow is a multi-tenant payment platform for merchants. It supports merchant administration,
+customer profiles, tokenized payment methods, payment processing, refunds, invoices, immutable
+ledger postings, provider webhooks, event-driven projections, object storage, notifications,
+reconciliation, and privacy operations.
 
 ## Local development
 
@@ -28,19 +29,22 @@ npm run smoke
 docker compose --profile tools run --rm runtime-check
 ```
 
+To exercise provider failure and callback behavior after the environment and seed data are ready:
+
+```bash
+npm run provider:check
+```
+
+`npm run smoke` checks the gateway and key service health endpoints. `runtime-check` confirms the
+sample payment activity converged: outbox publishing, provider callbacks, webhooks, background
+jobs, and email delivery have finished; no dead letters remain; ledger entries balance;
+reconciliation matches; successful payments have captures and receipts; and Redis, OpenSearch,
+MinIO, and Mailpit agree with the database.
+
 The API gateway is available at `http://localhost:3000`. Service and infrastructure ports are
 listed in `docker-compose.yml`.
 
 ## Documentation
 
-- `docs/product-overview.md` — product overview and local environment
-- `docs/architecture.md` — service boundaries and data flow
-- `docs/domain-model.md` — core data model
-- `docs/event-catalog.md` — application events and consumers
-- `docs/api.md` — existing public APIs
 - `docs/privacy-api.md` — customer-erasure API
 - `docs/privacy-and-retention.md` — privacy and retention rules
-- `docs/operations.md` — operational procedures
-- `docs/financial-invariants.md` — financial correctness rules
-- `docs/security.md` — authentication and tenant isolation
-- `docs/runtime-checks.md` — local runtime checks
