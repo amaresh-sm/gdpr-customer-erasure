@@ -1,0 +1,24 @@
+diff --git a/packages/database/migrations/004_provider_customers.sql b/packages/database/migrations/004_provider_customers.sql
+--- a/packages/database/migrations/004_provider_customers.sql
++++ b/packages/database/migrations/004_provider_customers.sql
+@@ -2,7 +2,7 @@ CREATE SCHEMA IF NOT EXISTS provider_sandbox;
+ CREATE TABLE IF NOT EXISTS customers.provider_customer_mappings(
+   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+   merchant_id uuid NOT NULL,
+-  customer_id uuid NOT NULL REFERENCES customers.customers(id),
++  customer_id uuid NOT NULL,
+   provider_name text NOT NULL,
+   provider_customer_id text NOT NULL,
+   created_at timestamptz NOT NULL DEFAULT now(),
+diff --git a/apps/privacy-service/src/handlers/customer-records.ts b/apps/privacy-service/src/handlers/customer-records.ts
+--- a/apps/privacy-service/src/handlers/customer-records.ts
++++ b/apps/privacy-service/src/handlers/customer-records.ts
+@@ -43,8 +43,6 @@ export async function eraseCustomerRecords(request: ErasureRequestRecord): Promi
+     await client.query(`DELETE FROM provider_sandbox.customers WHERE merchant_id=$1 AND payflow_customer_id=$2`,
+       [request.merchant_id, request.customer_id]);
+-    await client.query(`DELETE FROM customers.provider_customer_mappings WHERE merchant_id=$1 AND customer_id=$2`,
+-      [request.merchant_id, request.customer_id]);
+     await client.query(`DELETE FROM customers.customers WHERE merchant_id=$1 AND id=$2`,
+       [request.merchant_id, request.customer_id]);
+   });
+ }

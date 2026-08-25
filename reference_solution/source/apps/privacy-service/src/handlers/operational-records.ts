@@ -1,5 +1,5 @@
 import { pool, transaction } from '../../../../packages/database/src/pool.js';
-import { redactSubjectValue, sanitizeSubjectPayload } from '../../../../packages/privacy/src/redact.js';
+import { containsSubjectValue, redactSubjectValue, sanitizeSubjectPayload } from '../../../../packages/privacy/src/redact.js';
 import type { ErasureRequestRecord, SubjectContext } from '../../../../packages/privacy/src/types.js';
 
 /** Sanitizes durable operational payloads so retries cannot restore the erased subject. */
@@ -11,8 +11,7 @@ export async function sanitizeOperationalRecords(request: ErasureRequestRecord):
       [request.merchant_id],
     );
     for (const row of audits.rows) {
-      if (row.actor_id !== request.customer_id && row.target_id !== request.customer_id &&
-          !JSON.stringify(row.metadata).includes(request.customer_id)) continue;
+      if (!containsSubjectValue({ actorId: row.actor_id, targetId: row.target_id, metadata: row.metadata }, context)) continue;
       await client.query(`UPDATE platform.audit_logs SET actor_id=$2,target_id=$3,metadata=$4 WHERE id=$1`, [
         row.id,
         row.actor_id === request.customer_id ? request.surrogate_id : redactSubjectValue(row.actor_id, context),
@@ -26,7 +25,7 @@ export async function sanitizeOperationalRecords(request: ErasureRequestRecord):
       [request.merchant_id],
     );
     for (const row of outbox.rows) {
-      if (row.aggregate_id !== request.customer_id && !JSON.stringify(row.payload).includes(request.customer_id)) continue;
+      if (!containsSubjectValue({ aggregateId: row.aggregate_id, payload: row.payload }, context)) continue;
       const aggregateId = row.aggregate_id === request.customer_id ? request.surrogate_id : row.aggregate_id;
       await client.query(`UPDATE operations.outbox_events SET aggregate_id=$2,payload=$3 WHERE id=$1`,
         [row.id, aggregateId, sanitizeSubjectPayload(row.payload, context)]);
@@ -36,7 +35,7 @@ export async function sanitizeOperationalRecords(request: ErasureRequestRecord):
       `SELECT id,payload FROM operations.jobs WHERE merchant_id=$1 FOR UPDATE`, [request.merchant_id],
     );
     for (const row of jobs.rows) {
-      if (JSON.stringify(row.payload).includes(request.customer_id)) {
+      if (containsSubjectValue(row.payload, context)) {
         await client.query(`UPDATE operations.jobs SET payload=$2 WHERE id=$1`,
           [row.id, sanitizeSubjectPayload(row.payload, context)]);
       }
@@ -46,7 +45,7 @@ export async function sanitizeOperationalRecords(request: ErasureRequestRecord):
       `SELECT id,payload FROM operations.provider_webhooks FOR UPDATE`,
     );
     for (const row of webhooks.rows) {
-      if (JSON.stringify(row.payload).includes(request.customer_id)) {
+      if (containsSubjectValue(row.payload, context)) {
         await client.query(`UPDATE operations.provider_webhooks SET payload=$2 WHERE id=$1`,
           [row.id, sanitizeSubjectPayload(row.payload, context)]);
       }
@@ -56,7 +55,7 @@ export async function sanitizeOperationalRecords(request: ErasureRequestRecord):
       `SELECT id,payload,error FROM operations.dead_letters FOR UPDATE`,
     );
     for (const row of deadLetters.rows) {
-      if (!JSON.stringify(row).includes(request.customer_id)) continue;
+      if (!containsSubjectValue(row, context)) continue;
       await client.query(`UPDATE operations.dead_letters SET payload=$2,error=$3 WHERE id=$1`,
         [row.id, sanitizeSubjectPayload(row.payload, context), redactSubjectValue(row.error, context)]);
     }
@@ -66,7 +65,7 @@ export async function sanitizeOperationalRecords(request: ErasureRequestRecord):
       [request.merchant_id],
     );
     for (const row of keys.rows) {
-      if (JSON.stringify(row.response_body).includes(request.customer_id)) {
+      if (containsSubjectValue(row.response_body, context)) {
         await client.query(
           `UPDATE operations.idempotency_keys SET response_body=$4
            WHERE merchant_id=$1 AND scope=$2 AND key=$3`,
@@ -80,7 +79,7 @@ export async function sanitizeOperationalRecords(request: ErasureRequestRecord):
        WHERE merchant_id=$1 FOR UPDATE`, [request.merchant_id],
     );
     for (const row of analytics.rows) {
-      if (row.customer_id !== request.customer_id && !JSON.stringify(row.properties).includes(request.customer_id)) continue;
+      if (!containsSubjectValue({ customerId: row.customer_id, properties: row.properties }, context)) continue;
       await client.query(
         `UPDATE operations.analytics_events SET customer_id=NULL,email=NULL,anonymous_id=$2,properties=$3 WHERE id=$1`,
         [row.id, `anon_${request.surrogate_id}`, sanitizeSubjectPayload(row.properties, context)],

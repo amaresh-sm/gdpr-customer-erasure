@@ -17,13 +17,13 @@ function assert(condition: unknown, message: string): asserts condition {
 }
 
 function needles(subject: SubjectFixture): string[] {
-  return [subject.customerId, subject.email, subject.name, subject.phone, subject.externalReference, subject.canary];
+  return [subject.customerId, subject.providerCustomerId, subject.email, subject.name, subject.phone, subject.externalReference, subject.canary];
 }
 
 function needleHits(value: unknown, subject: SubjectFixture,
                     allowed: ReadonlySet<string> = new Set()): string[] {
   const serialized = typeof value === 'string' ? value : JSON.stringify(value);
-  const labels = ['customer UUID', 'email', 'name', 'phone', 'external reference', 'PII canary'];
+  const labels = ['customer UUID', 'provider customer ID', 'email', 'name', 'phone', 'external reference', 'PII canary'];
   return needles(subject).flatMap((needle, index) => !allowed.has(needle) &&
     serialized.toLowerCase().includes(needle.toLowerCase()) ? [labels[index]!] : []);
 }
@@ -81,12 +81,14 @@ export async function waitForStatus(apiKey: string, requestId: string,
 /** Proves that every store claimed by the verifier actually contains the fixture subject before erasure. */
 export async function verifyFixtureCoverage(fixture: BenchmarkFixture): Promise<void> {
   const subject = fixture.normal;
-  const relational = await pool.query<{ customers: string; addresses: string; contacts: string; methods: string; payments: string; invoices: string }>(
+  const relational = await pool.query<{ customers: string; addresses: string; contacts: string; methods: string; provider_mappings: string; provider_profiles: string; payments: string; invoices: string }>(
     `SELECT
        (SELECT count(*)::text FROM customers.customers WHERE merchant_id=$1 AND id=$2) customers,
        (SELECT count(*)::text FROM customers.addresses WHERE merchant_id=$1 AND customer_id=$2) addresses,
        (SELECT count(*)::text FROM customers.contacts WHERE merchant_id=$1 AND customer_id=$2) contacts,
        (SELECT count(*)::text FROM customers.payment_method_refs WHERE merchant_id=$1 AND customer_id=$2) methods,
+       (SELECT count(*)::text FROM customers.provider_customer_mappings WHERE merchant_id=$1 AND customer_id=$2) provider_mappings,
+       (SELECT count(*)::text FROM provider_sandbox.customers WHERE merchant_id=$1 AND payflow_customer_id=$2) provider_profiles,
        (SELECT count(*)::text FROM payments.payment_intents WHERE merchant_id=$1 AND customer_id=$2) payments,
        (SELECT count(*)::text FROM payments.invoices WHERE merchant_id=$1 AND customer_id=$2) invoices`,
     [fixture.merchantId, subject.customerId],
@@ -106,7 +108,11 @@ export async function verifyFixtureCoverage(fixture: BenchmarkFixture): Promise<
           WHERE p.merchant_id=$1 AND p.id=$4 ORDER BY a.id LIMIT 1) payment_attempt,
        (SELECT jsonb_build_object('invoice',to_jsonb(i),'line',to_jsonb(l))
           FROM payments.invoices i JOIN payments.invoice_lines l ON l.invoice_id=i.id
-          WHERE i.merchant_id=$1 AND i.id=$5 ORDER BY l.id LIMIT 1) invoice_line`,
+          WHERE i.merchant_id=$1 AND i.id=$5 ORDER BY l.id LIMIT 1) invoice_line,
+       (SELECT jsonb_build_object('mapping',to_jsonb(m),'profile',to_jsonb(p))
+          FROM customers.provider_customer_mappings m
+          JOIN provider_sandbox.customers p ON p.id=m.provider_customer_id
+          WHERE m.merchant_id=$1 AND m.customer_id=$2 LIMIT 1) provider_customer`,
     [fixture.merchantId, subject.customerId, subject.ticketId, subject.paymentId, subject.invoiceId],
   );
   const payloadRow = postgresPayloads.rows[0];
@@ -173,11 +179,13 @@ export async function verifySubjectUnchanged(fixture: BenchmarkFixture, subject:
   const row = customer.rows[0];
   assert(row?.email === subject.email && row.name === subject.name && row.phone === subject.phone &&
     row.external_reference === subject.externalReference, 'tenant-boundary probe changed the target customer');
-  const related = await pool.query<{ addresses: string; contacts: string; methods: string; payments: string; invoices: string }>(
+  const related = await pool.query<{ addresses: string; contacts: string; methods: string; provider_mappings: string; provider_profiles: string; payments: string; invoices: string }>(
     `SELECT
        (SELECT count(*)::text FROM customers.addresses WHERE merchant_id=$1 AND customer_id=$2) addresses,
        (SELECT count(*)::text FROM customers.contacts WHERE merchant_id=$1 AND customer_id=$2) contacts,
        (SELECT count(*)::text FROM customers.payment_method_refs WHERE merchant_id=$1 AND customer_id=$2) methods,
+       (SELECT count(*)::text FROM customers.provider_customer_mappings WHERE merchant_id=$1 AND customer_id=$2) provider_mappings,
+       (SELECT count(*)::text FROM provider_sandbox.customers WHERE merchant_id=$1 AND payflow_customer_id=$2) provider_profiles,
        (SELECT count(*)::text FROM payments.payment_intents WHERE merchant_id=$1 AND customer_id=$2) payments,
        (SELECT count(*)::text FROM payments.invoices WHERE merchant_id=$1 AND customer_id=$2) invoices`,
     [fixture.merchantId, subject.customerId],
@@ -214,6 +222,8 @@ async function collectPostgresViolations(fixture: BenchmarkFixture, subject: Sub
      UNION ALL SELECT 'addresses',count(*)::text FROM customers.addresses WHERE merchant_id=$1 AND customer_id=$2
      UNION ALL SELECT 'contacts',count(*)::text FROM customers.contacts WHERE merchant_id=$1 AND customer_id=$2
      UNION ALL SELECT 'methods',count(*)::text FROM customers.payment_method_refs WHERE merchant_id=$1 AND customer_id=$2
+     UNION ALL SELECT 'provider-mapping',count(*)::text FROM customers.provider_customer_mappings WHERE merchant_id=$1 AND customer_id=$2
+     UNION ALL SELECT 'provider-profile',count(*)::text FROM provider_sandbox.customers WHERE merchant_id=$1 AND payflow_customer_id=$2
      UNION ALL SELECT 'participants',count(*)::text FROM customers.support_participants WHERE customer_id=$2
      UNION ALL SELECT 'payment-link',count(*)::text FROM payments.payment_intents WHERE merchant_id=$1 AND customer_id=$2
      UNION ALL SELECT 'invoice-link',count(*)::text FROM payments.invoices WHERE merchant_id=$1 AND customer_id=$2
@@ -516,6 +526,14 @@ export async function verifySurvivorUntouched(fixture: BenchmarkFixture): Promis
   assert(row?.email === fixture.survivor.email && row.name === fixture.survivor.name &&
     row.phone === fixture.survivor.phone && row.external_reference === fixture.survivor.externalReference,
   'unrelated customer was changed');
+  const providerProfile = await pool.query<{ mappings: string; profiles: string }>(
+    `SELECT
+       (SELECT count(*)::text FROM customers.provider_customer_mappings WHERE merchant_id=$1 AND customer_id=$2) mappings,
+       (SELECT count(*)::text FROM provider_sandbox.customers WHERE merchant_id=$1 AND payflow_customer_id=$2) profiles`,
+    [fixture.merchantId, fixture.survivor.customerId],
+  );
+  assert(providerProfile.rows[0]?.mappings === '1' && providerProfile.rows[0]?.profiles === '1',
+    'unrelated provider customer identity was changed');
   const participant = await pool.query<{ count: string }>(
     `SELECT count(*)::text count FROM customers.support_participants WHERE ticket_id=$1 AND customer_id=$2`,
     [fixture.normal.ticketId, fixture.survivor.customerId]);
@@ -678,6 +696,7 @@ export async function replayHistoricalPiiEvent(fixture: BenchmarkFixture): Promi
       aggregateType: 'payment_intent', aggregateId: fixture.delayed.paymentId, merchantId: fixture.merchantId,
       correlationId: randomUUID(), payload: { customerId: fixture.delayed.customerId,
         customerEmail: fixture.delayed.email, name: fixture.delayed.name, canary: fixture.delayed.canary,
+        providerCustomerId: fixture.delayed.providerCustomerId,
         paymentId: fixture.delayed.paymentId, amount: 9100, currency: 'USD' },
     }) }] });
   } finally {

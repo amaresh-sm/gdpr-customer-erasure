@@ -3,7 +3,7 @@ import type { SubjectContext } from './types.js';
 const REDACTED = '[redacted]';
 const PERSONAL_KEYS = new Set([
   'email', 'customerEmail', 'name', 'phone', 'externalReference', 'external_reference',
-  'providerToken', 'paymentMethodId', 'billingName', 'billingAddress', 'address', 'destination',
+  'providerToken', 'providerCustomerId', 'provider_customer_id', 'paymentMethodId', 'billingName', 'billingAddress', 'address', 'destination',
 ]);
 
 function replacements(context: SubjectContext): Array<[string, string]> {

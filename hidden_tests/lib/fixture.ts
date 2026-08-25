@@ -4,6 +4,7 @@ import { CUSTOMER_INDEX, fixtureUuid, pool, redis, search } from './clients.js';
 
 export interface SubjectFixture {
   customerId: string;
+  providerCustomerId: string;
   paymentMethodId: string;
   paymentId: string;
   email: string;
@@ -303,8 +304,19 @@ async function createSubject(apiKey: string, slot: string, label: string): Promi
   const invoice = await api<{ id: string }>(apiKey, '/v1/invoices', { method: 'POST', expected: 201,
     body: { customerId: customer.body.id, currency: 'USD', tax: 125,
       lines: [{ description: `Service for ${name}`, quantity: 1, unitAmount: 5000 }] } });
-  return { customerId: customer.body.id, paymentMethodId: method.body.id, paymentId: '', email, name, phone,
+  return { customerId: customer.body.id, providerCustomerId: '', paymentMethodId: method.body.id, paymentId: '', email, name, phone,
     externalReference, canary, ticketId: ticket.body.id, importId: imported.body.id, invoiceId: invoice.body.id };
+}
+
+async function loadProviderCustomer(subject: SubjectFixture, merchantId: string): Promise<void> {
+  const result = await pool.query<{ provider_customer_id: string }>(
+    `SELECT provider_customer_id FROM customers.provider_customer_mappings
+     WHERE merchant_id=$1 AND customer_id=$2 AND provider_name='payflow_sandbox'`,
+    [merchantId, subject.customerId],
+  );
+  const mapping = result.rows[0];
+  if (!mapping) throw new Error(`provider customer mapping was not created for ${subject.customerId}`);
+  subject.providerCustomerId = mapping.provider_customer_id;
 }
 
 export async function seedFixture(slot: string): Promise<BenchmarkFixture> {
@@ -325,6 +337,7 @@ export async function seedFixture(slot: string): Promise<BenchmarkFixture> {
   const admin = await provisionMerchantAdmin(merchant.id, slot);
   const secondaryKey = await provisionSecondaryMerchantKey(merchant.id, slot);
   const survivorPayment = await createSurvivorPaymentArtifacts(merchant.key, merchant.id, survivor, slot);
+  await loadProviderCustomer(survivor, merchant.id);
 
   const payment = await api<{ id: string }>(merchant.key, '/v1/payments', { method: 'POST', expected: 202,
     headers: { 'idempotency-key': `normal-payment-${slot}` }, body: { customerId: normal.customerId,
@@ -333,6 +346,7 @@ export async function seedFixture(slot: string): Promise<BenchmarkFixture> {
   await poll(async () => (await pool.query<{ status: string }>(
     `SELECT status FROM payments.payment_intents WHERE id=$1`, [normal.paymentId])).rows[0]?.status,
   (status) => status === 'succeeded', 'normal payment success');
+  await loadProviderCustomer(normal, merchant.id);
   await poll(async () => Number((await pool.query<{ count: string }>(
     `SELECT count(*)::text count FROM operations.document_manifests WHERE metadata->>'paymentId'=$1`, [normal.paymentId])).rows[0]!.count),
   (count) => count === 1, 'normal receipt');
@@ -352,6 +366,7 @@ export async function seedFixture(slot: string): Promise<BenchmarkFixture> {
   await poll(async () => (await pool.query<{ status: string }>(
     `SELECT status FROM payments.payment_intents WHERE id=$1`, [refund.paymentId])).rows[0]?.status,
   (status) => status === 'succeeded', 'refund-subject payment success');
+  await loadProviderCustomer(refund, merchant.id);
 
   const refundRetryPayment = await api<{ id: string }>(merchant.key, '/v1/payments', { method: 'POST', expected: 202,
     headers: { 'idempotency-key': `refund-retry-payment-${slot}` }, body: { customerId: refundRetry.customerId,
@@ -360,6 +375,19 @@ export async function seedFixture(slot: string): Promise<BenchmarkFixture> {
   await poll(async () => (await pool.query<{ status: string }>(
     `SELECT status FROM payments.payment_intents WHERE id=$1`, [refundRetry.paymentId])).rows[0]?.status,
   (status) => status === 'succeeded', 'refund-retry subject payment success');
+  await loadProviderCustomer(refundRetry, merchant.id);
+
+  delayed.providerCustomerId = `pcus_hidden_${createHash('sha256').update(`${slot}:delayed`).digest('hex').slice(0, 20)}`;
+  await pool.query(
+    `INSERT INTO customers.provider_customer_mappings(merchant_id,customer_id,provider_name,provider_customer_id)
+     VALUES($1,$2,'payflow_sandbox',$3)`,
+    [merchant.id, delayed.customerId, delayed.providerCustomerId],
+  );
+  await pool.query(
+    `INSERT INTO provider_sandbox.customers(id,merchant_id,payflow_customer_id,email,name,external_reference)
+     VALUES($1,$2,$3,$4,$5,$6)`,
+    [delayed.providerCustomerId, merchant.id, delayed.customerId, delayed.email, delayed.name, delayed.externalReference],
+  );
 
   const delayedPaymentId = fixtureUuid(`${slot}:delayed-payment`);
   const providerPaymentId = `pi_hidden_${createHash('sha256').update(slot).digest('hex').slice(0, 16)}`;
@@ -382,7 +410,8 @@ export async function seedFixture(slot: string): Promise<BenchmarkFixture> {
     `INSERT INTO operations.provider_webhooks(id,provider_event_id,event_type,signature,payload,next_attempt_at)
      VALUES($1,$2,'payment.succeeded','hidden-fixture',$3,now()+interval '1 day')`, [webhookId,
       `evt_hidden_${slot}`, { id: `evt_hidden_${slot}`, type: 'payment.succeeded', createdAt: new Date().toISOString(),
-        data: { providerPaymentId, paymentId: delayedPaymentId, merchantId: merchant.id, amount: 9100, currency: 'USD', status: 'succeeded' } }],
+        data: { providerPaymentId, providerCustomerId: delayed.providerCustomerId, paymentId: delayedPaymentId,
+          merchantId: merchant.id, amount: 9100, currency: 'USD', status: 'succeeded' } }],
   );
   const delayedJobId = fixtureUuid(`${slot}:delayed-job`);
   await pool.query(

@@ -8,6 +8,10 @@ export interface CustomerRow {
   created_at: Date; updated_at: Date;
 }
 
+export interface ProviderCustomerMapping {
+  provider_customer_id: string;
+}
+
 export interface AddressInput {
   kind: string;
   line1: string;
@@ -74,6 +78,39 @@ export class CustomerRepository {
       [merchantId, customerId, paymentMethodId],
     );
     return result.rows[0] as Record<string, unknown> | undefined;
+  }
+
+  /** Returns the stable provider-side customer identifier used for future payment operations. */
+  async ensureProviderCustomer(
+    client: pg.PoolClient,
+    merchantId: string,
+    customerId: string,
+    providerName: string,
+    providerCustomerId: string,
+  ): Promise<ProviderCustomerMapping | undefined> {
+    const existing = await client.query<ProviderCustomerMapping>(
+      `SELECT provider_customer_id FROM customers.provider_customer_mappings
+       WHERE merchant_id=$1 AND customer_id=$2 AND provider_name=$3 FOR UPDATE`,
+      [merchantId, customerId, providerName],
+    );
+    if (existing.rows[0]) {
+      await client.query(
+        `UPDATE customers.provider_customer_mappings SET last_seen_at=now()
+         WHERE merchant_id=$1 AND customer_id=$2 AND provider_name=$3`,
+        [merchantId, customerId, providerName],
+      );
+      return existing.rows[0];
+    }
+    const created = await client.query<ProviderCustomerMapping>(
+      `INSERT INTO customers.provider_customer_mappings
+       (merchant_id,customer_id,provider_name,provider_customer_id)
+       SELECT $1,id,$3,$4 FROM customers.customers WHERE merchant_id=$1 AND id=$2 AND status='active'
+       ON CONFLICT(merchant_id,customer_id,provider_name)
+       DO UPDATE SET last_seen_at=now()
+       RETURNING provider_customer_id`,
+      [merchantId, customerId, providerName, providerCustomerId],
+    );
+    return created.rows[0];
   }
 
   async update(client: pg.PoolClient, merchantId: string, customerId: string,

@@ -8,7 +8,7 @@ import { providerSandboxBehavior } from '../../../packages/payments/src/provider
 import { erasedSubjectByAnyId } from '../../../packages/privacy/src/subjects.js';
 import { completeIdempotency, requestHash, reserveIdempotency } from './idempotency.js';
 
-type CustomerSnapshot = { id: string; email: string; name: string; phone?: string | null; status: string };
+type CustomerSnapshot = { id: string; email: string; name: string; phone?: string | null; external_reference: string; status: string };
 
 export class PaymentService {
   async create(
@@ -18,11 +18,20 @@ export class PaymentService {
     const customer = await this.fetchCustomer(authorization, input.customerId);
     if (customer.status !== 'active') throw Object.assign(new Error('customer is not active'), { statusCode: 409 });
     const paymentMethod = await this.fetchPaymentMethod(merchantId, input.customerId, input.paymentMethodId);
+    const providerCustomerId = await this.ensureProviderCustomer(merchantId, input.customerId);
     const sandboxBehavior = providerSandboxBehavior(paymentMethod.providerToken);
     const correlationId = uuid();
     const prepared = await transaction(async (client) => {
       const replay = await reserveIdempotency(client, merchantId, 'create-payment', idempotencyKey, hash);
       if (replay) return { replay };
+      await client.query(
+        `INSERT INTO provider_sandbox.customers(id,merchant_id,payflow_customer_id,email,name,external_reference)
+         VALUES($1,$2,$3,$4,$5,$6)
+         ON CONFLICT(id) DO UPDATE
+         SET merchant_id=EXCLUDED.merchant_id,payflow_customer_id=EXCLUDED.payflow_customer_id,
+             email=EXCLUDED.email,name=EXCLUDED.name,external_reference=EXCLUDED.external_reference,updated_at=now()`,
+        [providerCustomerId, merchantId, customer.id, customer.email, customer.name, customer.external_reference],
+      );
       const intent = await client.query<{ id: string }>(
         `INSERT INTO payments.payment_intents
          (merchant_id,customer_id,payment_method_id,amount,currency,status,description,customer_snapshot)
@@ -47,7 +56,9 @@ export class PaymentService {
       const response = await fetch(`${config().PROCESSOR_URL}/v1/payment-intents`, {
         method: 'POST', headers: { 'content-type': 'application/json', 'x-request-id': prepared.providerRequestId! },
         body: JSON.stringify({ merchantId, paymentId: prepared.paymentId, amount: input.amount, currency: input.currency,
-          paymentMethodId: input.paymentMethodId, outcome: sandboxBehavior.outcome,
+          paymentMethodId: input.paymentMethodId, providerCustomerId,
+          customer: { id: input.customerId, email: customer.email, name: customer.name, externalReference: customer.external_reference },
+          outcome: sandboxBehavior.outcome,
           deliveryMode: sandboxBehavior.deliveryMode, webhookUrl: config().PROCESSOR_WEBHOOK_URL }),
       });
       if (!response.ok) throw new Error(`processor returned ${response.status}`);
@@ -130,5 +141,24 @@ export class PaymentService {
     const method = await response.json() as { provider_token?: unknown };
     if (typeof method.provider_token !== 'string') throw Object.assign(new Error('payment method is invalid'), { statusCode: 422 });
     return { providerToken: method.provider_token };
+  }
+
+  private async ensureProviderCustomer(merchantId: string, customerId: string): Promise<string> {
+    const response = await fetch(`${config().CUSTOMER_SERVICE_URL}/internal/customers/${customerId}/provider-customers`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-internal-service-token': config().INTERNAL_SERVICE_TOKEN,
+        'x-merchant-id': merchantId,
+      },
+      body: JSON.stringify({ providerName: 'payflow_sandbox' }),
+    });
+    if (response.status === 404) throw Object.assign(new Error('customer not found'), { statusCode: 422 });
+    if (!response.ok) throw Object.assign(new Error('customer service unavailable'), { statusCode: 503 });
+    const mapping = await response.json() as { provider_customer_id?: unknown };
+    if (typeof mapping.provider_customer_id !== 'string') {
+      throw Object.assign(new Error('provider customer mapping is invalid'), { statusCode: 503 });
+    }
+    return mapping.provider_customer_id;
   }
 }

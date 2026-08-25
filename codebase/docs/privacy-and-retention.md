@@ -6,7 +6,7 @@ what it keeps for financial history, and when an erasure request can be marked c
 ## Customer data and financial records
 
 Customer identity, contact details, addresses, external references, payment-method aliases,
-provider tokens, free-form customer metadata, uploaded import material, notification destinations,
+provider customer identifiers and mappings, provider tokens, free-form customer metadata, uploaded import material, notification destinations,
 and customer-facing search or cache documents are personal data that must be erased.
 
 Payment amounts, currencies, provider transaction identifiers, capture and refund facts, invoice

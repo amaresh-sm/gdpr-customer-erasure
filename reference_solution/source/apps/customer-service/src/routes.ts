@@ -79,6 +79,15 @@ export async function customerRoutes(app: FastifyInstance): Promise<void> {
     return await repository.findPaymentMethodForProvider(merchantId, id, paymentMethodId) ??
       reply.code(404).send({ error: 'payment_method_not_found' });
   });
+  app.post('/internal/customers/:id/provider-customers', async (request, reply) => {
+    if (request.headers['x-internal-service-token'] !== config().INTERNAL_SERVICE_TOKEN) {
+      return reply.code(401).send({ error: 'internal_authentication_required' });
+    }
+    const { id } = z.object({ id: z.string().uuid() }).parse(request.params);
+    const merchantId = z.string().uuid().parse(request.headers['x-merchant-id']);
+    const { providerName } = z.object({ providerName: z.literal('payflow_sandbox').default('payflow_sandbox') }).parse(request.body);
+    return { provider_customer_id: await service.ensureProviderCustomer(merchantId, id, providerName) };
+  });
   app.post('/v1/customers/:id/support-tickets', async (request, reply) => {
     const principal = await authenticate(request, 'customers:write');
     const { id } = z.object({ id: z.string().uuid() }).parse(request.params);

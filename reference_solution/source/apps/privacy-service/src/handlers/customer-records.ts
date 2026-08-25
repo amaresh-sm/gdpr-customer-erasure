@@ -41,6 +41,10 @@ export async function eraseCustomerRecords(request: ErasureRequestRecord): Promi
       [request.merchant_id, request.customer_id]);
     await client.query(`DELETE FROM customers.payment_method_refs WHERE merchant_id=$1 AND customer_id=$2`,
       [request.merchant_id, request.customer_id]);
+    await client.query(`DELETE FROM provider_sandbox.customers WHERE merchant_id=$1 AND payflow_customer_id=$2`,
+      [request.merchant_id, request.customer_id]);
+    await client.query(`DELETE FROM customers.provider_customer_mappings WHERE merchant_id=$1 AND customer_id=$2`,
+      [request.merchant_id, request.customer_id]);
     await client.query(`DELETE FROM customers.customers WHERE merchant_id=$1 AND id=$2`,
       [request.merchant_id, request.customer_id]);
   });

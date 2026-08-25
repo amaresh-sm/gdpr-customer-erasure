@@ -9,7 +9,7 @@ type Provider = 'codex-login' | 'portkey';
 
 interface LaunchRecord {
   schema_version: 1;
-  state: 'running' | 'startup_failed';
+  state: 'running' | 'startup_failed' | 'finalized';
   run_id: string;
   provider: Provider;
   model: string;
@@ -30,6 +30,10 @@ interface LaunchRecord {
   artifact_image: { tag: string; id: string | null };
   portkey_route: { kind: 'config' | 'provider'; value_sha256: string } | null;
   failure: string | null;
+  completed_at?: string | null;
+  exit_code?: number | null;
+  run_status?: 'completed' | 'timed_out' | 'failed' | null;
+  cleanup_completed?: boolean | null;
 }
 
 const root = resolve(process.cwd());

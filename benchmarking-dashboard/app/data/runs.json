@@ -1,0 +1,1709 @@
+{
+  "generatedAt": "2026-08-25T09:13:09.880Z",
+  "runs": [
+    {
+      "id": "gpt-5.6-sol-xhigh-20260825t065703z",
+      "status": "completed",
+      "exitCode": 0,
+      "timedOut": false,
+      "provider": "codex-login",
+      "model": "gpt-5.6-sol",
+      "reasoning": "xhigh",
+      "startedAt": "2026-08-25T06:57:03.276Z",
+      "completedAt": "2026-08-25T07:35:24.000Z",
+      "elapsedMs": 2300724,
+      "tokens": {
+        "input": 23479619,
+        "cachedInput": 23169024,
+        "output": 70756,
+        "reasoning": 32527,
+        "total": null
+      },
+      "tools": {
+        "total": 137,
+        "successful": 127,
+        "failed": 10,
+        "shell": 137,
+        "patch": 0,
+        "trajectory": [
+          {
+            "sequence": 1,
+            "kind": "shell",
+            "state": "error",
+            "label": "Inspect candidate changes",
+            "durationMs": 0
+          },
+          {
+            "sequence": 2,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 3,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Read privacy requirements",
+            "durationMs": 0
+          },
+          {
+            "sequence": 4,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Read privacy requirements",
+            "durationMs": 0
+          },
+          {
+            "sequence": 5,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect relational data",
+            "durationMs": 0
+          },
+          {
+            "sequence": 6,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 7,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 8,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 9,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 10,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 11,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 12,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 13,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect relational data",
+            "durationMs": 0
+          },
+          {
+            "sequence": 14,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 15,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 16,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 17,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 18,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 19,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 20,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 21,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 22,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 23,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 24,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 25,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 26,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 27,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 28,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 29,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 30,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 31,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 32,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 33,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 34,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 35,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 36,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 37,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 38,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 39,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 40,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 41,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 42,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 43,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 44,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 45,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 46,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 47,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 48,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect relational data",
+            "durationMs": 0
+          },
+          {
+            "sequence": 49,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run implementation command",
+            "durationMs": 0
+          },
+          {
+            "sequence": 50,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Build the application",
+            "durationMs": 0
+          },
+          {
+            "sequence": 51,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run the application tests",
+            "durationMs": 0
+          },
+          {
+            "sequence": 52,
+            "kind": "shell",
+            "state": "error",
+            "label": "Run static checks",
+            "durationMs": 0
+          },
+          {
+            "sequence": 53,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run static checks",
+            "durationMs": 0
+          },
+          {
+            "sequence": 54,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run implementation command",
+            "durationMs": 0
+          },
+          {
+            "sequence": 55,
+            "kind": "shell",
+            "state": "error",
+            "label": "Start the local platform",
+            "durationMs": 0
+          },
+          {
+            "sequence": 56,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 57,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Exercise a service endpoint",
+            "durationMs": 0
+          },
+          {
+            "sequence": 58,
+            "kind": "shell",
+            "state": "error",
+            "label": "Exercise a service endpoint",
+            "durationMs": 0
+          },
+          {
+            "sequence": 59,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 60,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Start the local platform",
+            "durationMs": 0
+          },
+          {
+            "sequence": 61,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Seed the local platform",
+            "durationMs": 0
+          },
+          {
+            "sequence": 62,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run implementation command",
+            "durationMs": 0
+          },
+          {
+            "sequence": 63,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run distributed runtime check",
+            "durationMs": 0
+          },
+          {
+            "sequence": 64,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Exercise a service endpoint",
+            "durationMs": 0
+          },
+          {
+            "sequence": 65,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run implementation command",
+            "durationMs": 0
+          },
+          {
+            "sequence": 66,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Build the application",
+            "durationMs": 0
+          },
+          {
+            "sequence": 67,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 68,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Start the local platform",
+            "durationMs": 0
+          },
+          {
+            "sequence": 69,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run implementation command",
+            "durationMs": 0
+          },
+          {
+            "sequence": 70,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Exercise a service endpoint",
+            "durationMs": 0
+          },
+          {
+            "sequence": 71,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Start the local platform",
+            "durationMs": 0
+          },
+          {
+            "sequence": 72,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Exercise a service endpoint",
+            "durationMs": 0
+          },
+          {
+            "sequence": 73,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run implementation command",
+            "durationMs": 0
+          },
+          {
+            "sequence": 74,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run implementation command",
+            "durationMs": 0
+          },
+          {
+            "sequence": 75,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Start the local platform",
+            "durationMs": 0
+          },
+          {
+            "sequence": 76,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Exercise a service endpoint",
+            "durationMs": 0
+          },
+          {
+            "sequence": 77,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect relational data",
+            "durationMs": 0
+          },
+          {
+            "sequence": 78,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 79,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 80,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 81,
+            "kind": "shell",
+            "state": "error",
+            "label": "Inspect relational data",
+            "durationMs": 0
+          },
+          {
+            "sequence": 82,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 83,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 84,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect relational data",
+            "durationMs": 0
+          },
+          {
+            "sequence": 85,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Start the local platform",
+            "durationMs": 0
+          },
+          {
+            "sequence": 86,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect relational data",
+            "durationMs": 0
+          },
+          {
+            "sequence": 87,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Exercise a service endpoint",
+            "durationMs": 0
+          },
+          {
+            "sequence": 88,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect relational data",
+            "durationMs": 0
+          },
+          {
+            "sequence": 89,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 90,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run the application tests",
+            "durationMs": 0
+          },
+          {
+            "sequence": 91,
+            "kind": "shell",
+            "state": "error",
+            "label": "Run static checks",
+            "durationMs": 0
+          },
+          {
+            "sequence": 92,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Build the application",
+            "durationMs": 0
+          },
+          {
+            "sequence": 93,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Start the local platform",
+            "durationMs": 0
+          },
+          {
+            "sequence": 94,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect relational data",
+            "durationMs": 0
+          },
+          {
+            "sequence": 95,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 96,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect relational data",
+            "durationMs": 0
+          },
+          {
+            "sequence": 97,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run the application tests",
+            "durationMs": 0
+          },
+          {
+            "sequence": 98,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run static checks",
+            "durationMs": 0
+          },
+          {
+            "sequence": 99,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Build the application",
+            "durationMs": 0
+          },
+          {
+            "sequence": 100,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run implementation command",
+            "durationMs": 0
+          },
+          {
+            "sequence": 101,
+            "kind": "shell",
+            "state": "error",
+            "label": "Run distributed runtime check",
+            "durationMs": 0
+          },
+          {
+            "sequence": 102,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Start the local platform",
+            "durationMs": 0
+          },
+          {
+            "sequence": 103,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect relational data",
+            "durationMs": 0
+          },
+          {
+            "sequence": 104,
+            "kind": "shell",
+            "state": "error",
+            "label": "Run implementation command",
+            "durationMs": 0
+          },
+          {
+            "sequence": 105,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run implementation command",
+            "durationMs": 0
+          },
+          {
+            "sequence": 106,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run implementation command",
+            "durationMs": 0
+          },
+          {
+            "sequence": 107,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run implementation command",
+            "durationMs": 0
+          },
+          {
+            "sequence": 108,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect relational data",
+            "durationMs": 0
+          },
+          {
+            "sequence": 109,
+            "kind": "shell",
+            "state": "error",
+            "label": "Run implementation command",
+            "durationMs": 0
+          },
+          {
+            "sequence": 110,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run implementation command",
+            "durationMs": 0
+          },
+          {
+            "sequence": 111,
+            "kind": "shell",
+            "state": "error",
+            "label": "Run implementation command",
+            "durationMs": 0
+          },
+          {
+            "sequence": 112,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run implementation command",
+            "durationMs": 0
+          },
+          {
+            "sequence": 113,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect relational data",
+            "durationMs": 0
+          },
+          {
+            "sequence": 114,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run implementation command",
+            "durationMs": 0
+          },
+          {
+            "sequence": 115,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run implementation command",
+            "durationMs": 0
+          },
+          {
+            "sequence": 116,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect relational data",
+            "durationMs": 0
+          },
+          {
+            "sequence": 117,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run implementation command",
+            "durationMs": 0
+          },
+          {
+            "sequence": 118,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 119,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Start the local platform",
+            "durationMs": 0
+          },
+          {
+            "sequence": 120,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Start the local platform",
+            "durationMs": 0
+          },
+          {
+            "sequence": 121,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 122,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run implementation command",
+            "durationMs": 0
+          },
+          {
+            "sequence": 123,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run implementation command",
+            "durationMs": 0
+          },
+          {
+            "sequence": 124,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run implementation command",
+            "durationMs": 0
+          },
+          {
+            "sequence": 125,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect relational data",
+            "durationMs": 0
+          },
+          {
+            "sequence": 126,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 127,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 128,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect relational data",
+            "durationMs": 0
+          },
+          {
+            "sequence": 129,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run distributed runtime check",
+            "durationMs": 0
+          },
+          {
+            "sequence": 130,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 131,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 132,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run the application tests",
+            "durationMs": 0
+          },
+          {
+            "sequence": 133,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run static checks",
+            "durationMs": 0
+          },
+          {
+            "sequence": 134,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Build the application",
+            "durationMs": 0
+          },
+          {
+            "sequence": 135,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Start the local platform",
+            "durationMs": 0
+          },
+          {
+            "sequence": 136,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Exercise a service endpoint",
+            "durationMs": 0
+          },
+          {
+            "sequence": 137,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Seed the local platform",
+            "durationMs": 0
+          }
+        ]
+      },
+      "score": 0.3875,
+      "scoreMaximum": 1,
+      "hardPass": false,
+      "scoreState": "complete",
+      "checks": [
+        {
+          "label": "Unknown customer is tenant-safe",
+          "state": "pass",
+          "earned": 0.0125,
+          "maximum": 0.0125
+        },
+        {
+          "label": "Concurrent same-key requests share one workflow",
+          "state": "pass",
+          "earned": 0.025,
+          "maximum": 0.025
+        },
+        {
+          "label": "Cross-tenant customer and request are hidden without mutation",
+          "state": "pass",
+          "earned": 0.0125,
+          "maximum": 0.0125
+        },
+        {
+          "label": "Alternate key reuses the customer workflow",
+          "state": "pass",
+          "earned": 0.0187,
+          "maximum": 0.0187
+        },
+        {
+          "label": "Idempotent retry returns the original request",
+          "state": "pass",
+          "earned": 0.0125,
+          "maximum": 0.0125
+        },
+        {
+          "label": "Key reuse for another customer is rejected",
+          "state": "pass",
+          "earned": 0.0125,
+          "maximum": 0.0125
+        },
+        {
+          "label": "Request reaches completed only after convergence",
+          "state": "pass",
+          "earned": 0.0313,
+          "maximum": 0.0313
+        },
+        {
+          "label": "Primary relational records are removed or rekeyed",
+          "state": "pass",
+          "earned": 0.0375,
+          "maximum": 0.0375
+        },
+        {
+          "label": "Embedded and operational PostgreSQL PII is redacted",
+          "state": "fail",
+          "earned": 0,
+          "maximum": 0.1
+        },
+        {
+          "label": "Redis no longer contains subject PII",
+          "state": "pass",
+          "earned": 0.0187,
+          "maximum": 0.0187
+        },
+        {
+          "label": "OpenSearch no longer contains subject PII",
+          "state": "pass",
+          "earned": 0.0187,
+          "maximum": 0.0187
+        },
+        {
+          "label": "MinIO no longer contains subject PII",
+          "state": "pass",
+          "earned": 0.0313,
+          "maximum": 0.0313
+        },
+        {
+          "label": "Mailpit no longer contains subject PII",
+          "state": "pass",
+          "earned": 0.0313,
+          "maximum": 0.0313
+        },
+        {
+          "label": "Financial facts remain intact after a successful erasure",
+          "state": "blocked",
+          "earned": 0,
+          "maximum": 0.0875
+        },
+        {
+          "label": "A later refund remains balanced without restoring customer identity",
+          "state": "fail",
+          "earned": 0,
+          "maximum": 0.05
+        },
+        {
+          "label": "A failed post-erasure refund stays private and a later retry remains balanced",
+          "state": "fail",
+          "earned": 0,
+          "maximum": 0.025
+        },
+        {
+          "label": "Merchant API credential remains active and unchanged",
+          "state": "pass",
+          "earned": 0,
+          "maximum": 0
+        },
+        {
+          "label": "Unrelated customer and shared record remain unchanged",
+          "state": "pass",
+          "earned": 0.025,
+          "maximum": 0.025
+        },
+        {
+          "label": "Merchant identity and administrator remain unchanged",
+          "state": "pass",
+          "earned": 0.0125,
+          "maximum": 0.0125
+        },
+        {
+          "label": "Independent merchant credential remains active and usable",
+          "state": "pass",
+          "earned": 0.0125,
+          "maximum": 0.0125
+        },
+        {
+          "label": "Unrelated payment, notification, and receipt remain unchanged",
+          "state": "pass",
+          "earned": 0.025,
+          "maximum": 0.025
+        },
+        {
+          "label": "Delayed-subject erasure request is accepted",
+          "state": "pass",
+          "earned": 0.0125,
+          "maximum": 0.0125
+        },
+        {
+          "label": "Participant failure prevents completion and the same request converges when retried",
+          "state": "pass",
+          "earned": 0.0375,
+          "maximum": 0.0375
+        },
+        {
+          "label": "Pending work and its payloads are fully sanitized",
+          "state": "fail",
+          "earned": 0,
+          "maximum": 0.1
+        },
+        {
+          "label": "Delayed work completes with correct financial processing",
+          "state": "blocked",
+          "earned": 0,
+          "maximum": 0.05
+        },
+        {
+          "label": "Delayed work does not reintroduce PII",
+          "state": "blocked",
+          "earned": 0,
+          "maximum": 0.075
+        },
+        {
+          "label": "Historical event is safely consumed",
+          "state": "blocked",
+          "earned": 0,
+          "maximum": 0.05
+        },
+        {
+          "label": "Historical replay does not restore PII",
+          "state": "blocked",
+          "earned": 0,
+          "maximum": 0.075
+        },
+        {
+          "label": "Unrelated shared record remains unchanged after delayed work and replay",
+          "state": "blocked",
+          "earned": 0,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "id": "gpt-5.6-terra-xhigh-20260825t061247z",
+      "status": "completed",
+      "exitCode": 0,
+      "timedOut": false,
+      "provider": "codex-login",
+      "model": "gpt-5.6-terra",
+      "reasoning": "xhigh",
+      "startedAt": "2026-08-25T06:12:47.466Z",
+      "completedAt": "2026-08-25T06:34:32.000Z",
+      "elapsedMs": 1304534,
+      "tokens": {
+        "input": 6524993,
+        "cachedInput": 6351616,
+        "output": 52539,
+        "reasoning": 27244,
+        "total": null
+      },
+      "tools": {
+        "total": 47,
+        "successful": 40,
+        "failed": 7,
+        "shell": 47,
+        "patch": 0,
+        "trajectory": [
+          {
+            "sequence": 1,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Read privacy requirements",
+            "durationMs": 0
+          },
+          {
+            "sequence": 2,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Read privacy requirements",
+            "durationMs": 0
+          },
+          {
+            "sequence": 3,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect relational data",
+            "durationMs": 0
+          },
+          {
+            "sequence": 4,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect relational data",
+            "durationMs": 0
+          },
+          {
+            "sequence": 5,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 6,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 7,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 8,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 9,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect relational data",
+            "durationMs": 0
+          },
+          {
+            "sequence": 10,
+            "kind": "shell",
+            "state": "error",
+            "label": "Build the application",
+            "durationMs": 0
+          },
+          {
+            "sequence": 11,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run implementation command",
+            "durationMs": 0
+          },
+          {
+            "sequence": 12,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Build the application",
+            "durationMs": 0
+          },
+          {
+            "sequence": 13,
+            "kind": "shell",
+            "state": "error",
+            "label": "Inspect candidate changes",
+            "durationMs": 0
+          },
+          {
+            "sequence": 14,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run the application tests",
+            "durationMs": 0
+          },
+          {
+            "sequence": 15,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run implementation command",
+            "durationMs": 0
+          },
+          {
+            "sequence": 16,
+            "kind": "shell",
+            "state": "error",
+            "label": "Run distributed runtime check",
+            "durationMs": 0
+          },
+          {
+            "sequence": 17,
+            "kind": "shell",
+            "state": "error",
+            "label": "Start the local platform",
+            "durationMs": 0
+          },
+          {
+            "sequence": 18,
+            "kind": "shell",
+            "state": "error",
+            "label": "Run distributed runtime check",
+            "durationMs": 0
+          },
+          {
+            "sequence": 19,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run implementation command",
+            "durationMs": 0
+          },
+          {
+            "sequence": 20,
+            "kind": "shell",
+            "state": "error",
+            "label": "Exercise a service endpoint",
+            "durationMs": 0
+          },
+          {
+            "sequence": 21,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Exercise a service endpoint",
+            "durationMs": 0
+          },
+          {
+            "sequence": 22,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Exercise a service endpoint",
+            "durationMs": 0
+          },
+          {
+            "sequence": 23,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Start the local platform",
+            "durationMs": 0
+          },
+          {
+            "sequence": 24,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Exercise a service endpoint",
+            "durationMs": 0
+          },
+          {
+            "sequence": 25,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Exercise a service endpoint",
+            "durationMs": 0
+          },
+          {
+            "sequence": 26,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect relational data",
+            "durationMs": 0
+          },
+          {
+            "sequence": 27,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Start the local platform",
+            "durationMs": 0
+          },
+          {
+            "sequence": 28,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect relational data",
+            "durationMs": 0
+          },
+          {
+            "sequence": 29,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect relational data",
+            "durationMs": 0
+          },
+          {
+            "sequence": 30,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 31,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect repository sources",
+            "durationMs": 0
+          },
+          {
+            "sequence": 32,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Build the application",
+            "durationMs": 0
+          },
+          {
+            "sequence": 33,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Build the application",
+            "durationMs": 0
+          },
+          {
+            "sequence": 34,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Exercise a service endpoint",
+            "durationMs": 0
+          },
+          {
+            "sequence": 35,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run distributed runtime check",
+            "durationMs": 0
+          },
+          {
+            "sequence": 36,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run implementation command",
+            "durationMs": 0
+          },
+          {
+            "sequence": 37,
+            "kind": "shell",
+            "state": "error",
+            "label": "Run implementation command",
+            "durationMs": 0
+          },
+          {
+            "sequence": 38,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run implementation command",
+            "durationMs": 0
+          },
+          {
+            "sequence": 39,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Start the local platform",
+            "durationMs": 0
+          },
+          {
+            "sequence": 40,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run distributed runtime check",
+            "durationMs": 0
+          },
+          {
+            "sequence": 41,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Start the local platform",
+            "durationMs": 0
+          },
+          {
+            "sequence": 42,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run distributed runtime check",
+            "durationMs": 0
+          },
+          {
+            "sequence": 43,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Inspect relational data",
+            "durationMs": 0
+          },
+          {
+            "sequence": 44,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run implementation command",
+            "durationMs": 0
+          },
+          {
+            "sequence": 45,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Build the application",
+            "durationMs": 0
+          },
+          {
+            "sequence": 46,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run distributed runtime check",
+            "durationMs": 0
+          },
+          {
+            "sequence": 47,
+            "kind": "shell",
+            "state": "ok",
+            "label": "Run distributed runtime check",
+            "durationMs": 0
+          }
+        ]
+      },
+      "score": 0.3562,
+      "scoreMaximum": 1,
+      "hardPass": false,
+      "scoreState": "complete",
+      "checks": [
+        {
+          "label": "Unknown customer is tenant-safe",
+          "state": "pass",
+          "earned": 0.0125,
+          "maximum": 0.0125
+        },
+        {
+          "label": "Concurrent same-key requests share one workflow",
+          "state": "pass",
+          "earned": 0.025,
+          "maximum": 0.025
+        },
+        {
+          "label": "Cross-tenant customer and request are hidden without mutation",
+          "state": "pass",
+          "earned": 0.0125,
+          "maximum": 0.0125
+        },
+        {
+          "label": "Alternate key reuses the customer workflow",
+          "state": "pass",
+          "earned": 0.0187,
+          "maximum": 0.0187
+        },
+        {
+          "label": "Idempotent retry returns the original request",
+          "state": "pass",
+          "earned": 0.0125,
+          "maximum": 0.0125
+        },
+        {
+          "label": "Key reuse for another customer is rejected",
+          "state": "pass",
+          "earned": 0.0125,
+          "maximum": 0.0125
+        },
+        {
+          "label": "Request reaches completed only after convergence",
+          "state": "pass",
+          "earned": 0.0313,
+          "maximum": 0.0313
+        },
+        {
+          "label": "Primary relational records are removed or rekeyed",
+          "state": "pass",
+          "earned": 0.0375,
+          "maximum": 0.0375
+        },
+        {
+          "label": "Embedded and operational PostgreSQL PII is redacted",
+          "state": "fail",
+          "earned": 0,
+          "maximum": 0.1
+        },
+        {
+          "label": "Redis no longer contains subject PII",
+          "state": "pass",
+          "earned": 0.0187,
+          "maximum": 0.0187
+        },
+        {
+          "label": "OpenSearch no longer contains subject PII",
+          "state": "pass",
+          "earned": 0.0187,
+          "maximum": 0.0187
+        },
+        {
+          "label": "MinIO no longer contains subject PII",
+          "state": "fail",
+          "earned": 0,
+          "maximum": 0.0313
+        },
+        {
+          "label": "Mailpit no longer contains subject PII",
+          "state": "pass",
+          "earned": 0.0313,
+          "maximum": 0.0313
+        },
+        {
+          "label": "Financial facts remain intact after a successful erasure",
+          "state": "blocked",
+          "earned": 0,
+          "maximum": 0.0875
+        },
+        {
+          "label": "A later refund remains balanced without restoring customer identity",
+          "state": "fail",
+          "earned": 0,
+          "maximum": 0.05
+        },
+        {
+          "label": "A failed post-erasure refund stays private and a later retry remains balanced",
+          "state": "fail",
+          "earned": 0,
+          "maximum": 0.025
+        },
+        {
+          "label": "Merchant API credential remains active and unchanged",
+          "state": "pass",
+          "earned": 0,
+          "maximum": 0
+        },
+        {
+          "label": "Unrelated customer and shared record remain unchanged",
+          "state": "pass",
+          "earned": 0.025,
+          "maximum": 0.025
+        },
+        {
+          "label": "Merchant identity and administrator remain unchanged",
+          "state": "pass",
+          "earned": 0.0125,
+          "maximum": 0.0125
+        },
+        {
+          "label": "Independent merchant credential remains active and usable",
+          "state": "pass",
+          "earned": 0.0125,
+          "maximum": 0.0125
+        },
+        {
+          "label": "Unrelated payment, notification, and receipt remain unchanged",
+          "state": "pass",
+          "earned": 0.025,
+          "maximum": 0.025
+        },
+        {
+          "label": "Delayed-subject erasure request is accepted",
+          "state": "pass",
+          "earned": 0.0125,
+          "maximum": 0.0125
+        },
+        {
+          "label": "Participant failure prevents completion and the same request converges when retried",
+          "state": "pass",
+          "earned": 0.0375,
+          "maximum": 0.0375
+        },
+        {
+          "label": "Pending work and its payloads are fully sanitized",
+          "state": "fail",
+          "earned": 0,
+          "maximum": 0.1
+        },
+        {
+          "label": "Delayed work completes with correct financial processing",
+          "state": "blocked",
+          "earned": 0,
+          "maximum": 0.05
+        },
+        {
+          "label": "Delayed work does not reintroduce PII",
+          "state": "blocked",
+          "earned": 0,
+          "maximum": 0.075
+        },
+        {
+          "label": "Historical event is safely consumed",
+          "state": "blocked",
+          "earned": 0,
+          "maximum": 0.05
+        },
+        {
+          "label": "Historical replay does not restore PII",
+          "state": "blocked",
+          "earned": 0,
+          "maximum": 0.075
+        },
+        {
+          "label": "Unrelated shared record remains unchanged after delayed work and replay",
+          "state": "blocked",
+          "earned": 0,
+          "maximum": 0
+        }
+      ]
+    }
+  ]
+}

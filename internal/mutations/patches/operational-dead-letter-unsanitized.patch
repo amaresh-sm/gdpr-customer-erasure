@@ -6,7 +6,7 @@ diff --git a/apps/privacy-service/src/handlers/operational-records.ts b/apps/pri
        `SELECT id,payload,error FROM operations.dead_letters FOR UPDATE`,
      );
 -    for (const row of deadLetters.rows) {
--      if (!JSON.stringify(row).includes(request.customer_id)) continue;
+-      if (!containsSubjectValue(row, context)) continue;
 -      await client.query(`UPDATE operations.dead_letters SET payload=$2,error=$3 WHERE id=$1`,
 -        [row.id, sanitizeSubjectPayload(row.payload, context), redactSubjectValue(row.error, context)]);
 -    }

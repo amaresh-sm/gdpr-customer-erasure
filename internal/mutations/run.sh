@@ -61,7 +61,9 @@ run_one() (
   if [[ -n "$patch_rel" ]]; then
     cp "$mutation_dir/$patch_rel" "$report_dir/patch.diff"
     git -C "$source_dir" apply "$mutation_dir/$patch_rel" || {
-      echo 'mutation patch did not apply to the frozen reference source' >"$report_dir/assertion.txt"
+      local reason='mutation patch did not apply to the frozen reference source'
+      echo "$reason" >"$report_dir/assertion.txt"
+      node "$mutation_dir/write-rejection.mjs" "$report_dir/assertion.json" mutation "$expected_check" "$reason"
       exit 1
     }
   fi
@@ -98,7 +100,10 @@ run_one() (
   printf '%s\n' "$verifier_status" >"$report_dir/verifier.exit-code"
 
   if [[ ! -f "$report_dir/hidden.score.json" || ! -f "$report_dir/hidden.junit.xml" ]]; then
-    echo 'verifier did not produce both reports' >"$report_dir/assertion.txt"
+    local reason='verifier did not produce both reports'
+    echo "$reason" >"$report_dir/assertion.txt"
+    node "$mutation_dir/write-rejection.mjs" "$report_dir/assertion.json" \
+      "$([[ "$id" == 'reference' ]] && echo reference || echo mutation)" "$expected_check" "$reason"
     return 1
   fi
   node "$mutation_dir/assert-result.mjs" \

@@ -21,12 +21,14 @@ export class PaymentService {
     const customer = await this.fetchCustomer(authorization, input.customerId);
     if (customer.status !== 'active') throw Object.assign(new Error('customer is not active'), { statusCode: 409 });
     const paymentMethod = await this.fetchPaymentMethod(merchantId, input.customerId, input.paymentMethodId);
+    const providerCustomerId = await this.ensureProviderCustomer(merchantId, input.customerId);
     const sandboxBehavior = providerSandboxBehavior(paymentMethod.providerToken);
     const correlationId = uuid();
     const prepared = await transaction(async (client) => {
       const replay = await reserveIdempotency(client, merchantId, 'create-payment', idempotencyKey, hash);
       if (replay) return { replay };
       const providerRequestId = uuid();
+      await this.repository.syncProviderCustomerProfile(client, merchantId, providerCustomerId, customer);
       const prepared = await this.repository.preparePayment(client, merchantId, providerRequestId, input, customer);
       await addOutboxEvent(client, {
         eventType: EVENT_TYPES.PAYMENT_INTENT_CREATED, aggregateType: 'payment_intent',
@@ -47,6 +49,13 @@ export class PaymentService {
         amount: input.amount,
         currency: input.currency,
         paymentMethodId: input.paymentMethodId,
+        providerCustomerId,
+        customer: {
+          id: input.customerId,
+          email: customer.email,
+          name: customer.name,
+          externalReference: customer.external_reference,
+        },
         outcome: sandboxBehavior.outcome,
         deliveryMode: sandboxBehavior.deliveryMode,
         webhookUrl: config().PROCESSOR_WEBHOOK_URL,
@@ -129,5 +138,24 @@ export class PaymentService {
     const method = await response.json() as { provider_token?: unknown };
     if (typeof method.provider_token !== 'string') throw Object.assign(new Error('payment method is invalid'), { statusCode: 422 });
     return { providerToken: method.provider_token };
+  }
+
+  private async ensureProviderCustomer(merchantId: string, customerId: string): Promise<string> {
+    const response = await fetch(`${config().CUSTOMER_SERVICE_URL}/internal/customers/${customerId}/provider-customers`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-internal-service-token': config().INTERNAL_SERVICE_TOKEN,
+        'x-merchant-id': merchantId,
+      },
+      body: JSON.stringify({ providerName: 'payflow_sandbox' }),
+    });
+    if (response.status === 404) throw Object.assign(new Error('customer not found'), { statusCode: 422 });
+    if (!response.ok) throw Object.assign(new Error('customer service unavailable'), { statusCode: 503 });
+    const mapping = await response.json() as { provider_customer_id?: unknown };
+    if (typeof mapping.provider_customer_id !== 'string') {
+      throw Object.assign(new Error('provider customer mapping is invalid'), { statusCode: 503 });
+    }
+    return mapping.provider_customer_id;
   }
 }

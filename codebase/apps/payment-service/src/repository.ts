@@ -7,6 +7,7 @@ export type CustomerSnapshot = {
   email: string;
   name: string;
   phone?: string | null;
+  external_reference: string;
   status: string;
 };
 
@@ -24,6 +25,23 @@ export interface RefundablePayment {
 }
 
 export class PaymentRepository {
+  /** Records the local provider-side customer profile before a provider operation is submitted. */
+  async syncProviderCustomerProfile(
+    client: PoolClient,
+    merchantId: string,
+    providerCustomerId: string,
+    customer: CustomerSnapshot,
+  ): Promise<void> {
+    await client.query(
+      `INSERT INTO provider_sandbox.customers(id,merchant_id,payflow_customer_id,email,name,external_reference)
+       VALUES($1,$2,$3,$4,$5,$6)
+       ON CONFLICT(id) DO UPDATE
+       SET merchant_id=EXCLUDED.merchant_id,payflow_customer_id=EXCLUDED.payflow_customer_id,
+           email=EXCLUDED.email,name=EXCLUDED.name,external_reference=EXCLUDED.external_reference,updated_at=now()`,
+      [providerCustomerId, merchantId, customer.id, customer.email, customer.name, customer.external_reference],
+    );
+  }
+
   async preparePayment(
     client: PoolClient,
     merchantId: string,

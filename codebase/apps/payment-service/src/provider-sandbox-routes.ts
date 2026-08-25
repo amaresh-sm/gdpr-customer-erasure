@@ -8,7 +8,8 @@ const processingDelayMs = 250;
 
 const paymentSchema = z.object({
   merchantId: z.string().uuid(), paymentId: z.string().uuid(), amount: z.number().int().positive(),
-  currency: z.string().length(3), paymentMethodId: z.string().uuid(),
+  currency: z.string().length(3), paymentMethodId: z.string().uuid(), providerCustomerId: z.string().min(8),
+  customer: z.object({ id: z.string().uuid(), email: z.string().email(), name: z.string().min(1), externalReference: z.string().min(1) }),
   outcome: z.enum(['succeeded','declined','timeout']),
   deliveryMode: z.enum(['standard','duplicate','stale_processing']),
   webhookUrl: z.string().url(),
@@ -44,6 +45,7 @@ async function deliverAvailable(app: FastifyInstance, repository: ProviderSandbo
       const eventId = `evt_payment_${payment.id}`;
       const data = {
         providerPaymentId: payment.id,
+        providerCustomerId: payment.provider_customer_id,
         paymentId: payment.payment_id,
         merchantId: payment.merchant_id,
         amount: Number(payment.amount),
@@ -101,11 +103,11 @@ export async function registerProviderSandboxRoutes(app: FastifyInstance, signal
   const repository = new ProviderSandboxRepository();
   void runDispatcher(app, repository, signal);
   app.post('/v1/payment-intents', async (request, reply) => {
-  const input = paymentSchema.parse(request.body);
-  const id = `pi_${randomUUID()}`;
-  await repository.createPayment(id, input, processingDelayMs);
-  if (input.outcome === 'timeout') return reply.code(504).send({ error: 'provider_response_delayed' });
-  return reply.code(202).send({ id, status: 'processing' });
+    const input = paymentSchema.parse(request.body);
+    const id = `pi_${randomUUID()}`;
+    await repository.createPayment(id, input, processingDelayMs);
+    if (input.outcome === 'timeout') return reply.code(504).send({ error: 'provider_response_delayed' });
+    return reply.code(202).send({ id, status: 'processing' });
   });
   app.post('/v1/payment-intents/:id/refunds', async (request, reply) => {
   const { id } = z.object({ id: z.string().min(4) }).parse(request.params);

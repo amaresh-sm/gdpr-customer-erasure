@@ -29,12 +29,13 @@ test('idempotency hashes are deterministic and payload-sensitive', () => {
 
 test('privacy redaction replaces only the selected subject and preserves financial values', () => {
   const context = { merchantId: randomUUID(), customerId: randomUUID(), surrogateId: randomUUID(),
-    sensitiveValues: ['erase-me@example.test', 'Erase Me'] };
+    sensitiveValues: ['erase-me@example.test', 'Erase Me', 'pcus_erase_me'] };
   const input = { customerId: context.customerId, email: 'erase-me@example.test', amount: 4200,
-    survivor: 'survivor@example.test', nested: { description: 'Invoice for Erase Me' } };
+    providerCustomerId: 'pcus_erase_me', survivor: 'survivor@example.test', nested: { description: 'Invoice for Erase Me' } };
   const output = redactSubjectValue(input, context);
   assert.equal(output.customerId, context.surrogateId);
   assert.equal(output.email, '[redacted]');
+  assert.equal(output.providerCustomerId, '[redacted]');
   assert.equal(output.amount, 4200);
   assert.equal(output.survivor, 'survivor@example.test');
   assert.equal(output.nested.description, 'Invoice for [redacted]');

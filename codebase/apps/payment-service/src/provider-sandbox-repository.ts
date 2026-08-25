@@ -6,6 +6,8 @@ export interface ProviderPaymentInput {
   amount: number;
   currency: string;
   paymentMethodId: string;
+  providerCustomerId: string;
+  customer: { id: string; email: string; name: string; externalReference: string };
   outcome: 'succeeded' | 'declined' | 'timeout';
   deliveryMode: 'standard' | 'duplicate' | 'stale_processing';
   webhookUrl: string;
@@ -24,6 +26,7 @@ export interface PaymentCallback {
   id: string;
   payment_id: string;
   merchant_id: string;
+  provider_customer_id: string | null;
   amount: string;
   currency: string;
   webhook_url: string;
@@ -56,14 +59,23 @@ export interface SettlementPayment {
 
 export class ProviderSandboxRepository {
   async createPayment(id: string, input: ProviderPaymentInput, delayMs: number): Promise<void> {
-    await pool.query(
+    await transaction(async (client) => {
+      await client.query(
+        `INSERT INTO provider_sandbox.customers(id,merchant_id,payflow_customer_id,email,name,external_reference)
+         VALUES($1,$2,$3,$4,$5,$6)
+         ON CONFLICT(id) DO UPDATE SET merchant_id=EXCLUDED.merchant_id,payflow_customer_id=EXCLUDED.payflow_customer_id,
+           email=EXCLUDED.email,name=EXCLUDED.name,external_reference=EXCLUDED.external_reference,updated_at=now()`,
+        [input.providerCustomerId, input.merchantId, input.customer.id, input.customer.email, input.customer.name, input.customer.externalReference],
+      );
+      await client.query(
       `INSERT INTO provider_sandbox.payment_intents
-       (id,payment_id,merchant_id,amount,currency,payment_method_id,webhook_url,status,outcome,delivery_mode,failure_code,available_at,next_delivery_at)
-       VALUES($1,$2,$3,$4,$5,$6,$7,'processing',$8,$9,$10,now()+($11 || ' milliseconds')::interval,
-              now()+($11 || ' milliseconds')::interval)`,
-      [id, input.paymentId, input.merchantId, input.amount, input.currency, input.paymentMethodId, input.webhookUrl,
-        input.outcome, input.deliveryMode, input.outcome === 'declined' ? 'card_declined' : null, delayMs],
-    );
+       (id,payment_id,merchant_id,amount,currency,payment_method_id,provider_customer_id,webhook_url,status,outcome,delivery_mode,failure_code,available_at,next_delivery_at)
+       VALUES($1,$2,$3,$4,$5,$6,$7,$8,'processing',$9,$10,$11,now()+($12 || ' milliseconds')::interval,
+              now()+($12 || ' milliseconds')::interval)`,
+        [id, input.paymentId, input.merchantId, input.amount, input.currency, input.paymentMethodId, input.providerCustomerId, input.webhookUrl,
+          input.outcome, input.deliveryMode, input.outcome === 'declined' ? 'card_declined' : null, delayMs],
+      );
+    });
   }
 
   async paymentIsRefundable(providerPaymentId: string): Promise<boolean> {
@@ -93,7 +105,7 @@ export class ProviderSandboxRepository {
          WHERE id=(SELECT id FROM provider_sandbox.payment_intents
            WHERE webhook_delivered_at IS NULL AND available_at<=now() AND next_delivery_at<=now()
            ORDER BY next_delivery_at,created_at FOR UPDATE SKIP LOCKED LIMIT 1)
-         RETURNING id,payment_id,merchant_id,amount::text,currency,webhook_url,webhook_attempts,
+         RETURNING id,payment_id,merchant_id,provider_customer_id,amount::text,currency,webhook_url,webhook_attempts,
            CASE WHEN outcome='declined' THEN 'payment.failed' ELSE 'payment.succeeded' END event_type,
            delivery_mode,failure_code`,
       );

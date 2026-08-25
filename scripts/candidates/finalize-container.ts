@@ -6,7 +6,7 @@ import { once } from 'node:events';
 import type { CandidateRunManifest, Evidence } from './types.js';
 
 interface LaunchRecord {
-  state: 'running' | 'startup_failed';
+  state: 'running' | 'startup_failed' | 'finalized';
   run_id: string;
   provider: 'codex-login' | 'portkey';
   model: string;
@@ -27,6 +27,10 @@ interface LaunchRecord {
   artifact_image: { tag: string; id: string | null };
   portkey_route: { kind: 'config' | 'provider'; value_sha256: string } | null;
   failure: string | null;
+  completed_at?: string | null;
+  exit_code?: number | null;
+  run_status?: 'completed' | 'timed_out' | 'failed' | null;
+  cleanup_completed?: boolean | null;
 }
 
 const root = resolve(process.cwd());
@@ -154,6 +158,12 @@ async function main(): Promise<void> {
   metadata.run.failure_reason = status === 'completed' ? null : `model container exit ${exitCode}; see logs/container-state.json and logs/events.sanitized.json`;
   await writeFile(metadataPath, `${JSON.stringify(metadata, null, 2)}\n`);
   await cleanup(launch);
+  launch.state = 'finalized';
+  launch.completed_at = completedAt;
+  launch.exit_code = exitCode;
+  launch.run_status = status;
+  launch.cleanup_completed = true;
+  await writeFile(launchPath, `${JSON.stringify(launch, null, 2)}\n`);
   process.stdout.write(`${metadataPath}\n`);
 }
 

@@ -28,7 +28,7 @@ function collectIdentityValues(customer: Record<string, unknown>, related: Array
   addNestedStrings(output, customer.metadata);
   for (const row of related.flat()) {
     for (const field of ['value', 'line1', 'line2', 'city', 'region', 'postal_code', 'provider_token',
-      'billing_name', 'body', 'subject']) {
+      'provider_customer_id', 'email', 'name', 'external_reference', 'billing_name', 'body', 'subject']) {
       addString(output, row[field]);
     }
     for (const field of ['billing_address', 'attachments']) addNestedStrings(output, row[field]);
@@ -77,6 +77,8 @@ export class PrivacyRepository {
         client.query(`SELECT * FROM customers.addresses WHERE merchant_id=$1 AND customer_id=$2`, [merchantId, customerId]),
         client.query(`SELECT * FROM customers.contacts WHERE merchant_id=$1 AND customer_id=$2`, [merchantId, customerId]),
         client.query(`SELECT * FROM customers.payment_method_refs WHERE merchant_id=$1 AND customer_id=$2`, [merchantId, customerId]),
+        client.query(`SELECT * FROM customers.provider_customer_mappings WHERE merchant_id=$1 AND customer_id=$2`, [merchantId, customerId]),
+        client.query(`SELECT * FROM provider_sandbox.customers WHERE merchant_id=$1 AND payflow_customer_id=$2`, [merchantId, customerId]),
         client.query(`SELECT m.* FROM customers.support_messages m WHERE m.merchant_id=$1 AND m.author_type='customer' AND m.author_id=$2`, [merchantId, customerId]),
         client.query(`SELECT t.* FROM customers.support_tickets t JOIN customers.support_participants p ON p.ticket_id=t.id
           WHERE t.merchant_id=$1 AND p.customer_id=$2`, [merchantId, customerId]),

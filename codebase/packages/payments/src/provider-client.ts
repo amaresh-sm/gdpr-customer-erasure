@@ -44,6 +44,8 @@ export class PaymentProviderClient {
     amount: number;
     currency: string;
     paymentMethodId: string;
+    providerCustomerId: string;
+    customer: { id: string; email: string; name: string; externalReference: string };
     outcome: ProviderOutcome;
     deliveryMode: WebhookDeliveryMode;
     webhookUrl: string;

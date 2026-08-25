@@ -26,6 +26,15 @@ export class CustomerService {
     });
   }
 
+  async ensureProviderCustomer(merchantId: string, customerId: string, providerName: string): Promise<string> {
+    const providerCustomerId = `pcus_${uuid().replaceAll('-', '')}`;
+    const mapping = await transaction(async (client) => await this.repository.ensureProviderCustomer(
+      client, merchantId, customerId, providerName, providerCustomerId,
+    ));
+    if (!mapping) throw Object.assign(new Error('customer not found'), { statusCode: 404 });
+    return mapping.provider_customer_id;
+  }
+
   async update(merchantId: string, customerId: string, version: number,
                fields: { email?: string | undefined; name?: string | undefined; phone?: string | null | undefined }, correlationId = uuid()): Promise<CustomerRow> {
     return transaction(async (client) => {
