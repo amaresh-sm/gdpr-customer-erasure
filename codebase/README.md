@@ -46,5 +46,5 @@ listed in `docker-compose.yml`.
 
 ## Documentation
 
-- `docs/privacy-api.md` — customer-erasure API
+- `docs/privacy-api.md` — customer data deletion API
 - `docs/privacy-and-retention.md` — privacy and retention rules

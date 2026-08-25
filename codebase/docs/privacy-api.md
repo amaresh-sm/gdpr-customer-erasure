@@ -1,8 +1,8 @@
-# Privacy erasure API
+# Customer data deletion API
 
-Use the following endpoints to create a customer-erasure request and check its status. After a request is accepted, cleanup runs asynchronously.
+Use the following endpoints to create a data deletion request and check its status. After a request is accepted, cleanup runs asynchronously.
 
-## Start or resume an erasure request
+## Start or resume a data deletion request
 
 ```http
 POST /v1/customers/{customerId}/erasure-requests
@@ -11,7 +11,7 @@ Idempotency-Key: <8-200 characters>
 ```
 
 The API key requires the `privacy:erase` scope. The request has no body. A valid request returns
-`202 Accepted` with a saved erasure request:
+`202 Accepted` with a saved data deletion request:
 
 ```json
 {
@@ -26,18 +26,18 @@ The API key requires the `privacy:erase` scope. The request has no body. A valid
 }
 ```
 
-Reusing an idempotency key for the same customer returns the same request. Reusing it for a different customer returns `409 Conflict`. If the customer already has an erasure request, a new key returns that existing request instead of starting another workflow.
+Reusing an idempotency key for the same customer returns the same request. Reusing it for a different customer returns `409 Conflict`. If the customer already has a data deletion request, a new key returns that existing request instead of starting another workflow.
 
 For this request-creation endpoint, return `404` if the customer does not exist or belongs to another merchant. Do not reveal information or change data.
 
-## Check an erasure request
+## Check a data deletion request
 
 ```http
 GET /v1/erasure-requests/{requestId}
 Authorization: Bearer <merchant-api-key>
 ```
 
-An erasure request has one of these statuses:
+A data deletion request has one of these statuses:
 
 - `pending`: accepted and awaiting work.
 - `processing`: one or more cleanup steps are running.
@@ -45,7 +45,7 @@ An erasure request has one of these statuses:
   data, and the request is safe to retry.
 - `completed`: all required cleanup work has finished and delayed work cannot restore PII.
 
-For this status endpoint, return `404` if the erasure request does not exist or belongs to another
+For this status endpoint, return `404` if the data deletion request does not exist or belongs to another
 merchant.
 
 The service may retry failed requests automatically. Reposting the same request is also allowed. It must keep the same request ID and preserve work that already finished.
