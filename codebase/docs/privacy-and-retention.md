@@ -1,13 +1,11 @@
 # Customer erasure and data retention
 
-PayFlow lets merchants permanently erase a customer. This document explains what PayFlow removes,
-what it keeps for financial history, and when an erasure request can be marked complete.
+PayFlow allows merchants to erase a customer’s personal data. This document explains what PayFlow should remove, what it retains for financial history, and when an erasure request can be marked complete.
 
 ## Customer data and financial records
 
 Customer identity, contact details, addresses, external references, payment-method aliases,
-provider customer identifiers and mappings, provider tokens, free-form customer metadata, uploaded import material, notification destinations,
-and customer-facing search or cache documents are personal data that must be erased.
+provider customer identifiers and mappings, provider tokens, free-form customer metadata, uploaded import material, notification destinations, and customer-facing search or cache documents are personal data that must be erased.
 
 Payment amounts, currencies, provider transaction identifiers, capture and refund facts, invoice
 totals, immutable ledger postings, settlements, and reconciliation results are retained financial
@@ -29,6 +27,7 @@ record are not retained.
 - A provider capture can create at most one payment ledger transaction.
 - A provider refund can create at most one refund ledger transaction.
 - Total successful refunds cannot exceed the captured amount.
+- A retained provider payment or capture reference may be used only to process refunds, reconciliation, or other required financial operations. It must not be used to look up, restore, or recreate the erased customer’s identity, payment-method alias, provider customer identifier, or personal data.
 - Reconciliation reads immutable provider settlements and ledger postings.
 - Customer and projection lifecycle changes cannot alter ledger totals.
 

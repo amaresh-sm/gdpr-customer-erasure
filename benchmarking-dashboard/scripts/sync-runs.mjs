@@ -92,7 +92,7 @@ runs.sort((left, right) => new Date(right.startedAt).getTime() - new Date(left.s
 
 await fs.writeFile(
   outputPath,
-  `${JSON.stringify({ generatedAt: new Date().toISOString(), runs: runs.slice(0, 2) }, null, 2)}\n`,
+  `${JSON.stringify({ generatedAt: new Date().toISOString(), runs: runs.slice(0, 6) }, null, 2)}\n`,
 );
 
-console.log(`Synced ${Math.min(runs.length, 2)} completed candidate runs.`);
+console.log(`Synced ${Math.min(runs.length, 6)} completed candidate runs.`);

@@ -1,9 +1,10 @@
 # Candidate calibration launcher
 
-Use the launcher for every new model attempt. It creates a timestamped, ignored local artifact and
-starts a durable Docker model container. The model receives only the copied `codebase/` plus the
-public task prompt; it cannot mount `hidden_tests/`, `reference_solution/`, calibration records, or
-other candidates. The container continues after the calling terminal returns.
+Use the provider-specific generation commands below for every new model attempt. They create a
+timestamped, ignored local artifact, wait for generation to end, and finalize its trusted telemetry.
+The model receives only the copied `codebase/` plus the public task prompt; it cannot mount
+`hidden_tests/`, `reference_solution/`, calibration records, or other candidates. The lower-level
+launcher commands remain available only for troubleshooting a detached generation container.
 
 The model container owns a private rootless Docker daemon, so the public `docker compose` commands
 work without mounting the host Docker socket. Candidate source is mounted read-only, copied to a
@@ -16,49 +17,46 @@ Portkey model traffic still uses its dedicated provider gateway. The outer conta
 Docker-in-Docker inside the Docker Desktop/Rancher Desktop VM; no host socket or evaluator file is
 available inside it.
 
+## Generate with Codex login
+
+This is the normal Codex/ChatGPT-login path. It waits for generation to finish, finalizes the
+trusted telemetry, removes the generation environment, and prints the resulting run directory.
+
 ```bash
-npm run candidates:run -- \
+npm run candidates:generate:codex -- \
   --model gpt-5.6-sol \
-  --thinking ultra \
-  --provider codex-login \
-  --prompt-file instruction/task.md \
-  --timeout-seconds 14400
+  --thinking xhigh
 ```
 
-Check a run without accessing its source from the model container:
+## Generate through Portkey
+
+The Portkey environment file is private and must contain `PORTKEY_API_KEY` plus exactly one of
+`PORTKEY_CONFIG` or `PORTKEY_PROVIDER`.
 
 ```bash
-npm run candidates:status -- --run-dir candidates/gpt-5.6-sol-ultra-<timestamp>
+npm run candidates:generate:portkey -- \
+  --model kimi-k3 \
+  --thinking high \
+  --portkey-env-file /absolute/path/to/private-portkey.env
 ```
 
-After the model container exits, finalize trusted telemetry and remove all generation containers:
+Both commands accept `--timeout-seconds` (default `14400`), `--run-id`, `--baseline-ref`, and
+`--prompt-file`. Use the lower-level `candidates:run`, `candidates:status`, and
+`candidates:finalize` commands only for launcher troubleshooting.
+
+## Score a completed candidate
+
+This is the only scoring command. It starts a fresh isolated stack, mounts hidden tests only into
+the verifier, writes JUnit and score reports into the candidate artifact, and cleans the stack up.
 
 ```bash
-npm run candidates:finalize -- --run-dir candidates/gpt-5.6-sol-ultra-<timestamp>
-```
-
-`score.sh` performs that finalization automatically when appropriate. It then runs a separate
-Docker project and attaches the JUnit report without copying the hidden suite into the artifact:
-
-```bash
-scripts/candidates/score.sh candidates/gpt-5.6-sol-high-<timestamp>
+npm run candidates:score -- candidates/gpt-5.6-sol-xhigh-<timestamp>
 ```
 
 Render the comparable headline table from the recorded evidence:
 
 ```bash
 npx --prefix codebase tsx scripts/candidates/summary.ts -- --run-dir candidates/gpt-5.6-sol-high-<timestamp>
-```
-
-For Portkey, use `--provider portkey` with a private environment file containing
-`PORTKEY_API_KEY` and exactly one of `PORTKEY_CONFIG` or `PORTKEY_PROVIDER`:
-
-```bash
-npm run candidates:run -- \
-  --model @provider/model \
-  --thinking ultra \
-  --provider portkey \
-  --portkey-env-file /absolute/path/to/private-portkey.env
 ```
 
 The Portkey key is streamed only into a trusted proxy container's tmpfs and is not a model-container

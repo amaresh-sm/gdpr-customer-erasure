@@ -1,0 +1,13 @@
+diff --git a/packages/privacy/src/subjects.ts b/packages/privacy/src/subjects.ts
+--- a/packages/privacy/src/subjects.ts
++++ b/packages/privacy/src/subjects.ts
+@@ -22,8 +22,7 @@
+ ): Promise<{ customerId: string; surrogateId: string } | undefined> {
+   const result = await client.query<{ customer_id: string; surrogate_id: string }>(
+     `SELECT customer_id,surrogate_id FROM privacy.erased_subjects
+-     WHERE merchant_id=$1 AND (customer_id=$2 OR surrogate_id=$2)`,
+-    [merchantId, customerId],
++     WHERE merchant_id=$1 AND customer_id=$2`, [merchantId, customerId],
+   );
+   const row = result.rows[0];
+   return row ? { customerId: row.customer_id, surrogateId: row.surrogate_id } : undefined;

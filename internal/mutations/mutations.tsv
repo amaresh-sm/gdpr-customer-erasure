@@ -13,6 +13,8 @@ opensearch-document-retained	patches/opensearch-document-retained.patch	normal.o
 object-storage-unsanitized	patches/object-storage-unsanitized.patch	normal.minio	false	Customer imports and retained documents must be scrubbed before completion.
 mailpit-message-retained	patches/mailpit-message-retained.patch	normal.mailpit	false	Application-owned provider mailbox copies must be removed.
 financial-facts-destroyed	patches/financial-facts-destroyed.patch	financial.retention	false	Erasure must preserve payment, invoice, and ledger financial facts.
+financial-surrogate-untracked	patches/financial-surrogate-untracked.patch	workflow.completed	false	Retained financial records must keep the durable suppression surrogate required for the erasure workflow to converge.
+financial-surrogate-lookup-omitted	patches/financial-surrogate-lookup-omitted.patch	financial.anonymous_retained_link	false	A later refund must recognize a retained opaque subject link and keep new financial data private.
 post-erasure-refund-stored-pii	patches/post-erasure-refund-stored-pii.patch	financial.post_erasure_refund	false	A refund created after erasure must not retain customer identity in the financial record.
 post-erasure-refund-provider-pii	patches/post-erasure-refund-provider-pii.patch	financial.post_erasure_refund	false	A refund created after erasure must not send customer-supplied identity to the payment provider.
 post-erasure-refund-failure-pii	patches/post-erasure-refund-failure-pii.patch	financial.post_erasure_refund_failure_retry	false	A failed post-erasure refund must not restore customer identity in the retained failure record.

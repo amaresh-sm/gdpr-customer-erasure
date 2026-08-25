@@ -3,39 +3,23 @@ PayFlow is a multi-tenant payment platform. Customer information is used across 
 
 ## The problem
 
-PayFlow’s documentation defines a customer-erasure API, but the feature has not been implemented yet.
+Customer erasure is not implemented yet. The repository includes the API and privacy requirements you must follow.
 
-Build the feature so an authenticated merchant can request erasure of one of its customers and check the request status later. The request and its status must remain reliable if it is retried or if services restart.
-
-Follow the documented API and privacy requirements, and ensure the change does not break existing payment behavior.
+Implement the feature so an authenticated merchant can erase one of its customers and check the request’s status later. It must work correctly when a request is repeated or when a service restarts. Ensure the change does not break existing payment behavior
 
 ## Requirement
 
-Implement these fixed public entry points through the API gateway; do not change their HTTP
-methods, paths, authentication model, or response shapes:
-
+Implement the following public endpoints:
 - `POST /v1/customers/:customerId/erasure-requests`
 - `GET /v1/erasure-requests/:requestId`
 
-The precise API behavior is in `docs/privacy-api.md`, and the erasure/retention contract is in
-`docs/privacy-and-retention.md`.
-
-An erasure request can be marked `completed` only after the customer’s personal data has been removed from PayFlow’s active systems and delayed work, retries, webhooks, or replayed events cannot add it back.
-
-Keep valid financial records, such as payments, invoices, and ledger entries, but remove the erased customer’s identifying information from them. Do not affect other customers, merchants, or shared records that they still use.
-
-Repeated requests for the same customer must not create competing erasure workflows. If a request cannot finish, it must not report `completed`.
-
-The original customer UUID is also part of the customer’s identity. After erasure, it must not remain in normal application records, payloads, caches, search documents, files, or object metadata. Remove it, set it to `null`, or replace it with an unrelated opaque UUID where a retained record still needs a reference.
-
-The original UUID may remain only in the minimal erasure-request and suppression records defined by the retention policy. Those records exist only to track the erasure and prevent delayed or replayed work from recreating the erased customer’s data.
+Implement without breaking valid payment behavior. Customer data must be erased while required financial history and data belonging to other customers and merchants remain intact. See the linked documents for the full API and retention requirements. The precise API behavior is in `docs/privacy-api.md`, and the erasure/retention contract is in `docs/privacy-and-retention.md`.
 
 ## Existing application components
 
 The API gateway entry point is `apps/api-gateway/src/main.ts`.
 
-Privacy, retention, and financial requirements are documented in
-`docs/privacy-and-retention.md`.
+Privacy, retention, and financial requirements are documented in `docs/privacy-and-retention.md`.
 
 The codebase includes patterns for database transactions, merchant authentication, outbox/inbox messaging, background workers, and integrations with Redis, OpenSearch, MinIO, and Redpanda. Extend those patterns where appropriate, and keep existing PayFlow behavior working.
 

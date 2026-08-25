@@ -1,7 +1,6 @@
 # Privacy erasure API
 
-Merchants request customer erasure through the API gateway. The cleanup continues in the
-background.
+Use the following endpoints to create a customer-erasure request and check its status. After a request is accepted, cleanup runs asynchronously.
 
 ## Start or resume an erasure request
 
@@ -27,12 +26,9 @@ The API key requires the `privacy:erase` scope. The request has no body. A valid
 }
 ```
 
-Reusing an idempotency key for the same customer returns the same request. Reusing it for a
-different customer returns `409 Conflict`. If the customer already has an erasure request, a new
-key returns that existing request instead of starting another workflow.
+Reusing an idempotency key for the same customer returns the same request. Reusing it for a different customer returns `409 Conflict`. If the customer already has an erasure request, a new key returns that existing request instead of starting another workflow.
 
-If the customer does not exist, return `404`. An ID belonging to another merchant also returns
-`404`; it must not reveal anything or change any data.
+For this request-creation endpoint, return `404` if the customer does not exist or belongs to another merchant. Do not reveal information or change data.
 
 ## Check an erasure request
 
@@ -49,7 +45,7 @@ An erasure request has one of these statuses:
   data, and the request is safe to retry.
 - `completed`: all required cleanup work has finished and delayed work cannot restore PII.
 
-An erasure request belonging to another merchant returns `404`.
+For this status endpoint, return `404` if the erasure request does not exist or belongs to another
+merchant.
 
-The service may retry failed requests automatically. Reposting the same request is also allowed;
-it must keep the same request ID and preserve work that already finished.
+The service may retry failed requests automatically. Reposting the same request is also allowed. It must keep the same request ID and preserve work that already finished.

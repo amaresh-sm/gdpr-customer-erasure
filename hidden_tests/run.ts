@@ -4,7 +4,7 @@ import { closeClients } from './lib/clients.js';
 import { seedFixture, type BenchmarkFixture } from './lib/fixture.js';
 import { assertNoErasureViolations, collectErasureViolations, installTransientPaymentWriteFailure,
   releaseDelayedWork, removeTransientPaymentWriteFailure, replayHistoricalPiiEvent, requestErasure,
-  verifyFinancialRetention, verifyFixtureCoverage, verifyMerchantCredentialsPreserved, verifyMerchantIdentityAndAdminPreserved,
+  verifyAnonymousRetainedFinancialLink, verifyFinancialRetention, verifyFixtureCoverage, verifyMerchantCredentialsPreserved, verifyMerchantIdentityAndAdminPreserved,
   verifyPostErasureRefund, verifyPostErasureRefundFailureRetry, verifySecondaryMerchantCredentialsPreserved, verifySubjectUnchanged, verifySurvivorUntouched, verifyUnrelatedPaymentArtifactsPreserved,
   waitForCompletion, waitForStatus } from './lib/verifier.js';
 import { api } from './lib/http.js';
@@ -151,7 +151,7 @@ async function writeScoreReport(): Promise<void> {
   const report: ScoreReport = blocked
     ? { schema_version: 1, state: 'blocked', hard_pass: false, earned: null, maximum: scoreMaximum, checks, diagnostics,
       blocked_reason: 'fixture provisioning failed; candidate score is not comparable' }
-    : { schema_version: 1, state: 'complete', hard_pass: results.length === 12 && results.every((result) => !result.error),
+    : { schema_version: 1, state: 'complete', hard_pass: results.length === 13 && results.every((result) => !result.error),
       earned: Number(checks.reduce((total, check) => total + check.earned, 0).toFixed(4)), maximum: scoreMaximum, checks, diagnostics };
   await writeFile(process.env.ERASURE_SCORE_PATH ?? 'hidden.score.json', `${JSON.stringify(report, null, 2)}\n`, 'utf8');
 }
@@ -243,9 +243,22 @@ try {
     await test('financial truth and shared unrelated records are retained', async () => {
       const financial = await observe(async () => { await verifyFinancialRetention(fixture); });
       const normalClean = checks.filter((check) => check.id.startsWith('normal.')).every((check) => check.state === 'pass');
-      recordCheck('financial.retention', 'Financial facts remain intact after a successful erasure', 0.7, financial,
+      recordCheck('financial.retention', 'Financial facts remain intact after a successful erasure', 0.6, financial,
         normalClean, 'normal-subject PII was not fully removed');
       if (!financial.ok) throw new Error(financial.evidence);
+    });
+    await test('retained financial links remain anonymous and support a later private refund', async () => {
+      const normalClean = checks.filter((check) => check.id.startsWith('normal.')).every((check) => check.state === 'pass');
+      if (!normalClean) {
+        recordCheck('financial.anonymous_retained_link',
+          'Retained financial links are anonymous and support a private later refund', 0.1,
+          { ok: false }, false, 'normal-subject PII was not fully removed');
+        return;
+      }
+      const anonymousLink = await observe(async () => { await verifyAnonymousRetainedFinancialLink(fixture); });
+      recordCheck('financial.anonymous_retained_link',
+        'Retained financial links are anonymous and support a private later refund', 0.1, anonymousLink);
+      if (!anonymousLink.ok) throw new Error(anonymousLink.evidence);
     });
     await test('post-erasure refunds preserve financial correctness without restoring PII', async () => {
       const refund = await observe(async () => { await verifyPostErasureRefund(fixture); });
