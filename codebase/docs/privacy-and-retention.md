@@ -4,77 +4,24 @@ PayFlow allows merchants to request erasure of a customer’s personal data. Thi
 
 ## Customer data and financial records
 
-Customer identity, contact details, addresses, external references, payment-method aliases,
-provider customer identifiers and mappings, provider tokens, free-form customer metadata, uploaded import material, notification destinations, and customer-facing search or cache documents are personal data that must be erased.
+An erasure request removes a customer’s personal data from every PayFlow-controlled system that actively stores, processes, or exposes it.
 
-Payment amounts, currencies, provider transaction identifiers, capture and refund facts, invoice
-totals, immutable ledger postings, settlements, and reconciliation results are retained financial
-facts. Keeping a financial fact does not allow PayFlow to keep the customer's name, contact
-details, address, payment-method reference, or other unnecessary identity data alongside it.
+PayFlow must retain financial facts needed for payment history, refunds, reconciliation, and accounting. Retained records must remain financially correct, but must no longer identify the erased customer.
 
-Audit and analytics records may remain only after direct customer identifiers and embedded personal
-data have been removed. Security and operational records may keep an event type, timestamp,
-merchant, status, and non-personal financial measurements.
+Do not alter data belonging to other customers or merchants. Shared records must remain usable for the people who still need them.
 
-Financial documents may remain when needed for transaction history, but their customer section
-must be redacted. Customer imports and other source documents used to create or enrich a customer
-record are not retained.
+## When an erasure is complete
 
-## Financial records to keep
+An erasure request can be marked `completed` only after the customer’s personal data is gone from PayFlow’s active systems and normal processing cannot add it back.
 
-- Every ledger transaction has postings whose signed sum is zero.
-- Ledger postings are append-only.
-- A provider capture can create at most one payment ledger transaction.
-- A provider refund can create at most one refund ledger transaction.
-- Total successful refunds cannot exceed the captured amount.
-- A retained provider payment or capture reference may be used only to process refunds, reconciliation, or other required financial operations. It must not be used to look up, restore, or recreate the erased customer’s identity, payment-method alias, provider customer identifier, or personal data.
-- Reconciliation reads immutable provider settlements and ledger postings.
-- Customer and projection lifecycle changes cannot alter ledger totals.
+Delayed work, retries, provider callbacks, duplicate delivery, restarts, and replayed events must not restore erased personal data.
 
-Support conversations can involve several customers. Erasure removes the erased customer's
-participation, attachments, and personal content without deleting another participant's messages or
-the ticket record they still need.
+## Retained erasure information
 
-## When erasure is complete
+PayFlow may retain the minimum information needed to track the request and prevent old work from recreating the customer’s data. The customer’s original identity must not remain in ordinary application records after erasure.
 
-An erasure is complete only after PayFlow has removed the customer's personal data from every active
-system it owns. This includes PostgreSQL records and embedded JSON, Redis, OpenSearch, MinIO
-documents, pending work, dead letters, notification delivery records, the PayFlow-controlled Mailpit
-mailbox, analytics, and other derived data.
+## Safety and recovery
 
-The customer must stay erased after duplicate delivery, a process restart, a retry, a delayed
-provider webhook, or replay of an event created before erasure. Existing financial processing must
-continue without bringing customer data back.
+Each request belongs to its authenticated merchant. Erasure must not expose or affect another merchant’s data.
 
-A small permanent suppression record may keep the merchant, the supplied internal customer UUID, an
-opaque replacement UUID, request identifiers, status, and timestamps. It must not keep the
-customer's name, email, phone, address, external reference, payment-method token, or free-form
-metadata.
-
-After completion, the original customer UUID may appear only in the erasure-request and suppression
-records described above. Every other PayFlow record must either delete the original UUID, set it to
-`null`, or replace it with the opaque replacement UUID when a retained record still needs a link.
-This applies to retained payments, invoices, audits, jobs, notifications, analytics, document
-manifests, caches, search data, object metadata, and queued, retried, or provider-captured email.
-A redacted customer row that still uses the original UUID is not a suppression record and does not
-satisfy this policy.
-
-Redpanda keeps events for a limited time. It is not PayFlow's main customer database, so historical
-event segments are not rewritten for one customer. Consumers must make sure retained or replayed
-events cannot restore personal data after erasure. PostgreSQL backups, database WAL, and
-disaster-recovery media follow separate expiry and access procedures and are outside this online
-erasure operation.
-
-Mailpit represents the PayFlow-controlled captured-mail archive used in this local environment. Its
-messages must be removed or made free of the erased customer's data before completion. PayFlow
-cannot delete a message that has already reached an independent recipient mailbox.
-
-## Merchant boundaries and retries
-
-Every request belongs to the authenticated merchant. A merchant must not be able to learn about or
-affect another merchant's customer. Unrelated customers, shared records, and financial totals must
-remain unchanged.
-
-The erasure workflow must survive retries and restarts. It must not report `completed` while a
-required service is unavailable or still has work to do. Repeating a request after a partial failure
-must finish the same erasure without repeating cleanup work or changing unrelated data.
+The workflow must safely resume after a failure or restart. Repeating a request must converge on the same result without duplicating destructive work.
