@@ -1,6 +1,6 @@
 # Customer erasure and data retention
 
-PayFlow allows merchants to erase a customer’s personal data. This document explains what PayFlow should remove, what it retains for financial history, and when an erasure request can be marked complete.
+PayFlow allows merchants to request erasure of a customer’s personal data. This document explains which data an erasure request must remove, which financial records it must retain, and when the request can be marked complete.
 
 ## Customer data and financial records
 
