@@ -62,6 +62,42 @@ case "${PAYFLOW_GENERATION_PROVIDER:-codex-login}" in
       -C /workspace/source - < "$prompt_copy"
     result=$?
     ;;
+  portkey-opencode)
+    mkdir -p /tmp/opencode/config/opencode /tmp/opencode/cache /tmp/opencode/data /tmp/npm-cache
+    cat > /tmp/opencode/config/opencode/opencode.json <<EOF
+{
+  "\$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "portkey": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Portkey",
+      "options": {
+        "baseURL": "http://provider-proxy:8081/v1",
+        "headers": { "Authorization": "Bearer payflow-trusted-relay" }
+      },
+      "models": {
+        "${PAYFLOW_GENERATION_MODEL}": {
+          "name": "${PAYFLOW_GENERATION_MODEL} via Portkey",
+          "options": { "reasoningEffort": "${PAYFLOW_GENERATION_REASONING_EFFORT}" }
+        }
+      }
+    }
+  },
+  "model": "portkey/${PAYFLOW_GENERATION_MODEL}",
+  "agent": {
+    "build": { "model": "portkey/${PAYFLOW_GENERATION_MODEL}", "reasoningEffort": "${PAYFLOW_GENERATION_REASONING_EFFORT}" }
+  },
+  "permission": {
+    "bash": "allow", "edit": "allow", "write": "allow", "read": "allow",
+    "external_directory": "allow", "webfetch": "allow"
+  }
+}
+EOF
+    timeout --signal=TERM --kill-after=30s "${PAYFLOW_GENERATION_TIMEOUT_SECONDS}s" env \
+      XDG_CONFIG_HOME=/tmp/opencode/config XDG_CACHE_HOME=/tmp/opencode/cache XDG_DATA_HOME=/tmp/opencode/data XDG_STATE_HOME=/tmp/opencode/state npm_config_cache=/tmp/npm-cache \
+      opencode run --auto --dir /workspace/source "$(cat "$prompt_copy")"
+    result=$?
+    ;;
   *)
     echo "unsupported generation provider" >&2
     result=64

@@ -6,6 +6,11 @@ const dashboardRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)),
 const projectRoot = path.resolve(dashboardRoot, '..');
 const candidatesRoot = path.join(projectRoot, 'candidates');
 const outputPath = path.join(dashboardRoot, 'app', 'data', 'runs.json');
+const displayRunIds = new Set([
+  'kimi-k3-high-20260825t093000z',
+  'gpt-5.6-sol-xhigh-20260825t065703z',
+  'grok-4.5-high-20260825t210036z',
+]);
 
 const value = (field) => field?.value ?? null;
 
@@ -82,6 +87,7 @@ for (const candidate of candidates) {
     const metadata = JSON.parse(await fs.readFile(path.join(runRoot, 'metadata.json'), 'utf8'));
     const score = JSON.parse(await fs.readFile(path.join(runRoot, 'reports', 'hidden.score.json'), 'utf8'));
     if (metadata.run?.status !== 'completed' || score.state !== 'complete') continue;
+    if (!displayRunIds.has(metadata.run.id)) continue;
     runs.push(mapRun(metadata, score));
   } catch {
     // A candidate may still be running or may not have been scored yet.
@@ -92,7 +98,7 @@ runs.sort((left, right) => new Date(right.startedAt).getTime() - new Date(left.s
 
 await fs.writeFile(
   outputPath,
-  `${JSON.stringify({ generatedAt: new Date().toISOString(), runs: runs.slice(0, 6) }, null, 2)}\n`,
+  `${JSON.stringify({ generatedAt: new Date().toISOString(), runs }, null, 2)}\n`,
 );
 
-console.log(`Synced ${Math.min(runs.length, 6)} completed candidate runs.`);
+console.log(`Synced ${runs.length} selected completed candidate runs.`);

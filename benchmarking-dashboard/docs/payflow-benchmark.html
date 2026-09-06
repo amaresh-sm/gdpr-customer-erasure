@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PayFlow benchmark overview</title>
+    <style>
+      :root { color-scheme: light; --ink:#202635; --muted:#687286; --line:#dfe4ec; --accent:#5146e5; --soft:#f7f8fc; }
+      * { box-sizing:border-box; }
+      body { margin:0; background:#fff; color:var(--ink); font:16px/1.55 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+      main { width:min(1080px,calc(100% - 40px)); margin:0 auto; padding:56px 0 80px; }
+      h1 { margin:0 0 10px; font-size:clamp(28px,4vw,46px); letter-spacing:-.04em; }
+      h2 { margin:44px 0 12px; font-size:22px; letter-spacing:-.02em; }
+      p { color:var(--muted); }
+      .lead { max-width:760px; font-size:18px; }
+      .note { padding:16px 18px; border:1px solid var(--line); background:var(--soft); }
+      ul { padding-left:22px; }
+      .diagram { display:grid; gap:14px; margin-top:20px; padding:24px; border:1px solid var(--line); background:var(--soft); }
+      .box { padding:13px 16px; border:1px solid #bdc5d5; border-radius:8px; background:#fff; text-align:center; font-weight:650; }
+      .arrow { color:var(--accent); text-align:center; font-size:22px; line-height:1; }
+      .row { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+      .row .box { min-height:58px; display:grid; place-items:center; }
+      table { width:100%; border-collapse:collapse; margin-top:16px; font-size:14px; }
+      th,td { padding:11px 12px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+      th { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.08em; }
+      td:first-child { width:90px; color:var(--accent); font:650 14px ui-monospace,SFMono-Regular,monospace; white-space:nowrap; }
+      code { font: .92em ui-monospace,SFMono-Regular,monospace; }
+      @media (max-width:700px) { main { width:min(100% - 24px,1080px); padding-top:32px; } .row { grid-template-columns:1fr; } table { font-size:13px; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>PayFlow benchmark overview</h1>
+      <p class="lead"><strong>Task:</strong> Add customer data deletion to PayFlow so a merchant can remove a customer's personal data without losing financial truth or affecting other customers.</p>
+
+      <h2>What a candidate receives</h2>
+      <ul>
+        <li>The public task in <code>instruction/task.md</code>.</li>
+        <li>A copy of <code>codebase/</code>, including source, Compose setup, migrations, seed data, and public documentation.</li>
+        <li>Public build and runtime commands.</li>
+      </ul>
+      <p class="note">Hidden tests, the reference solution, evaluator code, mutation patches, and other candidate artifacts are withheld. Hidden tests are mounted only into a separate verifier after the candidate source is frozen.</p>
+
+      <h2>PayFlow services and infrastructure</h2>
+      <p>The runtime combines a public API, workflow workers, financial storage, event transport, projections, external-store adapters, and a local payment provider.</p>
+      <ul>
+        <li><strong>Application:</strong> API gateway, customer service, payment service, webhook worker, projection worker, notification worker, document worker, and database migrator.</li>
+        <li><strong>Infrastructure:</strong> PostgreSQL (primary database), Redis (cache and short-lived projections), Redpanda (event transport), OpenSearch (customer/payment search index), MinIO (S3-compatible object storage), Mailpit (local mail service), and the provider simulator.</li>
+      </ul>
+
+      <h2>High-level architecture</h2>
+      <div class="diagram" aria-label="PayFlow architecture diagram">
+        <div class="box">Merchant client<br><small>starts and checks deletion</small></div>
+        <div class="arrow">↓</div>
+        <div class="box">API gateway<br><small>public HTTP entry point and authentication</small></div>
+        <div class="arrow">↓</div>
+        <div class="row"><div class="box">Customer service<br><small>customer records and deletion workflow</small></div><div class="box">Payment service<br><small>payments, invoices, ledger, refunds</small></div><div class="box">PostgreSQL<br><small>primary relational and financial database</small></div></div>
+        <div class="arrow">↓ events and outbox messages</div>
+        <div class="box">Redpanda event transport<br><small>outbox, inbox, and asynchronous events</small></div>
+        <div class="arrow">↓</div>
+        <div class="row"><div class="box">Webhook worker<br><small>receives and deduplicates provider callbacks</small></div><div class="box">Projection worker<br><small>updates Redis cache and OpenSearch index</small></div><div class="box">Notification/document workers<br><small>emails, invoices, receipts, and files</small></div></div>
+        <div class="arrow">↕</div>
+        <div class="row"><div class="box">Provider simulator<br><small>predictable payment outcomes and webhooks</small></div><div class="box">Redis + OpenSearch<br><small>cache and customer/payment search index</small></div><div class="box">MinIO + Mailpit<br><small>S3 files and captured local email</small></div></div>
+      </div>
+      <p>Deletion is a distributed workflow: customer identity is removed or anonymized across active stores and delayed work, while payments, invoices, ledger facts, and unrelated customers remain usable.</p>
+
+      <h2>Main scenarios checked</h2>
+      <ul>
+        <li><strong>API safety:</strong> Unknown and cross-merchant customers are hidden, with the correct merchant context enforced.</li>
+        <li><strong>Idempotency and concurrency:</strong> Repeated and concurrent requests share one deletion workflow.</li>
+        <li><strong>PostgreSQL cleanup:</strong> Customer links, embedded PII, jobs, events, and payloads are removed or redacted.</li>
+        <li><strong>External-store cleanup:</strong> Redis, OpenSearch, MinIO, and Mailpit no longer retain customer PII.</li>
+        <li><strong>Financial preservation:</strong> Payments, invoices, and ledger facts remain correct without identifying the deleted customer.</li>
+        <li><strong>Refund behavior:</strong> Later refunds remain usable and balanced without restoring PII.</li>
+        <li><strong>Failure and retry recovery:</strong> Partial failures do not appear complete, and retries continue safely.</li>
+        <li><strong>Delayed asynchronous work:</strong> Pending jobs, notifications, documents, webhooks, and events cannot recreate PII.</li>
+        <li><strong>Historical replay:</strong> Old events are consumed without restoring the deleted customer.</li>
+        <li><strong>Survivor protection:</strong> Unrelated customers, merchants, credentials, payments, notifications, documents, and shared records remain unchanged.</li>
+      </ul>
+
+      <h2>Score weights</h2>
+      <p>Scores are normalized to <code>1.0000</code>. The table is ordered from highest to lowest weight.</p>
+      <table>
+        <thead><tr><th>Weight</th><th>Checks</th></tr></thead>
+        <tbody>
+          <tr><td>0.1000</td><td>Embedded and operational PostgreSQL PII is redacted; pending work and payloads are fully sanitized</td></tr>
+          <tr><td>0.0750</td><td>Financial facts remain intact; delayed work does not reintroduce PII; historical replay does not restore PII</td></tr>
+          <tr><td>0.0500</td><td>Later refund remains balanced; delayed work processes financial state; historical event is safely consumed</td></tr>
+          <tr><td>0.0375</td><td>Primary relational records are removed or rekeyed; participant failure is retry-safe</td></tr>
+          <tr><td>0.0313</td><td>Completion waits for convergence; MinIO and Mailpit no longer contain subject PII</td></tr>
+          <tr><td>0.0250</td><td>Concurrency, failed-refund retry, and unrelated customer/payment/notification survivors</td></tr>
+          <tr><td>0.0187</td><td>Alternate-key reuse; Redis cleanup; OpenSearch cleanup</td></tr>
+          <tr><td>0.0125</td><td>Tenant safety, idempotency, key-reuse rejection, anonymous retained links, survivor credentials, and delayed-subject request acceptance</td></tr>
+        </tbody>
+      </table>
+      <p>Blocked checks earn no points and are never counted as passes. Zero-weight diagnostics do not affect the normalized score.</p>
+    </main>
+  </body>
+</html>

@@ -30,8 +30,8 @@ npm run candidates:generate:codex -- \
 
 ## Generate through Portkey
 
-The Portkey environment file is private and must contain `PORTKEY_API_KEY` plus exactly one of
-`PORTKEY_CONFIG` or `PORTKEY_PROVIDER`.
+The Portkey environment file is private and must contain `PORTKEY_API_KEY` plus a route:
+`PORTKEY_CONFIG` is used when present; otherwise the launcher uses `PORTKEY_PROVIDER`.
 
 ```bash
 npm run candidates:generate:portkey -- \
@@ -69,3 +69,25 @@ For compatibility with existing private benchmark configuration, a supplied priv
 file may use `OPENAI_API_KEY` and `OPENAI_BASE_URL` as the Portkey key and base URL. This fallback
 is accepted only from `--portkey-env-file`, never copied into the candidate source, and never
 recorded in metadata.
+## Generate a direct-model Portkey run with OpenCode
+
+Use this mode when Portkey should receive the requested model directly rather than a saved
+Portkey route:
+
+```bash
+npm run candidates:generate:portkey-opencode -- \
+  --model <provider-model-name> \
+  --thinking high \
+  --portkey-env-file /absolute/path/to/private-portkey-direct.env
+```
+
+The private file needs only:
+
+```dotenv
+PORTKEY_API_KEY=...
+OPENAI_BASE_URL=https://api.portkey.ai/v1
+```
+
+`OPENAI_API_KEY` can be used instead of `PORTKEY_API_KEY`. This mode deliberately ignores
+`PORTKEY_CONFIG` and `PORTKEY_PROVIDER`, so a saved Portkey route cannot replace the requested
+model. The API key remains inside the trusted relay; OpenCode receives a non-secret relay token.

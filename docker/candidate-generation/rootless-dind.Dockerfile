@@ -3,8 +3,9 @@ FROM docker:29-dind-rootless
 
 USER root
 RUN apk add --no-cache nodejs npm git python3 ripgrep coreutils \
-    && npm install --global --include=optional --no-audit --no-fund @openai/codex@0.144.5 \
-    && codex --version
+    && npm install --global --include=optional --no-audit --no-fund @openai/codex@0.144.5 opencode-ai \
+    && codex --version \
+    && opencode --version
 
 COPY docker/candidate-generation/rootless-dind-entrypoint.sh /usr/local/bin/payflow-rootless-entrypoint
 RUN chmod 0555 /usr/local/bin/payflow-rootless-entrypoint \

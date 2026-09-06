@@ -8,7 +8,7 @@ import type { CandidateRunManifest, Evidence } from './types.js';
 interface LaunchRecord {
   state: 'running' | 'startup_failed' | 'finalized';
   run_id: string;
-  provider: 'codex-login' | 'portkey';
+  provider: 'codex-login' | 'portkey' | 'portkey-opencode';
   model: string;
   reasoning_effort: string;
   timeout_seconds: number;

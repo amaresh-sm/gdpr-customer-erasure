@@ -5,7 +5,7 @@ import { join, resolve } from 'node:path';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 
-type Provider = 'codex-login' | 'portkey';
+type Provider = 'codex-login' | 'portkey' | 'portkey-opencode';
 
 interface LaunchRecord {
   schema_version: 1;
@@ -28,7 +28,7 @@ interface LaunchRecord {
   generation_image: { tag: string; id: string | null };
   gateway_image: { tag: string; id: string | null };
   artifact_image: { tag: string; id: string | null };
-  portkey_route: { kind: 'config' | 'provider'; value_sha256: string } | null;
+  portkey_route: { kind: 'config' | 'provider' | 'direct-model'; value_sha256: string } | null;
   failure: string | null;
   completed_at?: string | null;
   exit_code?: number | null;
@@ -130,24 +130,47 @@ async function dotenv(path: string): Promise<Record<string, string>> {
   return values;
 }
 
-function routeAndProxyConfiguration(fileValues: Record<string, string>): { configuration: string; route: LaunchRecord['portkey_route'] } {
+function portkeyValues(fileValues: Record<string, string>): Record<string, string> {
   const overrides = Object.fromEntries(Object.entries(process.env).filter(([key, entry]) => key.startsWith('PORTKEY_') && Boolean(entry)));
-  const values = { ...fileValues, ...overrides };
+  return { ...fileValues, ...overrides };
+}
+
+function portkeyBaseUrl(values: Record<string, string>, fileValues: Record<string, string>): string {
+  const baseUrl = values.PORTKEY_BASE_URL || fileValues.OPENAI_BASE_URL || 'https://api.portkey.ai/v1';
+  const parsed = new URL(baseUrl);
+  if (parsed.protocol !== 'https:' || parsed.username || parsed.password) throw new Error('PORTKEY_BASE_URL must be credential-free HTTPS');
+  return `${parsed.origin}${parsed.pathname.replace(/\/$/, '')}${parsed.search}`;
+}
+
+function routeAndProxyConfiguration(fileValues: Record<string, string>): { configuration: string; route: LaunchRecord['portkey_route'] } {
+  const values = portkeyValues(fileValues);
   const apiKey = values.PORTKEY_API_KEY || fileValues.OPENAI_API_KEY;
   const config = values.PORTKEY_CONFIG;
   const provider = values.PORTKEY_PROVIDER;
   if (!apiKey || apiKey.length < 12 || /\s/.test(apiKey)) throw new Error('Portkey generation requires PORTKEY_API_KEY');
-  if (Boolean(config) === Boolean(provider)) throw new Error('set exactly one of PORTKEY_CONFIG or PORTKEY_PROVIDER');
+  if (!config && !provider) throw new Error('Portkey generation requires PORTKEY_CONFIG or PORTKEY_PROVIDER');
+  // A route configuration is more specific than a provider default. Some existing private
+  // Portkey files include both, so preserve the explicit configuration route when present.
   const routeValue = config ?? provider!;
   if (routeValue.length > 512 || /[\x00-\x1f\x7f]/.test(routeValue)) throw new Error('Portkey route is invalid');
   const routeHeader = config ? 'x-portkey-config' : 'x-portkey-provider';
-  const baseUrl = values.PORTKEY_BASE_URL || fileValues.OPENAI_BASE_URL || 'https://api.portkey.ai/v1';
-  const parsed = new URL(baseUrl);
-  if (parsed.protocol !== 'https:' || parsed.username || parsed.password) throw new Error('PORTKEY_BASE_URL must be credential-free HTTPS');
-  const upstream = `${parsed.origin}${parsed.pathname.replace(/\/$/, '')}${parsed.pathname.endsWith('/responses') ? '' : '/responses'}${parsed.search}`;
+  const baseUrl = portkeyBaseUrl(values, fileValues);
+  const upstream = `${baseUrl}${baseUrl.endsWith('/responses') ? '' : '/responses'}`;
   return {
     configuration: JSON.stringify({ mode: 'portkey', api_key: apiKey, upstream_url: upstream, route_header: routeHeader, route_value: routeValue }),
     route: { kind: config ? 'config' : 'provider', value_sha256: sha256(routeValue) },
+  };
+}
+
+/** Creates a header-only relay configuration for OpenCode's OpenAI-compatible client. */
+function directModelProxyConfiguration(fileValues: Record<string, string>, model: string): { configuration: string; route: LaunchRecord['portkey_route'] } {
+  const values = portkeyValues(fileValues);
+  const apiKey = values.PORTKEY_API_KEY || fileValues.OPENAI_API_KEY;
+  if (!apiKey || apiKey.length < 12 || /\s/.test(apiKey)) throw new Error('OpenCode Portkey generation requires PORTKEY_API_KEY or OPENAI_API_KEY');
+  const baseUrl = portkeyBaseUrl(values, fileValues);
+  return {
+    configuration: JSON.stringify({ mode: 'portkey-openai-compatible', api_key: apiKey, upstream_url: baseUrl }),
+    route: { kind: 'direct-model', value_sha256: sha256(model) },
   };
 }
 
@@ -195,10 +218,10 @@ async function preloadInnerImages(container: string): Promise<void> {
 
 async function main(): Promise<void> {
   const provider = value('--provider', 'codex-login') as Provider;
-  if (provider !== 'codex-login' && provider !== 'portkey') throw new Error('--provider must be codex-login or portkey');
+  if (!['codex-login', 'portkey', 'portkey-opencode'].includes(provider)) throw new Error('--provider must be codex-login, portkey, or portkey-opencode');
   const model = value('--model');
   const reasoning = value('--thinking');
-  if (!['low', 'medium', 'high', 'xhigh', 'ultra'].includes(reasoning)) throw new Error('unsupported --thinking value');
+  if (!['low', 'medium', 'high', 'xhigh', 'ultra', 'max'].includes(reasoning)) throw new Error('unsupported --thinking value');
   if (provider === 'codex-login' && !['gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna'].includes(model)) {
     throw new Error('Codex login supports gpt-5.6-sol, gpt-5.6-terra, and gpt-5.6-luna only');
   }
@@ -249,7 +272,9 @@ async function main(): Promise<void> {
     } else {
       gatewayId = await ensureImage(proxyImage, 'docker/provider-proxy/Dockerfile');
       const environmentFile = process.argv.includes('--portkey-env-file') ? await dotenv(resolve(value('--portkey-env-file'))) : {};
-      ({ configuration: proxyConfig, route } = routeAndProxyConfiguration(environmentFile));
+      ({ configuration: proxyConfig, route } = provider === 'portkey-opencode'
+        ? directModelProxyConfiguration(environmentFile, model)
+        : routeAndProxyConfiguration(environmentFile));
     }
     await required('docker', ['network', 'create', '--internal', network]);
     await required('docker', ['volume', 'create', dockerVolume]);

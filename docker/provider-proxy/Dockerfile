@@ -12,7 +12,8 @@ RUN apt-get update \
 
 COPY docker/provider-proxy/proxy-supervisor.mjs /usr/local/lib/proxy-supervisor.mjs
 COPY docker/provider-proxy/portkey-adapter.mjs /usr/local/lib/portkey-adapter.mjs
-RUN chmod 0555 /usr/local/lib/proxy-supervisor.mjs /usr/local/lib/portkey-adapter.mjs
+COPY docker/provider-proxy/portkey-openai-compatible-adapter.mjs /usr/local/lib/portkey-openai-compatible-adapter.mjs
+RUN chmod 0555 /usr/local/lib/proxy-supervisor.mjs /usr/local/lib/portkey-adapter.mjs /usr/local/lib/portkey-openai-compatible-adapter.mjs
 
 USER 65532:65532
 ENV HOME=/tmp
