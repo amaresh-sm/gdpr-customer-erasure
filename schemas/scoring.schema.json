@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["scale", "criteria"],
+  "additionalProperties": false,
+  "properties": {
+    "scale": { "const": "normalized_1" },
+    "criteria": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "weight"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "weight": { "type": "number", "exclusiveMinimum": 0 }
+        }
+      }
+    }
+  }
+}

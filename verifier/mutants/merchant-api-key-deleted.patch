@@ -1,0 +1,11 @@
+diff --git a/apps/privacy-service/src/handlers/operational-records.ts b/apps/privacy-service/src/handlers/operational-records.ts
+--- a/apps/privacy-service/src/handlers/operational-records.ts
++++ b/apps/privacy-service/src/handlers/operational-records.ts
+@@ -20,6 +20,7 @@
+         sanitizeSubjectPayload(row.metadata, context),
+       ]);
+     }
++    await client.query(`DELETE FROM platform.api_keys WHERE merchant_id=$1`, [request.merchant_id]);
+ 
+     const outbox = await client.query<{ id: string; aggregate_id: string; aggregate_type: string; payload: unknown }>(
+       `SELECT id,aggregate_id,aggregate_type,payload FROM operations.outbox_events WHERE merchant_id=$1 FOR UPDATE`,

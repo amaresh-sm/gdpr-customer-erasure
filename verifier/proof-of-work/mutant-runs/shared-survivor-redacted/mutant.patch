@@ -1,0 +1,12 @@
+diff --git a/apps/privacy-service/src/handlers/customer-records.ts b/apps/privacy-service/src/handlers/customer-records.ts
+--- a/apps/privacy-service/src/handlers/customer-records.ts
++++ b/apps/privacy-service/src/handlers/customer-records.ts
+@@ -29,7 +29,7 @@ export async function eraseCustomerRecords(request: ErasureRequestRecord): Prom
+           `UPDATE customers.support_messages SET author_id=$2,body=$3,attachments=$4 WHERE id=$1`,
+           [message.id,
+             authoredBySubject ? request.surrogate_id : message.author_id,
+-            authoredBySubject ? '[redacted]' : redactSubjectValue(message.body, context),
++            '[redacted]',
+             authoredBySubject ? [] : redactSubjectValue(message.attachments, context)],
+         );
+       }

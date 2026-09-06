@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["task_id", "criteria"],
+  "additionalProperties": false,
+  "properties": {
+    "task_id": { "type": "string" },
+    "criteria": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "requirement", "hidden_test", "mutant", "weight"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "requirement": { "type": "string", "minLength": 1 },
+          "contract": { "type": "string" },
+          "fixture": { "type": "string" },
+          "hidden_test": { "type": "string" },
+          "mutant": { "type": "string" },
+          "weight": { "type": "number", "exclusiveMinimum": 0 }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,373 @@
+{
+  "task_id": "gdpr-customer-erasure",
+  "mutants": {
+    "canonical-workflow-duplicate": {
+      "patch": "verifier/mutants/canonical-workflow-duplicate.patch",
+      "hidden_test": "mutation.api-contract",
+      "expected_criteria": [
+        "api-contract"
+      ],
+      "related_criteria": [
+        "active-store-erasure",
+        "financial-retention",
+        "post-erasure-financial-work",
+        "failure-retry",
+        "delayed-work",
+        "replay-suppression",
+        "isolation-and-survivors"
+      ]
+    },
+    "financial-facts-destroyed": {
+      "patch": "verifier/mutants/financial-facts-destroyed.patch",
+      "hidden_test": "mutation.financial-retention",
+      "expected_criteria": [
+        "financial-retention"
+      ],
+      "related_criteria": [
+        "api-contract",
+        "active-store-erasure",
+        "post-erasure-financial-work",
+        "failure-retry",
+        "delayed-work",
+        "replay-suppression",
+        "isolation-and-survivors"
+      ]
+    },
+    "financial-invoice-lines-unsanitized": {
+      "patch": "verifier/mutants/financial-invoice-lines-unsanitized.patch",
+      "hidden_test": "mutation.active-store-erasure",
+      "expected_criteria": [
+        "active-store-erasure"
+      ],
+      "related_criteria": [
+        "api-contract",
+        "financial-retention",
+        "post-erasure-financial-work",
+        "failure-retry",
+        "delayed-work",
+        "replay-suppression",
+        "isolation-and-survivors"
+      ]
+    },
+    "financial-surrogate-lookup-omitted": {
+      "patch": "verifier/mutants/financial-surrogate-lookup-omitted.patch",
+      "hidden_test": "mutation.financial-retention",
+      "expected_criteria": [
+        "financial-retention"
+      ],
+      "related_criteria": [
+        "api-contract",
+        "active-store-erasure",
+        "post-erasure-financial-work",
+        "failure-retry",
+        "delayed-work",
+        "replay-suppression",
+        "isolation-and-survivors"
+      ]
+    },
+    "financial-surrogate-untracked": {
+      "patch": "verifier/mutants/financial-surrogate-untracked.patch",
+      "hidden_test": "mutation.financial-retention",
+      "expected_criteria": [
+        "financial-retention"
+      ],
+      "related_criteria": [
+        "api-contract",
+        "active-store-erasure",
+        "post-erasure-financial-work",
+        "failure-retry",
+        "delayed-work",
+        "replay-suppression",
+        "isolation-and-survivors"
+      ]
+    },
+    "mailpit-message-retained": {
+      "patch": "verifier/mutants/mailpit-message-retained.patch",
+      "hidden_test": "mutation.active-store-erasure",
+      "expected_criteria": [
+        "active-store-erasure"
+      ],
+      "related_criteria": [
+        "api-contract",
+        "financial-retention",
+        "post-erasure-financial-work",
+        "failure-retry",
+        "delayed-work",
+        "replay-suppression",
+        "isolation-and-survivors"
+      ]
+    },
+    "merchant-admin-deleted": {
+      "patch": "verifier/mutants/merchant-admin-deleted.patch",
+      "hidden_test": "mutation.isolation-and-survivors",
+      "expected_criteria": [
+        "isolation-and-survivors"
+      ],
+      "related_criteria": [
+        "api-contract",
+        "active-store-erasure",
+        "financial-retention",
+        "post-erasure-financial-work",
+        "failure-retry",
+        "delayed-work",
+        "replay-suppression"
+      ]
+    },
+    "merchant-api-key-deleted": {
+      "patch": "verifier/mutants/merchant-api-key-deleted.patch",
+      "hidden_test": "mutation.isolation-and-survivors",
+      "expected_criteria": [
+        "isolation-and-survivors"
+      ],
+      "related_criteria": [
+        "api-contract",
+        "active-store-erasure",
+        "financial-retention",
+        "post-erasure-financial-work",
+        "failure-retry",
+        "delayed-work",
+        "replay-suppression"
+      ]
+    },
+    "merchant-artifacts-deleted": {
+      "patch": "verifier/mutants/merchant-artifacts-deleted.patch",
+      "hidden_test": "mutation.isolation-and-survivors",
+      "expected_criteria": [
+        "isolation-and-survivors"
+      ],
+      "related_criteria": [
+        "api-contract",
+        "active-store-erasure",
+        "financial-retention",
+        "post-erasure-financial-work",
+        "failure-retry",
+        "delayed-work",
+        "replay-suppression"
+      ]
+    },
+    "object-storage-unsanitized": {
+      "patch": "verifier/mutants/object-storage-unsanitized.patch",
+      "hidden_test": "mutation.active-store-erasure",
+      "expected_criteria": [
+        "active-store-erasure"
+      ],
+      "related_criteria": [
+        "api-contract",
+        "financial-retention",
+        "post-erasure-financial-work",
+        "failure-retry",
+        "delayed-work",
+        "replay-suppression",
+        "isolation-and-survivors"
+      ]
+    },
+    "opensearch-document-retained": {
+      "patch": "verifier/mutants/opensearch-document-retained.patch",
+      "hidden_test": "mutation.active-store-erasure",
+      "expected_criteria": [
+        "active-store-erasure"
+      ],
+      "related_criteria": [
+        "api-contract",
+        "financial-retention",
+        "post-erasure-financial-work",
+        "failure-retry",
+        "delayed-work",
+        "replay-suppression",
+        "isolation-and-survivors"
+      ]
+    },
+    "operational-dead-letter-unsanitized": {
+      "patch": "verifier/mutants/operational-dead-letter-unsanitized.patch",
+      "hidden_test": "mutation.delayed-work",
+      "expected_criteria": [
+        "delayed-work"
+      ],
+      "related_criteria": [
+        "api-contract",
+        "active-store-erasure",
+        "financial-retention",
+        "post-erasure-financial-work",
+        "failure-retry",
+        "replay-suppression",
+        "isolation-and-survivors"
+      ]
+    },
+    "participant-failure-marked-complete": {
+      "patch": "verifier/mutants/participant-failure-marked-complete.patch",
+      "hidden_test": "mutation.failure-retry",
+      "expected_criteria": [
+        "failure-retry"
+      ],
+      "related_criteria": [
+        "api-contract",
+        "active-store-erasure",
+        "financial-retention",
+        "post-erasure-financial-work",
+        "delayed-work",
+        "replay-suppression",
+        "isolation-and-survivors"
+      ]
+    },
+    "post-erasure-refund-failure-not-observable": {
+      "patch": "verifier/mutants/post-erasure-refund-failure-not-observable.patch",
+      "hidden_test": "mutation.post-erasure-financial-work",
+      "expected_criteria": [
+        "post-erasure-financial-work"
+      ],
+      "related_criteria": [
+        "api-contract",
+        "active-store-erasure",
+        "financial-retention",
+        "failure-retry",
+        "delayed-work",
+        "replay-suppression",
+        "isolation-and-survivors"
+      ]
+    },
+    "post-erasure-refund-failure-pii": {
+      "patch": "verifier/mutants/post-erasure-refund-failure-pii.patch",
+      "hidden_test": "mutation.post-erasure-financial-work",
+      "expected_criteria": [
+        "post-erasure-financial-work"
+      ],
+      "related_criteria": [
+        "api-contract",
+        "active-store-erasure",
+        "financial-retention",
+        "failure-retry",
+        "delayed-work",
+        "replay-suppression",
+        "isolation-and-survivors"
+      ]
+    },
+    "post-erasure-refund-provider-pii": {
+      "patch": "verifier/mutants/post-erasure-refund-provider-pii.patch",
+      "hidden_test": "mutation.post-erasure-financial-work",
+      "expected_criteria": [
+        "post-erasure-financial-work"
+      ],
+      "related_criteria": [
+        "api-contract",
+        "active-store-erasure",
+        "financial-retention",
+        "failure-retry",
+        "delayed-work",
+        "replay-suppression",
+        "isolation-and-survivors"
+      ]
+    },
+    "post-erasure-refund-stored-pii": {
+      "patch": "verifier/mutants/post-erasure-refund-stored-pii.patch",
+      "hidden_test": "mutation.post-erasure-financial-work",
+      "expected_criteria": [
+        "post-erasure-financial-work"
+      ],
+      "related_criteria": [
+        "api-contract",
+        "active-store-erasure",
+        "financial-retention",
+        "failure-retry",
+        "delayed-work",
+        "replay-suppression",
+        "isolation-and-survivors"
+      ]
+    },
+    "provider-mapping-retained": {
+      "patch": "verifier/mutants/provider-mapping-retained.patch",
+      "hidden_test": "mutation.active-store-erasure",
+      "expected_criteria": [
+        "active-store-erasure"
+      ],
+      "related_criteria": [
+        "api-contract",
+        "financial-retention",
+        "post-erasure-financial-work",
+        "failure-retry",
+        "delayed-work",
+        "replay-suppression",
+        "isolation-and-survivors"
+      ]
+    },
+    "provider-profile-retained": {
+      "patch": "verifier/mutants/provider-profile-retained.patch",
+      "hidden_test": "mutation.active-store-erasure",
+      "expected_criteria": [
+        "active-store-erasure"
+      ],
+      "related_criteria": [
+        "api-contract",
+        "financial-retention",
+        "post-erasure-financial-work",
+        "failure-retry",
+        "delayed-work",
+        "replay-suppression",
+        "isolation-and-survivors"
+      ]
+    },
+    "redis-projection-retained": {
+      "patch": "verifier/mutants/redis-projection-retained.patch",
+      "hidden_test": "mutation.active-store-erasure",
+      "expected_criteria": [
+        "active-store-erasure"
+      ],
+      "related_criteria": [
+        "api-contract",
+        "financial-retention",
+        "post-erasure-financial-work",
+        "failure-retry",
+        "delayed-work",
+        "replay-suppression",
+        "isolation-and-survivors"
+      ]
+    },
+    "replay-suppression-omitted": {
+      "patch": "verifier/mutants/replay-suppression-omitted.patch",
+      "hidden_test": "mutation.replay-suppression",
+      "expected_criteria": [
+        "replay-suppression"
+      ],
+      "related_criteria": [
+        "api-contract",
+        "active-store-erasure",
+        "financial-retention",
+        "post-erasure-financial-work",
+        "failure-retry",
+        "delayed-work",
+        "isolation-and-survivors"
+      ]
+    },
+    "shared-survivor-redacted": {
+      "patch": "verifier/mutants/shared-survivor-redacted.patch",
+      "hidden_test": "mutation.isolation-and-survivors",
+      "expected_criteria": [
+        "isolation-and-survivors"
+      ],
+      "related_criteria": [
+        "api-contract",
+        "active-store-erasure",
+        "financial-retention",
+        "post-erasure-financial-work",
+        "failure-retry",
+        "delayed-work",
+        "replay-suppression"
+      ]
+    },
+    "tenant-request-read-leak": {
+      "patch": "verifier/mutants/tenant-request-read-leak.patch",
+      "hidden_test": "mutation.api-contract",
+      "expected_criteria": [
+        "api-contract"
+      ],
+      "related_criteria": [
+        "active-store-erasure",
+        "financial-retention",
+        "post-erasure-financial-work",
+        "failure-retry",
+        "delayed-work",
+        "replay-suppression",
+        "isolation-and-survivors"
+      ]
+    }
+  }
+}

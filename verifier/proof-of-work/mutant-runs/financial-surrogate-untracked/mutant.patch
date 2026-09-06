@@ -1,0 +1,21 @@
+diff --git a/apps/privacy-service/src/handlers/financial-records.ts b/apps/privacy-service/src/handlers/financial-records.ts
+--- a/apps/privacy-service/src/handlers/financial-records.ts
++++ b/apps/privacy-service/src/handlers/financial-records.ts
+@@ -18,7 +18,7 @@
+     for (const payment of payments.rows) {
+       await client.query(
+         `UPDATE payments.payment_intents
+-         SET customer_id=$2,payment_method_id=$2,description=$3,customer_snapshot=$4,updated_at=now()
++         SET customer_id=gen_random_uuid(),payment_method_id=$2,description=$3,customer_snapshot=$4,updated_at=now()
+          WHERE id=$1`,
+         [payment.id, request.surrogate_id,
+           payment.description ? redactSubjectValue(payment.description, context) : null,
+@@ -57,7 +57,7 @@
+     }
+ 
+     const invoices = await client.query<{ id: string }>(
+-      `UPDATE payments.invoices SET customer_id=$3,billing_snapshot=$4
++      `UPDATE payments.invoices SET customer_id=gen_random_uuid(),billing_snapshot=$4
+        WHERE merchant_id=$1 AND customer_id=$2 RETURNING id`,
+       [request.merchant_id, request.customer_id, request.surrogate_id, erasedCustomerBlock(context)],
+     );

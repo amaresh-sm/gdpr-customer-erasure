@@ -1,0 +1,13 @@
+diff --git a/apps/privacy-service/src/handlers/customer-records.ts b/apps/privacy-service/src/handlers/customer-records.ts
+--- a/apps/privacy-service/src/handlers/customer-records.ts
++++ b/apps/privacy-service/src/handlers/customer-records.ts
+@@ -42,8 +42,6 @@ export async function eraseCustomerRecords(request: ErasureRequestRecord): Promi
+     await client.query(`DELETE FROM customers.payment_method_refs WHERE merchant_id=$1 AND customer_id=$2`,
+       [request.merchant_id, request.customer_id]);
+-    await client.query(`DELETE FROM provider_sandbox.customers WHERE merchant_id=$1 AND payflow_customer_id=$2`,
+-      [request.merchant_id, request.customer_id]);
+     await client.query(`DELETE FROM customers.provider_customer_mappings WHERE merchant_id=$1 AND customer_id=$2`,
+       [request.merchant_id, request.customer_id]);
+     await client.query(`DELETE FROM customers.customers WHERE merchant_id=$1 AND id=$2`,
+       [request.merchant_id, request.customer_id]);
+   });

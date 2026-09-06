@@ -1,0 +1,13 @@
+{
+  "contractVersion": "1.0",
+  "commands": {
+    "build": ["bash", "app-setup/build.sh"],
+    "start": ["bash", "app-setup/start.sh"],
+    "reset": ["bash", "app-setup/reset.sh"]
+  },
+  "urls": {
+    "api": "http://127.0.0.1:3000",
+    "ready": "http://127.0.0.1:3000/health"
+  },
+  "datastoresUsed": ["postgresql", "redis", "redpanda", "minio", "opensearch", "mailpit"]
+}

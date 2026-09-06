@@ -1,0 +1,12 @@
+diff --git a/apps/payment-service/src/service.ts b/apps/payment-service/src/service.ts
+--- a/apps/payment-service/src/service.ts
++++ b/apps/payment-service/src/service.ts
+@@ -110,6 +110,7 @@ export class PaymentService {
+       await pool.query(`UPDATE payments.refunds SET provider_refund_id=$2 WHERE id=$1`, [refundId, provider.id]);
+       return { id: refundId, paymentId, amount: input.amount, status: 'pending', providerRefundId: provider.id };
+     } catch (error) {
+-      await pool.query(`UPDATE payments.refunds SET status='failed' WHERE id=$1`, [refundId]);
++      await pool.query(`UPDATE payments.refunds SET status='failed',reason=$2,customer_email=$3 WHERE id=$1`,
++        [refundId, input.reason, row.customer_snapshot.email]);
+       throw Object.assign(new Error('processor unavailable'), { statusCode: 502, cause: error });
+     }

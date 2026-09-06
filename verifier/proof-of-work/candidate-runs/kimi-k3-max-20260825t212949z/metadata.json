@@ -1,0 +1,9 @@
+{
+  "source_run_id": "kimi-k3-max-20260825t212949z",
+  "provider": "portkey-opencode",
+  "model": "kimi-k3",
+  "reasoning": "max",
+  "generation_elapsed_seconds": 658.975,
+  "source_exit_code": 0,
+  "source_tamper_check": "clean"
+}

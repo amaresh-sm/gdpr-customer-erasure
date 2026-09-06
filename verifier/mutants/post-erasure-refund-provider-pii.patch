@@ -1,0 +1,11 @@
+diff --git a/apps/payment-service/src/service.ts b/apps/payment-service/src/service.ts
+--- a/apps/payment-service/src/service.ts
++++ b/apps/payment-service/src/service.ts
+@@ -102,6 +102,6 @@ export class PaymentService {
+     try {
+       const response = await fetch(`${config().PROCESSOR_URL}/v1/payment-intents/${row.provider_payment_id}/refunds`, {
+         method: 'POST', headers: { 'content-type': 'application/json', 'x-request-id': refundId },
+         body: JSON.stringify({ refundId, paymentId, merchantId, amount: input.amount, currency: row.currency,
+-          reason, webhookUrl: config().PROCESSOR_WEBHOOK_URL }),
++          reason: input.reason, webhookUrl: config().PROCESSOR_WEBHOOK_URL }),
+       });

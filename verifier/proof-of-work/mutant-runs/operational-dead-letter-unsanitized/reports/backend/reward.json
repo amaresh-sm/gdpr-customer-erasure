@@ -1,0 +1,36 @@
+{
+  "criterionStatus": {
+    "api-contract": {
+      "status": "passed",
+      "scenarioId": "mutation.delayed-work"
+    },
+    "active-store-erasure": {
+      "status": "passed",
+      "scenarioId": "mutation.delayed-work"
+    },
+    "financial-retention": {
+      "status": "failed",
+      "scenarioId": "mutation.delayed-work"
+    },
+    "post-erasure-financial-work": {
+      "status": "failed",
+      "scenarioId": "mutation.delayed-work"
+    },
+    "failure-retry": {
+      "status": "passed",
+      "scenarioId": "mutation.delayed-work"
+    },
+    "delayed-work": {
+      "status": "failed",
+      "scenarioId": "mutation.delayed-work"
+    },
+    "replay-suppression": {
+      "status": "failed",
+      "scenarioId": "mutation.delayed-work"
+    },
+    "isolation-and-survivors": {
+      "status": "failed",
+      "scenarioId": "mutation.delayed-work"
+    }
+  }
+}

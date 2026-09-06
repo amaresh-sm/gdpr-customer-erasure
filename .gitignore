@@ -6,6 +6,9 @@
 !/internal/mutations/**
 /node_modules/
 /dist/
+__pycache__/
+*.py[cod]
+.pytest_cache/
 *.log
 *.zip
 .DS_Store

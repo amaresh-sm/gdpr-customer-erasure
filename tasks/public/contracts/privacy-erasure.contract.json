@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PayFlow customer erasure API",
+  "type": "object",
+  "required": ["operations"],
+  "properties": {
+    "operations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["method", "path", "successStatus", "requiredScope"],
+        "properties": {
+          "method": { "enum": ["POST", "GET"] },
+          "path": { "type": "string" },
+          "successStatus": { "type": "integer" },
+          "requiredScope": { "const": "privacy:erase" },
+          "idempotencyKey": { "type": "string", "minLength": 8, "maxLength": 200 },
+          "notFoundStatus": { "const": 404 },
+          "conflictStatus": { "const": 409 }
+        }
+      }
+    },
+    "statuses": {
+      "type": "array",
+      "items": { "enum": ["pending", "processing", "failed", "completed"] }
+    }
+  }
+}

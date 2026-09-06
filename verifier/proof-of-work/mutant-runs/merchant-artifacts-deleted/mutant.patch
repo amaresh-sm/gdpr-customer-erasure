@@ -1,0 +1,13 @@
+diff --git a/apps/privacy-service/src/handlers/operational-records.ts b/apps/privacy-service/src/handlers/operational-records.ts
+--- a/apps/privacy-service/src/handlers/operational-records.ts
++++ b/apps/privacy-service/src/handlers/operational-records.ts
+@@ -97,6 +97,8 @@ export async function sanitizeOperationalRecords(request: ErasureRequestRecord)
+     await client.query(
+       `DELETE FROM operations.notifications WHERE merchant_id=$1 AND customer_id=$2`,
+       [request.merchant_id, request.customer_id],
+     );
++    await client.query(`DELETE FROM operations.email_deliveries WHERE merchant_id=$1`, [request.merchant_id]);
++    await client.query(`DELETE FROM operations.document_manifests WHERE merchant_id=$1`, [request.merchant_id]);
+ 
+     const manifests = await client.query<{ id: string; metadata: unknown }>(
+       `SELECT id,metadata FROM operations.document_manifests

@@ -1,0 +1,4 @@
+id = "gdpr-customer-erasure"
+profile = "brownfield"
+title = "Add customer data deletion to PayFlow"
+version = 1

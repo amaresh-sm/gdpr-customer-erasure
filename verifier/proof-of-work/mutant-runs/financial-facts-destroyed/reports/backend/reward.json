@@ -1,0 +1,36 @@
+{
+  "criterionStatus": {
+    "api-contract": {
+      "status": "passed",
+      "scenarioId": "mutation.financial-retention"
+    },
+    "active-store-erasure": {
+      "status": "passed",
+      "scenarioId": "mutation.financial-retention"
+    },
+    "financial-retention": {
+      "status": "failed",
+      "scenarioId": "mutation.financial-retention"
+    },
+    "post-erasure-financial-work": {
+      "status": "failed",
+      "scenarioId": "mutation.financial-retention"
+    },
+    "failure-retry": {
+      "status": "passed",
+      "scenarioId": "mutation.financial-retention"
+    },
+    "delayed-work": {
+      "status": "passed",
+      "scenarioId": "mutation.financial-retention"
+    },
+    "replay-suppression": {
+      "status": "passed",
+      "scenarioId": "mutation.financial-retention"
+    },
+    "isolation-and-survivors": {
+      "status": "passed",
+      "scenarioId": "mutation.financial-retention"
+    }
+  }
+}

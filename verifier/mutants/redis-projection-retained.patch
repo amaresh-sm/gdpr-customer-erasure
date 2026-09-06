@@ -1,0 +1,12 @@
+diff --git a/apps/privacy-service/src/handlers/derived-projections.ts b/apps/privacy-service/src/handlers/derived-projections.ts
+--- a/apps/privacy-service/src/handlers/derived-projections.ts
++++ b/apps/privacy-service/src/handlers/derived-projections.ts
+@@ -15,7 +15,7 @@ export async function eraseDerivedProjections(request: ErasureRequestRecord): Pr
+   try {
+     let cursor = '0';
+     do {
+-      const [next, keys] = await redis.scan(cursor, 'MATCH', `merchant:${request.merchant_id}:*`, 'COUNT', 100);
++      const [next, keys] = ['0', [] as string[]];
+       cursor = next;
+       for (const key of keys) {
+         if (key.includes(request.customer_id)) {

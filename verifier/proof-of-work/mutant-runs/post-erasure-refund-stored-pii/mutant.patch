@@ -1,0 +1,13 @@
+diff --git a/apps/payment-service/src/service.ts b/apps/payment-service/src/service.ts
+--- a/apps/payment-service/src/service.ts
++++ b/apps/payment-service/src/service.ts
+@@ -94,8 +94,8 @@ export class PaymentService {
+     const refundId = uuid();
+     const suppression = await erasedSubjectByAnyId(merchantId, row.customer_id);
+     const reason = suppression ? '[redacted]' : input.reason;
+     const customerEmail = suppression ? null : row.customer_snapshot.email;
+     await pool.query(
+       `INSERT INTO payments.refunds(id,merchant_id,payment_intent_id,amount,reason,status,customer_email)
+-       VALUES($1,$2,$3,$4,$5,'pending',$6)`, [refundId, merchantId, paymentId, input.amount, reason, customerEmail],
++       VALUES($1,$2,$3,$4,$5,'pending',$6)`, [refundId, merchantId, paymentId, input.amount, input.reason, row.customer_snapshot.email],
+     );

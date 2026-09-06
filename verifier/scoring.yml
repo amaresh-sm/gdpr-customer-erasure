@@ -1,0 +1,27 @@
+task_id: gdpr-customer-erasure
+scale: normalized_1
+criteria:
+  - id: api-contract
+    weight: 0.15
+    blocked_policy: zero
+  - id: active-store-erasure
+    weight: 0.20
+    blocked_policy: zero
+  - id: financial-retention
+    weight: 0.15
+    blocked_policy: zero
+  - id: post-erasure-financial-work
+    weight: 0.15
+    blocked_policy: zero
+  - id: failure-retry
+    weight: 0.10
+    blocked_policy: zero
+  - id: delayed-work
+    weight: 0.10
+    blocked_policy: zero
+  - id: replay-suppression
+    weight: 0.10
+    blocked_policy: zero
+  - id: isolation-and-survivors
+    weight: 0.05
+    blocked_policy: zero
