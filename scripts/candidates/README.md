@@ -44,6 +44,25 @@ Both commands accept `--timeout-seconds` (default `14400`), `--run-id`, `--basel
 `--prompt-file`. Use the lower-level `candidates:run`, `candidates:status`, and
 `candidates:finalize` commands only for launcher troubleshooting.
 
+## Generate with OpenHands
+
+OpenHands runs through the OpenHands SDK inside the isolated generation container and uses the
+configured HackerRank AI gateway by default. The private environment file must be a regular file
+with mode `0600` or stricter and contain an API key:
+
+```bash
+npm run candidates:generate:openhands -- \
+  --model <gateway-model-name> \
+  --thinking high \
+  --openhands-env-file /absolute/path/to/private-openhands.env
+```
+
+The file must contain `LLM_API_KEY` or `ASTRA_GATEWAY_API_KEY`. Optional
+`LLM_BASE_URL` or `ASTRA_GATEWAY_BASE_URL` values must be credential-free HTTPS URLs; otherwise
+the default HackerRank gateway is used. OpenHands telemetry is sanitized into the same
+`metadata.json` and `logs/events.sanitized.json` format as the other generation providers, so the
+result can be scored with the normal `candidates:score` command.
+
 ## Score a completed candidate
 
 This is the only scoring command. It starts a fresh isolated stack, mounts hidden tests only into

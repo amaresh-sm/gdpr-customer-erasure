@@ -50,7 +50,7 @@ async function gitCommit(ref: string): Promise<string> {
   return result.stdout.trim();
 }
 
-/** Builds metadata.json from the trusted launcher context and an ephemeral Codex JSONL transcript. */
+/** Builds metadata.json from trusted launcher context and an ephemeral agent JSONL transcript. */
 async function main(): Promise<void> {
   const runDirectory = argument('--run-dir');
   const eventsPath = argument('--events');
@@ -79,7 +79,8 @@ async function main(): Promise<void> {
   }, new Map<string, number>()));
   const token = (name: string) => telemetry.tokens?.[name];
   const errorsDigest = createHash('sha256').update(telemetry.errorMessages.join('\n')).digest('hex');
-  const version = await cliVersion();
+  const version = provider === 'openhands' ? null : await cliVersion();
+  const telemetryLabel = provider === 'openhands' ? 'OpenHands JSONL' : 'Codex JSONL';
   const manifest: CandidateRunManifest = {
     schema_version: 1,
     run: { id: runId, status, exit_code: exitCode, timeout_exceeded: status === 'timed_out', failure_reason: status === 'completed' ? null : 'see logs/codex.stderr.log and logs/final-message.md' },
@@ -91,21 +92,21 @@ async function main(): Promise<void> {
       model_execution_elapsed_ms: measured(modelElapsedMs, 'Codex child-process wall clock'),
     },
     tokens: {
-      input: token('input_tokens') === undefined ? unavailable('Codex JSONL', 'usage event absent') : measured(token('input_tokens') as number, 'Codex JSONL total_token_usage'),
-      cached_input: token('cached_input_tokens') === undefined ? unavailable('Codex JSONL', 'usage event absent') : measured(token('cached_input_tokens') as number, 'Codex JSONL total_token_usage'),
-      output: token('output_tokens') === undefined ? unavailable('Codex JSONL', 'usage event absent') : measured(token('output_tokens') as number, 'Codex JSONL total_token_usage'),
-      reasoning: token('reasoning_output_tokens') === undefined ? unavailable('Codex JSONL', 'usage event absent') : measured(token('reasoning_output_tokens') as number, 'Codex JSONL total_token_usage'),
-      total: token('total_tokens') === undefined ? unavailable('Codex JSONL', 'usage event absent') : measured(token('total_tokens') as number, 'Codex JSONL total_token_usage'),
-      source: measured('Codex JSONL total_token_usage', 'Codex JSONL'),
+      input: token('input_tokens') === undefined ? unavailable(telemetryLabel, 'usage event absent') : measured(token('input_tokens') as number, `${telemetryLabel} token usage`),
+      cached_input: token('cached_input_tokens') === undefined ? unavailable(telemetryLabel, 'usage event absent') : measured(token('cached_input_tokens') as number, `${telemetryLabel} token usage`),
+      output: token('output_tokens') === undefined ? unavailable(telemetryLabel, 'usage event absent') : measured(token('output_tokens') as number, `${telemetryLabel} token usage`),
+      reasoning: token('reasoning_output_tokens') === undefined ? unavailable(telemetryLabel, 'usage event absent') : measured(token('reasoning_output_tokens') as number, `${telemetryLabel} token usage`),
+      total: token('total_tokens') === undefined ? unavailable(telemetryLabel, 'usage event absent') : measured(token('total_tokens') as number, `${telemetryLabel} token usage`),
+      source: measured(`${telemetryLabel} token usage`, telemetryLabel),
       provider_codex_agreement: unavailable('provider proxy', 'no provider-proxy usage export was supplied'),
     },
     tool_usage: {
-      total: measured(telemetry.toolCalls.length, 'Codex JSONL'),
-      successful: measured(telemetry.toolCalls.filter((call) => call.status === 'ok').length, 'Codex JSONL'),
-      failed: measured(telemetry.toolCalls.filter((call) => call.status === 'error').length, 'Codex JSONL'),
-      cancelled: measured(telemetry.toolCalls.filter((call) => call.status === 'cancelled').length, 'Codex JSONL'),
-      shell: measured(telemetry.toolCalls.filter((call) => call.category === 'shell').length, 'Codex JSONL'),
-      patch: measured(telemetry.toolCalls.filter((call) => call.category === 'patch').length, 'Codex JSONL'),
+      total: measured(telemetry.toolCalls.length, telemetryLabel),
+      successful: measured(telemetry.toolCalls.filter((call) => call.status === 'ok').length, telemetryLabel),
+      failed: measured(telemetry.toolCalls.filter((call) => call.status === 'error').length, telemetryLabel),
+      cancelled: measured(telemetry.toolCalls.filter((call) => call.status === 'cancelled').length, telemetryLabel),
+      shell: measured(telemetry.toolCalls.filter((call) => call.category === 'shell').length, telemetryLabel),
+      patch: measured(telemetry.toolCalls.filter((call) => call.category === 'patch').length, telemetryLabel),
       by_tool: byTool,
       trajectory: telemetry.toolCalls,
     },
@@ -114,15 +115,15 @@ async function main(): Promise<void> {
       peak_memory_bytes: unavailable('Docker cgroups', 'this launcher did not run the generator inside a metered container'),
     },
     event_integrity: {
-      codex_thread_id: telemetry.threadId === null ? unavailable('Codex JSONL', 'session_meta absent') : measured(telemetry.threadId, 'Codex JSONL session_meta'),
-      jsonl_event_count: measured(telemetry.eventCount, 'Codex JSONL'),
-      invalid_event_count: measured(telemetry.invalidEventCount, 'Codex JSONL'),
-      terminal_event: telemetry.terminalEvent === null ? unavailable('Codex JSONL', 'terminal event absent') : measured(telemetry.terminalEvent, 'Codex JSONL'),
+      codex_thread_id: telemetry.threadId === null ? unavailable(telemetryLabel, 'session identifier absent') : measured(telemetry.threadId, telemetryLabel),
+      jsonl_event_count: measured(telemetry.eventCount, telemetryLabel),
+      invalid_event_count: measured(telemetry.invalidEventCount, telemetryLabel),
+      terminal_event: telemetry.terminalEvent === null ? unavailable(telemetryLabel, 'terminal event absent') : measured(telemetry.terminalEvent, telemetryLabel),
     },
-    error_integrity: { codex_error_count: measured(telemetry.errorMessages.length, 'Codex JSONL'), error_sha256: measured(errorsDigest, 'redacted Codex errors') },
+    error_integrity: { codex_error_count: measured(telemetry.errorMessages.length, telemetryLabel), error_sha256: measured(errorsDigest, `redacted ${telemetryLabel} errors`) },
     prompt_integrity: { sha256: promptHash },
     runtime: {
-      codex_cli_version: version === null ? unavailable('local Codex CLI', 'codex --version failed') : measured(version, 'local Codex CLI'),
+      codex_cli_version: version === null ? unavailable(provider === 'openhands' ? 'OpenHands runner' : 'local Codex CLI', provider === 'openhands' ? 'runner version is not emitted' : 'codex --version failed') : measured(version, 'local Codex CLI'),
       generation_image: unavailable('Docker', 'generator was launched through local Codex CLI'),
       gateway_image: unavailable('Docker', 'no provider gateway image was supplied'),
     },

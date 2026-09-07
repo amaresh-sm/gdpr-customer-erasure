@@ -8,7 +8,7 @@ import type { CandidateRunManifest, Evidence } from './types.js';
 interface LaunchRecord {
   state: 'running' | 'startup_failed' | 'finalized';
   run_id: string;
-  provider: 'codex-login' | 'portkey' | 'portkey-opencode';
+  provider: 'codex-login' | 'portkey' | 'portkey-opencode' | 'openhands';
   model: string;
   reasoning_effort: string;
   timeout_seconds: number;
@@ -139,11 +139,15 @@ async function main(): Promise<void> {
   metadata.isolation.network_mode = measured(
     launch.provider === 'codex-login'
       ? 'private internal network with public HTTPS egress proxy; private and local destinations blocked'
+      : launch.provider === 'openhands'
+        ? 'private internal network with public HTTPS egress; OpenHands credentials loaded from ephemeral tmpfs'
       : 'private internal network with strict Portkey Responses proxy and public HTTPS egress; private and local destinations blocked',
     'trusted Docker network launcher',
   );
   metadata.credential_safety.location = measured(
-    launch.provider === 'codex-login' ? '/codex-home/auth.json' : 'trusted provider proxy configuration only',
+    launch.provider === 'codex-login'
+      ? '/codex-home/auth.json'
+      : launch.provider === 'openhands' ? '/tmp/openhands.env' : 'trusted provider proxy configuration only',
     'trusted launcher',
   );
   metadata.credential_safety.ephemeral_storage = measured(true, 'Docker tmpfs');
@@ -153,7 +157,7 @@ async function main(): Promise<void> {
   metadata.resources.cpu_seconds = unavailable('Docker cgroups', 'detached runs are not sampled yet');
   metadata.resources.peak_memory_bytes = unavailable('Docker cgroups', 'detached runs are not sampled yet');
   metadata.portkey.route_identity = launch.portkey_route === null
-    ? { value: null, status: 'not_applicable', source: 'provider selection', reason: 'Codex login was used' }
+    ? { value: null, status: 'not_applicable', source: 'provider selection', reason: launch.provider === 'openhands' ? 'OpenHands gateway credentials were used' : 'Codex login was used' }
     : measured(`${launch.portkey_route.kind}:${launch.portkey_route.value_sha256}`, 'trusted Portkey launcher');
   metadata.run.failure_reason = status === 'completed' ? null : `model container exit ${exitCode}; see logs/container-state.json and logs/events.sanitized.json`;
   await writeFile(metadataPath, `${JSON.stringify(metadata, null, 2)}\n`);

@@ -3,7 +3,7 @@ import { join, resolve } from 'node:path';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 
-type Provider = 'codex-login' | 'portkey' | 'portkey-opencode';
+type Provider = 'codex-login' | 'portkey' | 'portkey-opencode' | 'openhands';
 
 interface GenerationStatus {
   state?: string;
@@ -20,7 +20,7 @@ const providerIndex = process.argv.indexOf('--provider');
 const provider = process.argv[providerIndex + 1] as Provider | undefined;
 
 function help(): void {
-  process.stdout.write(`Usage:\n\n  npm run candidates:generate:codex -- --model <model> --thinking <effort> [options]\n  npm run candidates:generate:portkey -- --model <model> --thinking <effort> --portkey-env-file <private-file> [options]\n  npm run candidates:generate:portkey-opencode -- --model <model> --thinking <effort> --portkey-env-file <private-file> [options]\n\nThe OpenCode command sends the requested model directly to Portkey. It reads only PORTKEY_API_KEY (or OPENAI_API_KEY) and optional OPENAI_BASE_URL from the private file; PORTKEY_CONFIG and PORTKEY_PROVIDER are ignored.\n\nAll commands create one isolated candidate run, wait for generation to end, collect trusted telemetry, clean up generation containers, and print the run directory.\n\nOptions are forwarded to candidates:run. Important options: --model, --thinking, --timeout-seconds (default 14400), --run-id, --baseline-ref, and --prompt-file.\n`);
+  process.stdout.write(`Usage:\n\n  npm run candidates:generate:codex -- --model <model> --thinking <effort> [options]\n  npm run candidates:generate:portkey -- --model <model> --thinking <effort> --portkey-env-file <private-file> [options]\n  npm run candidates:generate:portkey-opencode -- --model <model> --thinking <effort> --portkey-env-file <private-file> [options]\n  npm run candidates:generate:openhands -- --model <model> --thinking <effort> --openhands-env-file <private-file> [options]\n\nThe OpenCode command sends the requested model directly to Portkey. It reads only PORTKEY_API_KEY (or OPENAI_API_KEY) and optional OPENAI_BASE_URL from the private file; PORTKEY_CONFIG and PORTKEY_PROVIDER are ignored.\n\nThe OpenHands command runs the OpenHands SDK against the configured HackerRank AI gateway. Its private environment file must contain LLM_API_KEY or ASTRA_GATEWAY_API_KEY and may contain LLM_BASE_URL or ASTRA_GATEWAY_BASE_URL.\n\nAll commands create one isolated candidate run, wait for generation to end, collect trusted telemetry, clean up generation containers, and print the run directory.\n\nOptions are forwarded to candidates:run. Important options: --model, --thinking, --timeout-seconds (default 14400), --run-id, --baseline-ref, and --prompt-file.\n`);
 }
 
 async function command(program: string, args: string[]): Promise<{ code: number; stdout: string; stderr: string }> {
@@ -65,11 +65,14 @@ async function main(): Promise<void> {
     help();
     return;
   }
-  if (!['codex-login', 'portkey', 'portkey-opencode'].includes(provider ?? '')) throw new Error('this wrapper requires --provider codex-login, portkey, or portkey-opencode');
+  if (!['codex-login', 'portkey', 'portkey-opencode', 'openhands'].includes(provider ?? '')) throw new Error('this wrapper requires --provider codex-login, portkey, portkey-opencode, or openhands');
   const duplicateProvider = process.argv.findIndex((value, index) => value === '--provider' && index > providerIndex);
   if (duplicateProvider >= 0) throw new Error('provider is selected by the command; do not pass --provider again');
   if ((provider === 'portkey' || provider === 'portkey-opencode') && !process.argv.includes('--portkey-env-file')) {
     throw new Error('Portkey generation requires --portkey-env-file /absolute/path/to/private-portkey.env');
+  }
+  if (provider === 'openhands' && !process.argv.includes('--openhands-env-file')) {
+    throw new Error('OpenHands generation requires --openhands-env-file /absolute/path/to/private-openhands.env');
   }
 
   const launch = await required('npx', ['--prefix', 'codebase', 'tsx', 'scripts/candidates/start-container.ts', ...process.argv.slice(2)]);

@@ -5,7 +5,7 @@ import { join, resolve } from 'node:path';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 
-type Provider = 'codex-login' | 'portkey' | 'portkey-opencode';
+type Provider = 'codex-login' | 'portkey' | 'portkey-opencode' | 'openhands';
 
 interface LaunchRecord {
   schema_version: 1;
@@ -115,17 +115,34 @@ async function privateAuth(path: string): Promise<string> {
   return document;
 }
 
-async function dotenv(path: string): Promise<Record<string, string>> {
+async function dotenv(path: string, label = 'provider'): Promise<Record<string, string>> {
   const metadata = await lstat(path);
-  if (!metadata.isFile() || metadata.isSymbolicLink() || (metadata.mode & 0o077) !== 0 || metadata.size > 64 * 1024) {
-    throw new Error('Portkey environment file must be a private regular file');
+  if (!metadata.isFile() || metadata.isSymbolicLink() || (metadata.mode & 0o077) !== 0 || metadata.size === 0 || metadata.size > 64 * 1024) {
+    throw new Error(`${label} environment file must be a private, non-empty regular file`);
   }
   const values: Record<string, string> = {};
   for (const raw of (await readFile(path, 'utf8')).split(/\r?\n/)) {
     if (!raw || raw.trimStart().startsWith('#')) continue;
     const match = /^([A-Z0-9_]+)=([^\r\n]*?)(?:[ \t]+#.*)?$/.exec(raw);
-    if (!match) throw new Error('Portkey environment file must contain only simple KEY=value entries with optional inline comments');
+    if (!match) throw new Error(`${label} environment file must contain only simple KEY=value entries with optional inline comments`);
     values[match[1]!] = match[2]!;
+  }
+  return values;
+}
+
+const OPENHANDS_ENVIRONMENT_KEYS = ['LLM_API_KEY', 'LLM_BASE_URL', 'ASTRA_GATEWAY_API_KEY', 'ASTRA_GATEWAY_BASE_URL'] as const;
+
+function openHandsValues(fileValues: Record<string, string>): Record<string, string> {
+  const values = Object.fromEntries(OPENHANDS_ENVIRONMENT_KEYS
+    .map((key) => [key, fileValues[key] ?? process.env[key] ?? ''])
+    .filter(([, entry]) => Boolean(entry)));
+  const apiKey = values.LLM_API_KEY || values.ASTRA_GATEWAY_API_KEY;
+  if (!apiKey || apiKey.length < 12 || /\s/.test(apiKey)) throw new Error('OpenHands generation requires LLM_API_KEY or ASTRA_GATEWAY_API_KEY');
+  for (const key of ['LLM_BASE_URL', 'ASTRA_GATEWAY_BASE_URL']) {
+    const baseUrl = values[key];
+    if (!baseUrl) continue;
+    const parsed = new URL(baseUrl);
+    if (parsed.protocol !== 'https:' || parsed.username || parsed.password) throw new Error(`${key} must be credential-free HTTPS`);
   }
   return values;
 }
@@ -218,7 +235,7 @@ async function preloadInnerImages(container: string): Promise<void> {
 
 async function main(): Promise<void> {
   const provider = value('--provider', 'codex-login') as Provider;
-  if (!['codex-login', 'portkey', 'portkey-opencode'].includes(provider)) throw new Error('--provider must be codex-login, portkey, or portkey-opencode');
+  if (!['codex-login', 'portkey', 'portkey-opencode', 'openhands'].includes(provider)) throw new Error('--provider must be codex-login, portkey, portkey-opencode, or openhands');
   const model = value('--model');
   const reasoning = value('--thinking');
   if (!['low', 'medium', 'high', 'xhigh', 'ultra', 'max'].includes(reasoning)) throw new Error('unsupported --thinking value');
@@ -263,18 +280,21 @@ async function main(): Promise<void> {
   let failure: string | null = null;
   let auth: string | null = null;
   let proxyConfig: string | null = null;
+  let openhandsEnvironment: Record<string, string> = {};
   try {
     generationId = await ensureImage(generationImage, 'docker/candidate-generation/rootless-dind.Dockerfile');
     artifactId = await ensureImage(egressImage, 'docker/codex-egress/Dockerfile');
     if (provider === 'codex-login') {
       gatewayId = artifactId;
       auth = await privateAuth(resolve(value('--codex-auth-file', process.env.CODEX_AUTH_FILE ?? join(homedir(), '.codex', 'auth.json'))));
-    } else {
+    } else if (provider === 'portkey' || provider === 'portkey-opencode') {
       gatewayId = await ensureImage(proxyImage, 'docker/provider-proxy/Dockerfile');
       const environmentFile = process.argv.includes('--portkey-env-file') ? await dotenv(resolve(value('--portkey-env-file'))) : {};
       ({ configuration: proxyConfig, route } = provider === 'portkey-opencode'
         ? directModelProxyConfiguration(environmentFile, model)
         : routeAndProxyConfiguration(environmentFile));
+    } else {
+      openhandsEnvironment = openHandsValues(await dotenv(resolve(value('--openhands-env-file')), 'OpenHands'));
     }
     await required('docker', ['network', 'create', '--internal', network]);
     await required('docker', ['volume', 'create', dockerVolume]);
@@ -307,6 +327,10 @@ async function main(): Promise<void> {
     await preloadInnerImages(modelContainer);
     if (auth !== null) await required('docker', ['exec', '-i', '--user', '1000:1000', modelContainer, 'sh', '-c', 'umask 077 && cat > /codex-home/auth.json'], auth);
     if (proxyConfig !== null) await required('docker', ['exec', '-i', '--user', '65532:65532', gatewayContainer, 'sh', '-c', 'umask 077 && cat > /tmp/trusted-provider-config.json && touch /tmp/provider.start'], proxyConfig);
+    if (provider === 'openhands') {
+      const environment = `${Object.entries(openhandsEnvironment).map(([key, entry]) => `${key}=${entry}`).join('\n')}\n`;
+      await required('docker', ['exec', '-i', '--user', '1000:1000', modelContainer, 'sh', '-c', 'umask 077 && cat > /tmp/openhands.env'], environment);
+    }
     await required('docker', ['exec', modelContainer, 'touch', '/tmp/generation.start']);
   } catch (error) {
     failure = error instanceof Error ? error.message : String(error);

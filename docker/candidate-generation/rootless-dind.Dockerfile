@@ -2,12 +2,15 @@
 FROM docker:29-dind-rootless
 
 USER root
-RUN apk add --no-cache nodejs npm git python3 ripgrep coreutils \
+RUN apk add --no-cache nodejs npm git python3 python3-dev py3-pip ripgrep coreutils build-base \
     && npm install --global --include=optional --no-audit --no-fund @openai/codex@0.144.5 opencode-ai \
     && codex --version \
-    && opencode --version
+    && opencode --version \
+    && python3 -m pip install --break-system-packages --no-cache-dir openhands-sdk==1.44.1 openhands-tools==1.44.1 \
+    && apk del build-base
 
 COPY docker/candidate-generation/rootless-dind-entrypoint.sh /usr/local/bin/payflow-rootless-entrypoint
+COPY astra_harness/openhands_runner.py /opt/astra/openhands_runner.py
 RUN chmod 0555 /usr/local/bin/payflow-rootless-entrypoint \
     && mkdir -p /workspace/source /home/rootless/.docker/run \
     && chown -R rootless:rootless /workspace /home/rootless/.docker

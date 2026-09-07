@@ -77,8 +77,10 @@ function usageFrom(value: unknown): Record<string, number> | null {
   if (!isRecord(value)) return null;
   const aliases: Record<string, string> = {
     input_tokens: 'input_tokens',
+    prompt_tokens: 'input_tokens',
     cached_input_tokens: 'cached_input_tokens',
     output_tokens: 'output_tokens',
+    completion_tokens: 'output_tokens',
     reasoning_output_tokens: 'reasoning_output_tokens',
     reasoning_tokens: 'reasoning_output_tokens',
     total_tokens: 'total_tokens',
@@ -86,6 +88,12 @@ function usageFrom(value: unknown): Record<string, number> | null {
   const result: Record<string, number> = {};
   for (const [source, target] of Object.entries(aliases)) {
     if (typeof value[source] === 'number') result[target] = value[source] as number;
+  }
+  const cacheRead = typeof value.cache_read_input_tokens === 'number' ? value.cache_read_input_tokens : 0;
+  const cacheCreated = typeof value.cache_creation_input_tokens === 'number' ? value.cache_creation_input_tokens : 0;
+  if (cacheRead || cacheCreated) result.cached_input_tokens = cacheRead + cacheCreated;
+  if (result.total_tokens === undefined && (result.input_tokens !== undefined || result.output_tokens !== undefined)) {
+    result.total_tokens = (result.input_tokens ?? 0) + (result.cached_input_tokens ?? 0) + (result.output_tokens ?? 0);
   }
   return Object.keys(result).length > 0 ? result : null;
 }
@@ -96,7 +104,7 @@ function richerUsage(current: Record<string, number> | null, candidate: Record<s
   return current;
 }
 
-/** Parses Codex desktop-session JSONL and `codex exec --json` defensively. */
+/** Parses structured Codex, OpenCode, and OpenHands agent JSONL defensively. */
 export async function parseCodexJsonl(path: string): Promise<JsonlTelemetry> {
   const lines = (await readFile(path, 'utf8')).split('\n');
   const pending = new Map<string, PendingCall>();
@@ -135,6 +143,32 @@ export async function parseCodexJsonl(path: string): Promise<JsonlTelemetry> {
     tokens = richerUsage(tokens, usageFrom(payload.usage));
     tokens = richerUsage(tokens, usageFrom(event.usage));
     tokens = richerUsage(tokens, usageFrom(item?.usage));
+
+    if (eventType === 'astra_openhands_metrics') {
+      tokens = richerUsage(tokens, usageFrom(event));
+    }
+
+    // The PayFlow OpenHands runner intentionally emits event metadata only. Treat each
+    // observed tool event as a completed, privacy-safe trajectory entry; raw arguments and
+    // results never leave the model container.
+    if (eventType === 'openhands_event' && typeof event.tool_name === 'string') {
+      const serialized = JSON.stringify({ event_type: event.event_type ?? null, source: event.source ?? null });
+      const eventName = event.tool_name;
+      calls.push({
+        sequence: calls.length + 1,
+        call_id: null,
+        name: eventName,
+        category: category(eventName),
+        started_at: timestamp,
+        duration_ms: null,
+        status: /error|fail/i.test(String(event.event_type)) ? 'error' : 'ok',
+        sanitized_arguments: null,
+        result_size_bytes: Buffer.byteLength(serialized),
+        result_sha256: sha256(serialized),
+        result_metadata: { event_type: event.event_type ?? null, source: event.source ?? null },
+        truncated: null,
+      });
+    }
 
     // Codex CLI 0.144+ emits tool activity as item.started/item.completed
     // rather than the older response_item/function_call pair.

@@ -20,6 +20,46 @@ from openhands.tools.terminal import TerminalTool
 HACKERRANK_GATEWAY_BASE_URL = "https://gateway-central.ai.private.hackerrank.link/v1"
 
 
+def _portable_gateway_messages(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Remove optional chat fields rejected by the internal portable route."""
+    return [
+        {key: value for key, value in message.items() if key not in {"name", "refusal"}}
+        for message in messages
+    ]
+
+
+def _install_portable_gateway_compatibility(base_url: str) -> None:
+    """Adapt OpenHands chat history for the HackerRank OpenAI-compatible gateway."""
+    if "gateway-central.ai.private.hackerrank.link" not in base_url:
+        return
+
+    original_transport_call = LLM._transport_call
+    original_async_transport_call = LLM._atransport_call
+    if getattr(original_transport_call, "_astra_gateway_compatible", False):
+        return
+
+    def transport_call(self: LLM, *, messages: list[dict[str, Any]], **kwargs: Any):
+        return original_transport_call(
+            self,
+            messages=_portable_gateway_messages(messages),
+            **kwargs,
+        )
+
+    async def async_transport_call(
+        self: LLM, *, messages: list[dict[str, Any]], **kwargs: Any
+    ):
+        return await original_async_transport_call(
+            self,
+            messages=_portable_gateway_messages(messages),
+            **kwargs,
+        )
+
+    transport_call._astra_gateway_compatible = True
+    async_transport_call._astra_gateway_compatible = True
+    LLM._transport_call = transport_call
+    LLM._atransport_call = async_transport_call
+
+
 def _json_value(value: Any) -> Any:
     """Convert SDK/Pydantic values into JSON-safe primitives."""
     if value is None or isinstance(value, (str, int, float, bool)):
@@ -77,7 +117,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--workspace", type=Path, required=True)
     parser.add_argument("--instruction", type=Path, required=True)
     parser.add_argument("--model", required=True)
-    parser.add_argument("--reasoning", choices=("low", "medium", "high", "xhigh", "max"), default="medium")
+    parser.add_argument("--reasoning", choices=("low", "medium", "high", "xhigh", "ultra", "max"), default="medium")
     return parser.parse_args()
 
 
@@ -97,14 +137,19 @@ def main() -> int:
     if not api_key:
         print("LLM_API_KEY or ASTRA_GATEWAY_API_KEY is required", file=sys.stderr)
         return 2
+    # Keep the shared launcher vocabulary while mapping stronger Codex-style levels to the
+    # highest OpenHands reasoning level supported by the gateway.
+    reasoning_effort = args.reasoning if args.reasoning in {"low", "medium", "high"} else "high"
+    base_url = os.getenv("LLM_BASE_URL") or os.getenv("ASTRA_GATEWAY_BASE_URL") or HACKERRANK_GATEWAY_BASE_URL
     llm = LLM(
         usage_id="agent",
         model=args.model,
         api_key=SecretStr(api_key),
-        base_url=os.getenv("LLM_BASE_URL") or os.getenv("ASTRA_GATEWAY_BASE_URL") or HACKERRANK_GATEWAY_BASE_URL,
+        base_url=base_url,
         force_string_serializer=True,
-        reasoning_effort="high" if args.reasoning == "max" else args.reasoning,
+        reasoning_effort=reasoning_effort,
     )
+    _install_portable_gateway_compatibility(base_url)
 
     def callback(event: Event) -> None:
         if isinstance(event, LLMConvertibleEvent) or getattr(event, "tool_name", None):

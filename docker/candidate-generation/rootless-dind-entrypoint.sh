@@ -44,6 +44,20 @@ prompt_copy=/tmp/payflow-task.md
 cp "$prompt" "$prompt_copy"
 rm -f "$prompt"
 
+if [ "${PAYFLOW_GENERATION_PROVIDER:-codex-login}" = "openhands" ]; then
+  if [ ! -r /tmp/openhands.env ]; then
+    echo "OpenHands environment file is unavailable" >&2
+    exit 64
+  fi
+  while IFS='=' read -r key value; do
+    case "$key" in
+      LLM_API_KEY|LLM_BASE_URL|ASTRA_GATEWAY_API_KEY|ASTRA_GATEWAY_BASE_URL)
+        export "$key=$value"
+        ;;
+    esac
+  done < /tmp/openhands.env
+fi
+
 set +e
 case "${PAYFLOW_GENERATION_PROVIDER:-codex-login}" in
   codex-login)
@@ -96,6 +110,13 @@ EOF
     timeout --signal=TERM --kill-after=30s "${PAYFLOW_GENERATION_TIMEOUT_SECONDS}s" env \
       XDG_CONFIG_HOME=/tmp/opencode/config XDG_CACHE_HOME=/tmp/opencode/cache XDG_DATA_HOME=/tmp/opencode/data XDG_STATE_HOME=/tmp/opencode/state npm_config_cache=/tmp/npm-cache \
       opencode run --auto --dir /workspace/source "$(cat "$prompt_copy")"
+    result=$?
+    ;;
+  openhands)
+    timeout --signal=TERM --kill-after=30s "${PAYFLOW_GENERATION_TIMEOUT_SECONDS}s" \
+      python3 /opt/astra/openhands_runner.py \
+      --workspace /workspace/source --instruction "$prompt_copy" \
+      --model "$PAYFLOW_GENERATION_MODEL" --reasoning "$PAYFLOW_GENERATION_REASONING_EFFORT"
     result=$?
     ;;
   *)
