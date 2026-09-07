@@ -94,6 +94,22 @@ def parse_tokens(log_path: Path) -> dict[str, object]:
         output_tokens = int(usage.get("output_tokens") or 0)
         return {"input": input_tokens, "output": output_tokens, "cached_input": cached, "total": input_tokens + output_tokens, "source": "provider-reported"}
 
+    for line in reversed(text.splitlines()):
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(event, dict) or event.get("type") != "astra_openhands_metrics":
+            continue
+        input_tokens = event.get("input_tokens")
+        output_tokens = event.get("output_tokens")
+        cached = (event.get("cache_read_input_tokens") or 0) + (event.get("cache_creation_input_tokens") or 0)
+        if not isinstance(input_tokens, (int, float)) and not isinstance(output_tokens, (int, float)):
+            continue
+        prompt = int(input_tokens or 0) + int(cached)
+        completion = int(output_tokens or 0)
+        return {"input": prompt, "output": completion, "cached_input": int(cached), "total": prompt + completion, "source": "provider-reported"}
+
     def find(pattern: str) -> int | None:
         match = re.search(pattern, text, re.IGNORECASE)
         return int(match.group(1).replace(",", "")) if match else None
@@ -130,7 +146,7 @@ def parse_tool_calls(log_path: Path) -> dict[str, object]:
 
 
 def _event_tool_names(event: object) -> list[str]:
-    """Recognize Codex, Claude Code, and OpenAI-compatible structured events."""
+    """Recognize Codex, Claude Code, OpenAI-compatible, and OpenHands events."""
     if not isinstance(event, dict):
         return []
     item = event.get("item")
@@ -148,6 +164,8 @@ def _event_tool_names(event: object) -> list[str]:
             if isinstance(block, dict) and block.get("type") in {"tool_use", "tool_call", "function_call"}:
                 names.append(str(block.get("name") or block.get("type")))
     event_type = event.get("type")
+    if event_type == "openhands_event" and isinstance(event.get("tool_name"), str):
+        names.append(event["tool_name"])
     if event_type in {"tool_use", "tool_call", "function_call"}:
         names.append(str(event.get("name") or event_type))
     return names

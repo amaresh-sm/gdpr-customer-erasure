@@ -71,6 +71,20 @@ def load_candidate_manifest(candidate: Path) -> tuple[dict[str, list[str]], str]
     return selected, str(path.relative_to(candidate))
 
 
+def resolve_candidate_workspace(candidate: Path) -> Path:
+    """Locate the runnable application without changing the candidate package layout.
+
+    Brownfield task packages may include their source under ``codebase/`` alongside
+    public contracts and instructions.  The lifecycle manifest is the authoritative
+    signal for which directory is runnable.
+    """
+
+    nested = candidate / "codebase"
+    if not (candidate / "app-setup" / "manifest.json").is_file() and (nested / "app-setup" / "manifest.json").is_file():
+        return nested
+    return candidate
+
+
 def stop_process(process: subprocess.Popen[bytes] | None) -> None:
     if process is None or process.poll() is not None:
         return
@@ -200,11 +214,12 @@ def run(args: argparse.Namespace) -> int:
     task_id = task_identifier(task_dir)
     name = f"astra-verify-{task_id}-{run_dir.name}".replace("_", "-")
     runtime_name = f"{name}-runtime"
-    commands, manifest_path = load_candidate_manifest(candidate)
+    candidate_workspace = resolve_candidate_workspace(candidate)
+    commands, manifest_path = load_candidate_manifest(candidate_workspace)
     runtime_args = [
         "docker", "run", "--detach", "--rm", "--name", runtime_name,
         "--cap-drop", "NET_RAW", "--security-opt", "no-new-privileges",
-        "--mount", f"type=bind,src={candidate},dst=/workspace",
+        "--mount", f"type=bind,src={candidate_workspace},dst=/workspace",
         args.runtime_image,
     ]
     docker_args = [
@@ -235,7 +250,7 @@ def run(args: argparse.Namespace) -> int:
         "workspace": "<candidate-workspace>",
         "image": args.image,
         "runtime_image": args.runtime_image,
-        "manifest": manifest_path,
+        "manifest": str((candidate_workspace / manifest_path).relative_to(candidate)),
         "started_at": utc_now(),
         "status": "running",
     }
