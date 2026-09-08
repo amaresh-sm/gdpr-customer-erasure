@@ -2,7 +2,7 @@
 FROM docker:29-dind-rootless
 
 USER root
-RUN apk add --no-cache nodejs npm git python3 python3-dev py3-pip ripgrep coreutils build-base \
+RUN apk add --no-cache bash nodejs npm git python3 python3-dev py3-pip ripgrep coreutils build-base \
     && npm install --global --include=optional --no-audit --no-fund @openai/codex@0.144.5 opencode-ai \
     && codex --version \
     && opencode --version \

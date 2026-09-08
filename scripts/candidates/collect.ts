@@ -92,6 +92,7 @@ async function main(): Promise<void> {
       model_execution_elapsed_ms: measured(modelElapsedMs, 'Codex child-process wall clock'),
     },
     tokens: {
+      cost_usd: telemetry.costUsd === null ? unavailable(telemetryLabel, 'cost event absent') : measured(telemetry.costUsd, `${telemetryLabel} cost usage`),
       input: token('input_tokens') === undefined ? unavailable(telemetryLabel, 'usage event absent') : measured(token('input_tokens') as number, `${telemetryLabel} token usage`),
       cached_input: token('cached_input_tokens') === undefined ? unavailable(telemetryLabel, 'usage event absent') : measured(token('cached_input_tokens') as number, `${telemetryLabel} token usage`),
       output: token('output_tokens') === undefined ? unavailable(telemetryLabel, 'usage event absent') : measured(token('output_tokens') as number, `${telemetryLabel} token usage`),
@@ -145,7 +146,7 @@ async function main(): Promise<void> {
   };
   await mkdir(join(runDirectory, 'logs'), { recursive: true });
   await writeFile(join(runDirectory, 'metadata.json'), `${JSON.stringify(manifest, null, 2)}\n`);
-  await writeFile(join(runDirectory, 'logs', 'events.sanitized.json'), `${JSON.stringify({ event_count: telemetry.eventCount, invalid_event_count: telemetry.invalidEventCount, tool_trajectory: telemetry.toolCalls }, null, 2)}\n`);
+  await writeFile(join(runDirectory, 'logs', 'events.sanitized.json'), `${JSON.stringify({ event_count: telemetry.eventCount, invalid_event_count: telemetry.invalidEventCount, cost_usd: telemetry.costUsd, tool_trajectory: telemetry.toolCalls }, null, 2)}\n`);
 }
 
 await main();

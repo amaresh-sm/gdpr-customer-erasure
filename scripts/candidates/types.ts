@@ -42,6 +42,7 @@ export interface CandidateRunManifest {
     model_execution_elapsed_ms: Evidence<number>;
   };
   tokens: {
+    cost_usd?: Evidence<number>;
     input: Evidence<number>;
     cached_input: Evidence<number>;
     output: Evidence<number>;

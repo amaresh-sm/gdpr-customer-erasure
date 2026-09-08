@@ -30,11 +30,12 @@ test('parses OpenHands metrics and privacy-safe tool events', async () => {
   try {
     await writeFile(events, [
       JSON.stringify({ type: 'openhands_event', event_type: 'ActionEvent', source: 'agent', timestamp: '2026-08-22T12:00:00.000Z', tool_name: 'terminal' }),
-      JSON.stringify({ type: 'astra_openhands_metrics', input_tokens: 100, output_tokens: 25, cache_read_input_tokens: 10, cache_creation_input_tokens: 5 }),
+      JSON.stringify({ type: 'astra_openhands_metrics', input_tokens: 100, output_tokens: 25, cache_read_input_tokens: 10, cache_creation_input_tokens: 5, cost_usd: 0.012345 }),
     ].join('\n'));
     const telemetry = await parseCodexJsonl(events);
     assert.equal(telemetry.eventCount, 2);
     assert.deepEqual(telemetry.tokens, { input_tokens: 100, cached_input_tokens: 15, output_tokens: 25, total_tokens: 140 });
+    assert.equal(telemetry.costUsd, 0.012345);
     assert.equal(telemetry.toolCalls.length, 1);
     assert.equal(telemetry.toolCalls[0]?.category, 'shell');
     assert.equal(telemetry.toolCalls[0]?.status, 'ok');

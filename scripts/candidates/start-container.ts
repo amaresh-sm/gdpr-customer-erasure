@@ -37,7 +37,7 @@ interface LaunchRecord {
 }
 
 const root = resolve(process.cwd());
-const generationImage = 'payflow-candidate-generation-rootless:v5';
+const generationImage = 'payflow-candidate-generation-rootless:v6';
 const egressImage = 'payflow-codex-egress:v3';
 const proxyImage = 'payflow-provider-proxy:v1';
 const innerImages = [
@@ -295,6 +295,7 @@ async function main(): Promise<void> {
         : routeAndProxyConfiguration(environmentFile));
     } else {
       openhandsEnvironment = openHandsValues(await dotenv(resolve(value('--openhands-env-file')), 'OpenHands'));
+      gatewayId = artifactId;
     }
     await required('docker', ['network', 'create', '--internal', network]);
     await required('docker', ['volume', 'create', dockerVolume]);
@@ -306,6 +307,9 @@ async function main(): Promise<void> {
     await required('docker', ['network', 'connect', '--alias', 'artifact-egress', network, artifactContainer]);
     if (provider === 'codex-login') {
       gateway = artifactContainer;
+    } else if (provider === 'openhands') {
+      // OpenHands talks directly to the configured HTTPS gateway through the egress relay.
+      gateway = null;
     } else {
       await required('docker', ['run', '--detach', '--name', gatewayContainer, '--read-only', '--tmpfs', '/tmp:rw,noexec,nosuid,nodev,size=32m,uid=65532,gid=65532,mode=0700', '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges:true', '--pids-limit', '64', '--memory', '1024m', '--memory-swap', '1024m', '--cpus', '0.5', '--log-driver', 'none', proxyImage]);
       gateway = gatewayContainer;
@@ -344,7 +348,7 @@ async function main(): Promise<void> {
   const launch: LaunchRecord = {
     schema_version: 1, state: failure ? 'startup_failed' : 'running', run_id: id, provider, model, reasoning_effort: reasoning, timeout_seconds: timeoutSeconds,
     started_at: startedAt, prompt_sha256: sha256(prompt), baseline_ref: baselineRef, source_directory: sourceDirectory, network: failure ? null : network,
-    model_container: failure ? null : modelName, gateway_container: failure ? null : gateway, artifact_container: failure ? null : artifact, docker_volume: failure ? null : dockerVolume, workspace_volume: failure ? null : workspaceVolume, generation_image: { tag: generationImage, id: generationId }, gateway_image: { tag: provider === 'codex-login' ? egressImage : proxyImage, id: gatewayId }, artifact_image: { tag: egressImage, id: artifactId }, portkey_route: route, failure,
+    model_container: failure ? null : modelName, gateway_container: failure ? null : gateway, artifact_container: failure ? null : artifact, docker_volume: failure ? null : dockerVolume, workspace_volume: failure ? null : workspaceVolume, generation_image: { tag: generationImage, id: generationId }, gateway_image: { tag: provider === 'codex-login' || provider === 'openhands' ? egressImage : proxyImage, id: gatewayId }, artifact_image: { tag: egressImage, id: artifactId }, portkey_route: route, failure,
   };
   await writeFile(launchPath, `${JSON.stringify(launch, null, 2)}\n`);
   if (failure) throw new Error(failure);

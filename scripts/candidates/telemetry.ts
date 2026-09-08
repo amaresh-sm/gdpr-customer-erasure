@@ -16,6 +16,7 @@ export interface JsonlTelemetry {
   invalidEventCount: number;
   terminalEvent: string | null;
   tokens: Record<string, number> | null;
+  costUsd: number | null;
   toolCalls: ToolCallEvidence[];
   errorMessages: string[];
 }
@@ -115,6 +116,7 @@ export async function parseCodexJsonl(path: string): Promise<JsonlTelemetry> {
   let threadId: string | null = null;
   let terminalEvent: string | null = null;
   let tokens: Record<string, number> | null = null;
+  let costUsd: number | null = null;
 
   for (const line of lines) {
     if (!line.trim()) continue;
@@ -146,6 +148,9 @@ export async function parseCodexJsonl(path: string): Promise<JsonlTelemetry> {
 
     if (eventType === 'astra_openhands_metrics') {
       tokens = richerUsage(tokens, usageFrom(event));
+      const eventCost = [event.cost_usd, event.accumulated_cost, event.cost]
+        .find((value): value is number => typeof value === 'number' && Number.isFinite(value));
+      if (eventCost !== undefined) costUsd = Math.max(costUsd ?? 0, eventCost);
     }
 
     // The PayFlow OpenHands runner intentionally emits event metadata only. Treat each
@@ -250,7 +255,7 @@ export async function parseCodexJsonl(path: string): Promise<JsonlTelemetry> {
       truncated: null,
     });
   }
-  return { threadId, eventCount, invalidEventCount, terminalEvent, tokens, toolCalls: calls, errorMessages: errors };
+  return { threadId, eventCount, invalidEventCount, terminalEvent, tokens, costUsd, toolCalls: calls, errorMessages: errors };
 }
 
 export function measured<T>(value: T, source: string): Evidence<T> {

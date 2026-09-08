@@ -49,6 +49,7 @@ async function main(): Promise<void> {
     ['Provider / model / thinking', `${manifest.model.provider} / ${manifest.model.name} / ${manifest.model.reasoning_effort}`],
     ['Generation time', value(manifest.timing.generation_elapsed_ms, elapsed)],
     ['Model execution time', value(manifest.timing.model_execution_elapsed_ms, elapsed)],
+    ['Cost (USD)', manifest.tokens.cost_usd ? value(manifest.tokens.cost_usd, (amount) => `$${amount.toFixed(6)}`) : 'NA (cost event absent)'],
     ['Input tokens', value(manifest.tokens.input)],
     ['Cached input tokens', value(manifest.tokens.cached_input)],
     ['Output tokens', value(manifest.tokens.output)],
