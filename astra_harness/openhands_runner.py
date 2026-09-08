@@ -141,9 +141,10 @@ def main() -> int:
     # highest OpenHands reasoning level supported by the gateway.
     reasoning_effort = args.reasoning if args.reasoning in {"low", "medium", "high"} else "high"
     base_url = os.getenv("LLM_BASE_URL") or os.getenv("ASTRA_GATEWAY_BASE_URL") or HACKERRANK_GATEWAY_BASE_URL
+    model = args.model if "/" in args.model else f"openai/{args.model}"
     llm = LLM(
         usage_id="agent",
-        model=args.model,
+        model=model,
         api_key=SecretStr(api_key),
         base_url=base_url,
         force_string_serializer=True,
@@ -160,11 +161,11 @@ def main() -> int:
     try:
         conversation.send_message(instruction)
         conversation.run()
-        _emit_metrics(llm, args.model, args.reasoning)
+        _emit_metrics(llm, model, args.reasoning)
     except Exception as exc:  # noqa: BLE001 - preserve provider diagnostics in stderr
         print(f"OpenHands task failed: {exc}", file=sys.stderr)
         try:
-            _emit_metrics(llm, args.model, args.reasoning)
+            _emit_metrics(llm, model, args.reasoning)
         except Exception:
             pass
         return 1

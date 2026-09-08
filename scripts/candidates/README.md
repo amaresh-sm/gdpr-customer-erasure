@@ -52,11 +52,13 @@ with mode `0600` or stricter and contain an API key:
 
 ```bash
 npm run candidates:generate:openhands -- \
-  --model <gateway-model-name> \
+  --model openai/<gateway-model-name> \
   --thinking high \
   --openhands-env-file /absolute/path/to/private-openhands.env
 ```
 
+OpenAI-compatible HackerRank gateway models use the `openai/` namespace (for example,
+`openai/gpt-5.6-terra`); the launcher also adds that prefix automatically when omitted.
 The file must contain `LLM_API_KEY` or `ASTRA_GATEWAY_API_KEY`. Optional
 `LLM_BASE_URL` or `ASTRA_GATEWAY_BASE_URL` values must be credential-free HTTPS URLs; otherwise
 the default HackerRank gateway is used. OpenHands telemetry is sanitized into the same

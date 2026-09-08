@@ -236,7 +236,11 @@ async function preloadInnerImages(container: string): Promise<void> {
 async function main(): Promise<void> {
   const provider = value('--provider', 'codex-login') as Provider;
   if (!['codex-login', 'portkey', 'portkey-opencode', 'openhands'].includes(provider)) throw new Error('--provider must be codex-login, portkey, portkey-opencode, or openhands');
-  const model = value('--model');
+  const requestedModel = value('--model');
+  // HackerRank's OpenAI-compatible gateway expects its provider namespace for
+  // OpenHands requests (for example, openai/gpt-5.6-terra). Keep the CLI
+  // ergonomic while recording and executing the effective gateway model.
+  const model = provider === 'openhands' && !requestedModel.includes('/') ? `openai/${requestedModel}` : requestedModel;
   const reasoning = value('--thinking');
   if (!['low', 'medium', 'high', 'xhigh', 'ultra', 'max'].includes(reasoning)) throw new Error('unsupported --thinking value');
   if (provider === 'codex-login' && !['gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna'].includes(model)) {
