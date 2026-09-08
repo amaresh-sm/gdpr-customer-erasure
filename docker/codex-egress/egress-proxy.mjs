@@ -2,6 +2,10 @@ import http from 'node:http';
 import dns from 'node:dns/promises';
 import net from 'node:net';
 
+const trustedPrivateHosts = new Set([
+  'gateway-central.ai.private.hackerrank.link',
+]);
+
 function isPrivateAddress(address) {
   const normalized = address.toLowerCase();
   if (normalized.startsWith('::ffff:') && net.isIPv4(normalized.slice(7))) return isPrivateAddress(normalized.slice(7));
@@ -20,7 +24,7 @@ async function publicAddresses(hostname) {
   try {
     const addresses = await dns.lookup(hostname, { all: true, verbatim: true });
     return addresses
-      .filter(({ address }) => !isPrivateAddress(address))
+      .filter(({ address }) => trustedPrivateHosts.has(hostname) || !isPrivateAddress(address))
       .sort((left, right) => Number(right.family === 4) - Number(left.family === 4));
   } catch {
     return [];
