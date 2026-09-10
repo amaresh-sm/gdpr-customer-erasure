@@ -994,23 +994,155 @@ export async function releaseDelayedWork(fixture: BenchmarkFixture): Promise<voi
     'delayed financial work was not preserved exactly once and balanced');
 }
 
-export async function replayHistoricalPiiEvent(fixture: BenchmarkFixture): Promise<void> {
+export interface HistoricalReplayEvent {
+  eventId: string;
+  eventType: string;
+  eventVersion: number;
+  occurredAt: string;
+  aggregateType: string;
+  aggregateId: string;
+  merchantId: string;
+  correlationId: string;
+  payload: Record<string, unknown>;
+}
+
+interface PublishedReplayEvent {
+  partition: number;
+  offset: string;
+}
+
+/** Publishes one exact event envelope and returns its Kafka position. */
+export async function publishHistoricalEvent(event: HistoricalReplayEvent): Promise<PublishedReplayEvent> {
   const producer = kafka.producer();
-  const eventId = randomUUID();
   await producer.connect();
   try {
-    await producer.send({ topic: 'payflow.domain-events.v1', messages: [{ key: fixture.delayed.customerId, value: JSON.stringify({
-      eventId, eventType: 'payment.succeeded.v1', eventVersion: 1, occurredAt: new Date().toISOString(),
-      aggregateType: 'payment_intent', aggregateId: fixture.delayed.paymentId, merchantId: fixture.merchantId,
-      correlationId: randomUUID(), payload: { customerId: fixture.delayed.customerId,
-        customerEmail: fixture.delayed.email, name: fixture.delayed.name, canary: fixture.delayed.canary,
-        providerCustomerId: fixture.delayed.providerCustomerId,
-        paymentId: fixture.delayed.paymentId, amount: 9100, currency: 'USD' },
-    }) }] });
+    const metadata = await producer.send({ topic: 'payflow.domain-events.v1', messages: [{
+      key: event.aggregateId, value: JSON.stringify(event),
+    }] });
+    const record = metadata[0];
+    assert(record !== undefined, 'historical replay did not return Kafka metadata');
+    const offset = record.offset ?? record.baseOffset;
+    assert(typeof offset === 'string', 'historical replay Kafka metadata omitted its offset');
+    return { partition: record.partition, offset };
   } finally {
     await producer.disconnect();
   }
+}
+
+/** Waits until the named consumers have committed the published event position. */
+export async function waitForHistoricalConsumerOffsets(position: PublishedReplayEvent, consumerGroups: string[]): Promise<void> {
+  const admin = kafka.admin();
+  await admin.connect();
+  try {
+    await poll(async () => await Promise.all(consumerGroups.map(async (groupId) => {
+      const topics = await admin.fetchOffsets({ groupId, topics: ['payflow.domain-events.v1'] });
+      const partitions = topics.find((item) => item.topic === 'payflow.domain-events.v1')?.partitions ?? [];
+      const committed = partitions.find((item) => item.partition === position.partition)?.offset;
+      return committed !== undefined && BigInt(committed) > BigInt(position.offset);
+    })), (committed) => committed.every(Boolean), 'historical replay consumer offsets');
+  } finally {
+    await admin.disconnect();
+  }
+}
+
+/** Waits until each named consumer has durably acknowledged a historical event. */
+export async function waitForHistoricalInbox(eventId: string, consumerGroups: string[]): Promise<void> {
   await poll(async () => Number((await pool.query<{ count: string }>(
-    `SELECT count(*)::text count FROM operations.inbox_events WHERE event_id=$1 AND consumer IN ('projection-worker','notification-worker') AND status='processed'`,
-    [eventId])).rows[0]?.count ?? '0'), (count) => count === 2, 'historical event consumers', 160);
+    `SELECT count(*)::text count FROM operations.inbox_events
+     WHERE event_id=$1 AND consumer=ANY($2::text[]) AND status='processed'`,
+    [eventId, consumerGroups],
+  )).rows[0]?.count ?? '0'), (count) => count === consumerGroups.length,
+  'historical event consumers', 160);
+}
+
+/** Builds the canonical historical payment event used by replay-suppression checks. */
+export function historicalPiiPaymentEvent(fixture: BenchmarkFixture): HistoricalReplayEvent {
+  return {
+    eventId: randomUUID(), eventType: 'payment.succeeded.v1', eventVersion: 1,
+    occurredAt: new Date().toISOString(), aggregateType: 'payment_intent', aggregateId: fixture.delayed.paymentId,
+    merchantId: fixture.merchantId, correlationId: randomUUID(), payload: {
+      customerId: fixture.delayed.customerId, customerEmail: fixture.delayed.email, name: fixture.delayed.name,
+      canary: fixture.delayed.canary, providerCustomerId: fixture.delayed.providerCustomerId,
+      paymentId: fixture.delayed.paymentId, amount: 9100, currency: 'USD',
+    },
+  };
+}
+
+/** Builds a customer aggregate replay whose original ID exists only in aggregateId. */
+export function historicalCustomerAggregateEvent(fixture: BenchmarkFixture): HistoricalReplayEvent {
+  return {
+    eventId: randomUUID(), eventType: 'customer.updated.v1', eventVersion: 1,
+    occurredAt: new Date().toISOString(), aggregateType: 'customer', aggregateId: fixture.delayed.customerId,
+    merchantId: fixture.merchantId, correlationId: randomUUID(), payload: {
+      email: fixture.delayed.email,
+      profile: {
+        name: fixture.delayed.name, phone: fixture.delayed.phone,
+        nested: { marker: fixture.delayed.nestedCanary },
+        paymentSnapshot: { marker: fixture.delayed.snapshotCanary },
+      },
+      externalReference: fixture.delayed.externalReference,
+    },
+  };
+}
+
+/** Publishes the canonical event once and waits for both replay consumers. */
+export async function replayHistoricalPiiEvent(fixture: BenchmarkFixture): Promise<HistoricalReplayEvent> {
+  const event = historicalPiiPaymentEvent(fixture);
+  const position = await publishHistoricalEvent(event);
+  await waitForHistoricalInbox(event.eventId, ['projection-worker', 'notification-worker']);
+  await waitForHistoricalConsumerOffsets(position, ['payflow-projections-v1', 'payflow-notifications-v1']);
+  return event;
+}
+
+interface ReplaySideEffectSnapshot {
+  analytics: number;
+  notifications: number;
+  deliveries: number;
+  jobs: number;
+  captures: number;
+  ledgerEntries: number;
+  inboxEvents: number;
+  cache: string | null;
+  activity: Record<string, string>;
+  search: string | null;
+}
+
+/** Captures replay side effects so duplicate delivery can be checked exactly once. */
+export async function snapshotReplaySideEffects(fixture: BenchmarkFixture, event: HistoricalReplayEvent): Promise<ReplaySideEffectSnapshot> {
+  const counts = await pool.query<{
+    analytics: string; notifications: string; deliveries: string; jobs: string; captures: string; ledger_entries: string; inbox_events: string;
+  }>(
+    `SELECT
+       (SELECT count(*)::text FROM operations.analytics_events WHERE merchant_id=$1 AND anonymous_id=$6) analytics,
+       (SELECT count(*)::text FROM operations.notifications WHERE merchant_id=$1 AND payload->>'paymentId'=$3) notifications,
+       (SELECT count(*)::text FROM operations.email_deliveries WHERE merchant_id=$1 AND (customer_id=$4 OR destination=$5)) deliveries,
+       (SELECT count(*)::text FROM operations.jobs WHERE merchant_id=$1 AND payload->>'paymentId'=$3) jobs,
+       (SELECT count(*)::text FROM payments.captures WHERE payment_intent_id=$3::uuid) captures,
+       (SELECT count(*)::text FROM payments.ledger_entries WHERE reference_id=$3::uuid) ledger_entries,
+       (SELECT count(*)::text FROM operations.inbox_events WHERE event_id=$2::uuid) inbox_events`,
+    [fixture.merchantId, event.eventId, fixture.delayed.paymentId, fixture.delayed.customerId, fixture.delayed.email,
+      `anon_${event.aggregateId}`],
+  );
+  const row = counts.rows[0];
+  assert(row !== undefined, 'replay side-effect snapshot was empty');
+  const cacheKey = `merchant:${fixture.merchantId}:customer:${fixture.delayed.customerId}`;
+  const cache = await redis.get(cacheKey);
+  const activity = await redis.hgetall(`${cacheKey}:activity`);
+  let searchValue: string | null = null;
+  try {
+    const document = await search.get({ index: CUSTOMER_INDEX, id: `${fixture.merchantId}:${fixture.delayed.customerId}` });
+    searchValue = JSON.stringify(document.body);
+  } catch (error) {
+    if ((error as { statusCode?: unknown }).statusCode !== 404) throw error;
+  }
+  return {
+    analytics: Number(row.analytics), notifications: Number(row.notifications), deliveries: Number(row.deliveries),
+    jobs: Number(row.jobs), captures: Number(row.captures), ledgerEntries: Number(row.ledger_entries),
+    inboxEvents: Number(row.inbox_events), cache, activity, search: searchValue,
+  };
+}
+
+export function assertReplaySideEffectsUnchanged(before: ReplaySideEffectSnapshot, after: ReplaySideEffectSnapshot): void {
+  assert(JSON.stringify(before) === JSON.stringify(after),
+    `duplicate historical replay changed side effects: before=${JSON.stringify(before)} after=${JSON.stringify(after)}`);
 }

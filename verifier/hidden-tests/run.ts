@@ -4,8 +4,9 @@ import { closeClients } from './lib/clients.js';
 import { seedApiContractFixture, seedFixture, seedPartialCoreFixture, verifyApiContractCustomerUnchanged,
   type ApiContractFixture, type BenchmarkFixture } from './lib/fixture.js';
 import { buildScoreReport, type DiagnosticCheck, type FixtureDiagnostic } from './lib/scoring.js';
-import { assertNoErasureViolations, collectErasureViolations, installTransientPaymentWriteFailure,
-  releaseDelayedWork, removeTransientPaymentWriteFailure, replayHistoricalPiiEvent, requestErasure,
+import { assertNoErasureViolations, assertReplaySideEffectsUnchanged, collectErasureViolations, historicalCustomerAggregateEvent,
+  installTransientPaymentWriteFailure, publishHistoricalEvent, releaseDelayedWork, removeTransientPaymentWriteFailure,
+  replayHistoricalPiiEvent, requestErasure, snapshotReplaySideEffects, waitForHistoricalConsumerOffsets, waitForHistoricalInbox,
   verifyAnonymousRetainedFinancialLink, verifyFinancialRetention, verifyFixtureCoverage, verifyMerchantCredentialsPreserved, verifyMerchantIdentityAndAdminPreserved,
   verifyPostErasureRefund, verifyPostErasureRefundFailureRetry, verifySecondaryMerchantCredentialsPreserved, verifySubjectUnchanged, verifySurvivorUntouched, verifyUnrelatedPaymentArtifactsPreserved,
   waitForCompletion, waitForStatus } from './lib/verifier.js';
@@ -552,17 +553,34 @@ try {
       if (!release.ok || !introduced.ok) throw new Error([release.evidence, introduced.evidence].filter(Boolean).join('; ') || 'delayed-work verification failed');
     });
     await test('historical event replay is suppressed by durable erasure state', async () => {
-      const replay = await observe(async () => { await replayHistoricalPiiEvent(fixture); });
+      let replayEvent: Awaited<ReturnType<typeof replayHistoricalPiiEvent>> | undefined;
+      const replay = await observe(async () => { replayEvent = await replayHistoricalPiiEvent(fixture); });
       const delayedSafe = checks.find((check) => check.id === 'delayed.no_reintroduction')?.state === 'pass';
       const replayOk = recordCheck('replay.consumed', 'Historical event is safely consumed', 0.4, replay,
         delayedSafe, 'delayed-work safety was not established');
-      const current = replay.ok ? await collectErasureViolations(fixture, fixture.delayed) : [];
+      let current = replay.ok ? await collectErasureViolations(fixture, fixture.delayed) : [];
       const introduced = replay.ok ? noViolations(newlyIntroduced(delayedViolations, current))
         : { ok: false, evidence: replay.evidence };
-      recordCheck('replay.no_reintroduction', 'Historical replay does not restore PII', 0.6, introduced,
+      let replaySafe = introduced;
+      if (replay.ok && replayEvent) {
+        const beforeDuplicate = await snapshotReplaySideEffects(fixture, replayEvent);
+        const duplicatePosition = await publishHistoricalEvent(replayEvent);
+        await waitForHistoricalConsumerOffsets(duplicatePosition, ['payflow-projections-v1', 'payflow-notifications-v1']);
+        await waitForHistoricalInbox(replayEvent.eventId, ['projection-worker', 'notification-worker']);
+        const afterDuplicate = await snapshotReplaySideEffects(fixture, replayEvent);
+        assertReplaySideEffectsUnchanged(beforeDuplicate, afterDuplicate);
+
+        const aggregateEvent = historicalCustomerAggregateEvent(fixture);
+        const aggregatePosition = await publishHistoricalEvent(aggregateEvent);
+        await waitForHistoricalInbox(aggregateEvent.eventId, ['projection-worker']);
+        await waitForHistoricalConsumerOffsets(aggregatePosition, ['payflow-projections-v1']);
+        current = await collectErasureViolations(fixture, fixture.delayed);
+        replaySafe = noViolations(newlyIntroduced(delayedViolations, current));
+      }
+      recordCheck('replay.no_reintroduction', 'Historical replay does not restore PII', 0.6, replaySafe,
         delayedSafe && replayOk, 'historical replay could not be safely evaluated');
       if (replay.ok) delayedViolations = current;
-      if (!replay.ok || !introduced.ok) throw new Error([replay.evidence, introduced.evidence].filter(Boolean).join('; ') || 'replay verification failed');
+      if (!replay.ok || !replaySafe.ok) throw new Error([replay.evidence, replaySafe.evidence].filter(Boolean).join('; ') || 'replay verification failed');
     });
     await test('survivor remains unchanged after replay and delayed work', async () => {
       const survivor = await observe(async () => { await verifySurvivorUntouched(fixture); });
