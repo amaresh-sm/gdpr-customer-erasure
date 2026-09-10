@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { api, poll } from './http.js';
-import { CUSTOMER_INDEX, fixtureUuid, pool, redis, search } from './clients.js';
+import { CUSTOMER_INDEX, DOCUMENT_BUCKET, fixtureUuid, minio, pool, redis, search } from './clients.js';
 
 export interface SubjectFixture {
   customerId: string;
@@ -12,6 +12,9 @@ export interface SubjectFixture {
   phone: string;
   externalReference: string;
   canary: string;
+  nestedCanary: string;
+  snapshotCanary: string;
+  objectMetadataCanary: string;
   ticketId: string;
   importId: string;
   invoiceId: string;
@@ -299,13 +302,31 @@ async function createSurvivorPaymentArtifacts(
 }
 
 async function createSubject(apiKey: string, slot: string, label: string): Promise<SubjectFixture> {
-  const canary = `PII_${label.toUpperCase()}_${slot}`;
+  // Keep the fixture identifiers stable enough to diagnose a run, while making the
+  // actual PII markers unpredictable to a candidate implementation.
+  const randomMarker = randomUUID().replaceAll('-', '');
+  const canary = `PII_${label.toUpperCase()}_${randomMarker}`;
+  const nestedCanary = `PII_NESTED_${randomUUID().replaceAll('-', '')}`;
+  const snapshotCanary = `PII_SNAPSHOT_${randomUUID().replaceAll('-', '')}`;
+  const objectMetadataCanary = `PII_OBJECT_META_${randomUUID().replaceAll('-', '')}`;
   const email = `${label}.${slot}@erasure.test`;
   const name = `${label} Subject ${slot}`;
   const phone = `+1555${createHash('sha256').update(`${slot}:${label}`).digest('hex').slice(0, 7)}`;
   const externalReference = `crm-${label}-${slot}`;
+  const importRecord = {
+    customerId: '',
+    email,
+    canary,
+    nested: { profile: { marker: nestedCanary }, paymentSnapshot: { marker: snapshotCanary } },
+    objectMetadata: { marker: objectMetadataCanary },
+  };
   const customer = await api<{ id: string }>(apiKey, '/v1/customers', { method: 'POST', expected: 201,
-    body: { externalReference, email, name, phone, metadata: { privateNote: canary, segment: 'benchmark' } } });
+    body: { externalReference, email, name, phone, metadata: {
+      privateNote: canary,
+      nestedRecord: JSON.stringify({ profile: { marker: nestedCanary }, snapshot: { marker: snapshotCanary } }),
+      segment: 'benchmark',
+    } } });
+  importRecord.customerId = customer.body.id;
   await api(apiKey, `/v1/customers/${customer.body.id}/addresses`, { method: 'POST', expected: 201,
     body: { kind: 'billing', line1: `${canary} Avenue`, city: 'Austin', region: 'TX', postalCode: '78701', country: 'US' } });
   await api(apiKey, `/v1/customers/${customer.body.id}/contacts`, { method: 'POST', expected: 201,
@@ -319,12 +340,26 @@ async function createSubject(apiKey: string, slot: string, label: string): Promi
     method: 'POST', expected: 201, body: { subject: `${canary} account question`, body: `Contact ${email}; ${canary}` },
   });
   const imported = await api<{ id: string }>(apiKey, '/v1/customer-imports', { method: 'POST', expected: 201,
-    body: { source: 'hidden-fixture', record: { customerId: customer.body.id, email, canary } } });
+    body: { source: 'hidden-fixture', record: importRecord } });
+  // The public import path creates the object and manifest. Add a PII-bearing
+  // user-metadata header to that same linked object so erasure must sanitize both
+  // object bytes and object metadata, not only the database row.
+  const importObject = await pool.query<{ object_key: string }>(
+    `SELECT object_key FROM customers.customer_imports WHERE id=$1`, [imported.body.id],
+  );
+  const importObjectKey = importObject.rows[0]?.object_key;
+  if (!importObjectKey) throw new Error('fixture import object was not recorded');
+  await minio.putObject(DOCUMENT_BUCKET, importObjectKey, Buffer.from(JSON.stringify(importRecord)),
+    Buffer.byteLength(JSON.stringify(importRecord)), {
+      'Content-Type': 'application/json',
+      'X-Amz-Meta-Privacy-Canary': objectMetadataCanary,
+    });
   const invoice = await api<{ id: string }>(apiKey, '/v1/invoices', { method: 'POST', expected: 201,
     body: { customerId: customer.body.id, currency: 'USD', tax: 125,
       lines: [{ description: `Service for ${name}`, quantity: 1, unitAmount: 5000 }] } });
   return { customerId: customer.body.id, providerCustomerId: '', paymentMethodId: method.body.id, paymentId: '', email, name, phone,
-    externalReference, canary, ticketId: ticket.body.id, importId: imported.body.id, invoiceId: invoice.body.id };
+    externalReference, canary, nestedCanary, snapshotCanary, objectMetadataCanary,
+    ticketId: ticket.body.id, importId: imported.body.id, invoiceId: invoice.body.id };
 }
 
 async function createApiContractCustomer(apiKey: string, slot: string, label: string): Promise<{

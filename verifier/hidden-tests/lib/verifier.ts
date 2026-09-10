@@ -16,16 +16,27 @@ function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
 }
 
-function needles(subject: SubjectFixture): string[] {
-  return [subject.customerId, subject.providerCustomerId, subject.email, subject.name, subject.phone, subject.externalReference, subject.canary];
+function needles(subject: SubjectFixture): Array<{ value: string; label: string }> {
+  return [
+    { value: subject.customerId, label: 'customer UUID' },
+    { value: subject.providerCustomerId, label: 'provider customer ID' },
+    { value: subject.email, label: 'email' },
+    { value: subject.name, label: 'name' },
+    { value: subject.phone, label: 'phone' },
+    { value: subject.externalReference, label: 'external reference' },
+    { value: subject.canary, label: 'PII canary' },
+    { value: subject.nestedCanary, label: 'nested PII canary' },
+    { value: subject.snapshotCanary, label: 'snapshot PII canary' },
+    { value: subject.objectMetadataCanary, label: 'object metadata PII canary' },
+  ].filter((needle) => needle.value.length > 0);
 }
 
 function needleHits(value: unknown, subject: SubjectFixture,
                     allowed: ReadonlySet<string> = new Set()): string[] {
-  const serialized = typeof value === 'string' ? value : JSON.stringify(value);
-  const labels = ['customer UUID', 'provider customer ID', 'email', 'name', 'phone', 'external reference', 'PII canary'];
-  return needles(subject).flatMap((needle, index) => !allowed.has(needle) &&
-    serialized.toLowerCase().includes(needle.toLowerCase()) ? [labels[index]!] : []);
+  const serialized = typeof value === 'string' ? value : JSON.stringify(value) ?? '';
+  const lowerSerialized = serialized.toLowerCase();
+  return needles(subject).flatMap(({ value: needle, label }) => !allowed.has(needle) &&
+    lowerSerialized.includes(needle.toLowerCase()) ? [label] : []);
 }
 
 export async function verifyRequestContract(fixture: BenchmarkFixture): Promise<string> {
@@ -264,17 +275,17 @@ async function collectPostgresViolations(fixture: BenchmarkFixture, subject: Sub
     `SELECT schemaname,tablename FROM pg_tables
      WHERE schemaname NOT IN ('pg_catalog','information_schema')`,
   );
-  const humanNeedles = [subject.email, subject.name, subject.phone, subject.externalReference, subject.canary];
+  const subjectNeedles = needles(subject).map(({ value }) => value);
   for (const table of applicationTables.rows) {
     const schema = table.schemaname.replaceAll('"', '""');
     const name = table.tablename.replaceAll('"', '""');
     const result = await pool.query<{ hits: string }>(
       `SELECT count(*)::text hits FROM "${schema}"."${name}" row_value
-       WHERE ${humanNeedles.map((_, index) => `lower(to_jsonb(row_value)::text) LIKE lower($${index + 1})`).join(' OR ')}`,
-      humanNeedles.map((needle) => `%${needle}%`),
+       WHERE ${subjectNeedles.map((_, index) => `position(lower($${index + 1}::text) in lower(to_jsonb(row_value)::text)) > 0`).join(' OR ')}`,
+      subjectNeedles,
     );
     if (result.rows[0]?.hits !== '0') {
-      violations.push(`${table.schemaname}.${table.tablename} retained human PII in ${result.rows[0]?.hits ?? 'unknown'} row(s)`);
+      violations.push(`${table.schemaname}.${table.tablename} retained subject PII in ${result.rows[0]?.hits ?? 'unknown'} row(s)`);
     }
   }
   return violations;
@@ -318,32 +329,39 @@ async function listObjectNames(prefix: string): Promise<string[]> {
 
 async function collectExternalStoreViolations(fixture: BenchmarkFixture, subject: SubjectFixture): Promise<string[]> {
   const violations: string[] = [];
-  const cache = await redisValues(`merchant:${fixture.merchantId}:*`);
+  // Scan every key, not only the canonical customer prefix. Implementations may
+  // maintain provider, activity, import, or alternate customer-key projections.
+  const cache = await redisValues('*');
   for (const entry of cache) {
     const hits = needleHits(`${entry.key}\n${entry.value}`, subject);
     if (hits.length > 0) violations.push(`Redis ${entry.key} retained ${hits.join(', ')}`);
   }
   const exists = await search.exists({ index: CUSTOMER_INDEX, id: `${fixture.merchantId}:${subject.customerId}` });
   if (exists.body) violations.push('OpenSearch retained the subject document');
-  const result = await search.search({ index: CUSTOMER_INDEX, body: { size: 10, query: { query_string: {
-    query: needles(subject).map((value) => `"${value.replaceAll('"', '\\"')}"`).join(' OR '),
-  } } } });
-  const hits = result.body.hits.total;
-  const total = typeof hits === 'number' ? hits : hits?.value ?? 0;
-  if (total !== 0) violations.push(`OpenSearch retained PII tokens in ${total} document(s)`);
+  // Inspect returned source documents directly. A query_string search can miss
+  // unanalyzed/nested fields and can interpret punctuation in canaries as syntax.
+  const result = await search.search({ index: CUSTOMER_INDEX, body: { size: 1000, query: { match_all: {} } } });
+  const documents = (result.body.hits.hits ?? []) as Array<{ _id?: unknown; _source?: unknown }>;
+  for (const document of documents) {
+    const hits = needleHits(`${String(document._id ?? '')}\n${JSON.stringify(document._source)}`, subject);
+    if (hits.length > 0) violations.push(`OpenSearch document ${String(document._id ?? '<unknown>')} retained ${hits.join(', ')}`);
+  }
   for (const objectName of await listObjectNames(`${fixture.merchantId}/`)) {
+    const metadata = await minio.statObject(DOCUMENT_BUCKET, objectName);
+    const metadataHits = needleHits(metadata.metaData, subject);
+    if (metadataHits.length > 0) violations.push(`MinIO ${objectName} metadata retained ${metadataHits.join(', ')}`);
     const object = await minio.getObject(DOCUMENT_BUCKET, objectName);
     const hits = needleHits(`${objectName}\n${await streamText(object)}`, subject);
     if (hits.length > 0) violations.push(`MinIO ${objectName} retained ${hits.join(', ')}`);
   }
-  for (const needle of [subject.email, subject.canary]) {
+  for (const { value: needle, label } of needles(subject)) {
     const response = await fetch(`${settings.mailpit}/api/v1/search?query=${encodeURIComponent(needle)}`);
     if (!response.ok) throw new Error(`Mailpit search failed: ${response.status}`);
     const body = await response.json() as { messages_count?: number; messages?: unknown[] };
     // Mailpit's `total` is the total mailbox size, not the number matching
     // the query. Only `messages_count` represents a scoped PII hit.
     const total = body.messages_count ?? body.messages?.length ?? 0;
-    if (total > 0) violations.push(`Mailpit retained ${needle} in ${total} provider message(s)`);
+    if (total > 0) violations.push(`Mailpit retained ${label} in ${total} provider message(s)`);
   }
   return violations;
 }
