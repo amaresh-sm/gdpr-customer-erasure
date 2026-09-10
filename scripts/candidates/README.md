@@ -75,6 +75,14 @@ the verifier, writes JUnit and score reports into the candidate artifact, and cl
 npm run candidates:score -- candidates/gpt-5.6-sol-xhigh-<timestamp>
 ```
 
+Use the versioned v2 scorer to retain the v1 score while recording a separate v2 report. V2 may
+return `partial` only when independently provisioned checks ran; partial results are not comparable
+to complete benchmark scores.
+
+```bash
+npm run candidates:score:v2 -- candidates/gpt-5.6-sol-xhigh-<timestamp>
+```
+
 Render the comparable headline table from the recorded evidence:
 
 ```bash

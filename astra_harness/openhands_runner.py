@@ -28,6 +28,21 @@ def _portable_gateway_messages(messages: list[dict[str, Any]]) -> list[dict[str,
     ]
 
 
+def _without_gemini_prompt_cache_key(llm: LLM, kwargs: dict[str, Any]) -> dict[str, Any]:
+    """Prevent OpenHands' cache-control field from reaching Gemini gateways."""
+    if "gemini" not in str(getattr(llm, "model", "")).lower():
+        return kwargs
+
+    sanitized = dict(kwargs)
+    sanitized.pop("prompt_cache_key", None)
+    extra_body = sanitized.get("extra_body")
+    if isinstance(extra_body, dict) and "prompt_cache_key" in extra_body:
+        sanitized["extra_body"] = {
+            key: value for key, value in extra_body.items() if key != "prompt_cache_key"
+        }
+    return sanitized
+
+
 def _install_portable_gateway_compatibility(base_url: str) -> None:
     """Adapt OpenHands chat history for the HackerRank OpenAI-compatible gateway."""
     if "gateway-central.ai.private.hackerrank.link" not in base_url:
@@ -39,6 +54,7 @@ def _install_portable_gateway_compatibility(base_url: str) -> None:
         return
 
     def transport_call(self: LLM, *, messages: list[dict[str, Any]], **kwargs: Any):
+        kwargs = _without_gemini_prompt_cache_key(self, kwargs)
         return original_transport_call(
             self,
             messages=_portable_gateway_messages(messages),
@@ -48,6 +64,7 @@ def _install_portable_gateway_compatibility(base_url: str) -> None:
     async def async_transport_call(
         self: LLM, *, messages: list[dict[str, Any]], **kwargs: Any
     ):
+        kwargs = _without_gemini_prompt_cache_key(self, kwargs)
         return await original_async_transport_call(
             self,
             messages=_portable_gateway_messages(messages),

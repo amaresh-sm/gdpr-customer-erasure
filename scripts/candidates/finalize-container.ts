@@ -114,6 +114,15 @@ async function main(): Promise<void> {
   await writeFile(rawEvents, logs);
   const logsDirectory = join(runDirectory, 'logs');
   await mkdir(logsDirectory, { recursive: true });
+  // The model container's /tmp is ephemeral. The entrypoint stages the package
+  // artifacts into the exported workspace so they survive until this handoff.
+  const packageTelemetryDirectory = join(launch.source_directory, '.hackerrank-openhands-run');
+  for (const artifact of ['telemetry.json', 'trajectory.json', 'events.sanitized.json']) {
+    const source = join(packageTelemetryDirectory, artifact);
+    const destination = join(logsDirectory, `openhands-${artifact}`);
+    await command('mv', [source, destination]);
+  }
+  await rm(packageTelemetryDirectory, { recursive: true, force: true });
   await writeFile(join(logsDirectory, 'container-state.json'), `${JSON.stringify(state, null, 2)}\n`);
   const status = exitCode === 0 ? 'completed' : exitCode === 124 ? 'timed_out' : 'failed';
   const collect = await command(process.execPath, [

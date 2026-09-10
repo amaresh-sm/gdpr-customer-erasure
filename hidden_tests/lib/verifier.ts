@@ -677,12 +677,15 @@ export async function verifySecondaryMerchantCredentialsPreserved(fixture: Bench
   assert(result.rowCount === 1, 'secondary merchant API key was deleted');
   assertCredentialMatches(result.rows[0]!, survivor.secondaryApiKey);
   await api(survivor.secondaryKey, `/v1/customers/${fixture.survivor.customerId}`, { expected: 200 });
-  await api(survivor.secondaryKey, `/v1/payments/${survivor.payment.paymentId}`, { expected: 200 });
+  if (survivor.payment) {
+    await api(survivor.secondaryKey, `/v1/payments/${survivor.payment.paymentId}`, { expected: 200 });
+  }
 }
 
 /** Confirms unrelated payment, receipt, and notification artifacts are not removed or rewritten. */
 export async function verifyUnrelatedPaymentArtifactsPreserved(fixture: BenchmarkFixture): Promise<void> {
   const snapshot = fixture.platformSurvivor.payment;
+  assert(snapshot !== null, 'unrelated payment fixture was not available');
   const payment = await pool.query<{
     amount: string; currency: string; status: string; captures: string; postings: string; signed_balance: string;
   }>(

@@ -114,10 +114,22 @@ EOF
     ;;
   openhands)
     timeout --signal=TERM --kill-after=30s "${PAYFLOW_GENERATION_TIMEOUT_SECONDS}s" \
-      python3 /opt/astra/openhands_runner.py \
-      --workspace /workspace/source --instruction "$prompt_copy" \
-      --model "$PAYFLOW_GENERATION_MODEL" --reasoning "$PAYFLOW_GENERATION_REASONING_EFFORT"
+      hackerrank-openhands run \
+      --workspace /workspace/source --instruction-file "$prompt_copy" \
+      --model "$PAYFLOW_GENERATION_MODEL" --reasoning "$PAYFLOW_GENERATION_REASONING_EFFORT" \
+      --output /tmp/hackerrank-openhands-run
     result=$?
+    if [ -f /tmp/hackerrank-openhands-run/events.jsonl ]; then
+      cat /tmp/hackerrank-openhands-run/events.jsonl
+    fi
+    if [ -d /tmp/hackerrank-openhands-run ]; then
+      mkdir -p /workspace/source/.hackerrank-openhands-run
+      for artifact in telemetry.json trajectory.json events.sanitized.json; do
+        if [ -f "/tmp/hackerrank-openhands-run/$artifact" ]; then
+          cp "/tmp/hackerrank-openhands-run/$artifact" "/workspace/source/.hackerrank-openhands-run/$artifact"
+        fi
+      done
+    fi
     ;;
   *)
     echo "unsupported generation provider" >&2

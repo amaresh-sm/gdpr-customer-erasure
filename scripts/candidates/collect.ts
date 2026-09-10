@@ -142,7 +142,8 @@ async function main(): Promise<void> {
     portkey: { route_identity: unavailable('provider proxy', 'no Portkey route was configured') },
     source: { baseline_ref: baselineRef, baseline_commit: await gitCommit(baselineRef), sha256: await treeSha256(sourceDirectory) },
     scoring: { verifier_ref: null, junit_path: null, score_path: null, scenarios_total: null, scenarios_passed: null,
-      score: null, score_maximum: null, hard_pass: null, score_state: null, report_sha256: null },
+      score: null, score_maximum: null, hard_pass: null, score_state: null, report_sha256: null,
+      scoring_version: null, evaluated_maximum: null, comparable: null },
   };
   await mkdir(join(runDirectory, 'logs'), { recursive: true });
   await writeFile(join(runDirectory, 'metadata.json'), `${JSON.stringify(manifest, null, 2)}\n`);

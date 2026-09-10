@@ -65,11 +65,12 @@ export interface MerchantPlatformSurvivor {
   admin: MerchantAdminSnapshot;
   secondaryKey: string;
   secondaryApiKey: MerchantApiKeySnapshot;
-  payment: SurvivorPaymentArtifactSnapshot;
+  payment: SurvivorPaymentArtifactSnapshot | null;
 }
 
 export interface BenchmarkFixture {
   slot: string;
+  capabilities?: { normalMailpit: boolean };
   merchantId: string;
   merchantKey: string;
   merchantApiKey: MerchantApiKeySnapshot;
@@ -97,6 +98,24 @@ export interface BenchmarkFixture {
     invoiceLineUnitAmount: string;
     invoiceLineTotal: string;
   };
+}
+
+export interface SeedFixtureOptions {
+  /** Skip the unrelated payment artifact whose notification is not needed by core cells. */
+  skipSurvivorPayment?: boolean;
+  /** Allow the partial fixture to continue when the candidate cannot deliver the normal email. */
+  allowMissingNormalMailpit?: boolean;
+}
+
+/** Minimal isolated fixture for API checks that do not require background payment delivery. */
+export interface ApiContractFixture {
+  slot: string;
+  merchantId: string;
+  merchantKey: string;
+  otherMerchantKey: string;
+  normalCustomerId: string;
+  survivorCustomerId: string;
+  normalSnapshot: { email: string; name: string; phone: string; externalReference: string };
 }
 
 async function provisionMerchant(slot: string, suffix: string): Promise<{
@@ -308,6 +327,69 @@ async function createSubject(apiKey: string, slot: string, label: string): Promi
     externalReference, canary, ticketId: ticket.body.id, importId: imported.body.id, invoiceId: invoice.body.id };
 }
 
+async function createApiContractCustomer(apiKey: string, slot: string, label: string): Promise<{
+  id: string;
+  email: string;
+  name: string;
+  phone: string;
+  externalReference: string;
+}> {
+  const email = `${label}.${slot}@api-fixture.test`;
+  const name = `API ${label} ${slot}`;
+  const phone = `+1555${createHash('sha256').update(`${slot}:${label}:api`).digest('hex').slice(0, 7)}`;
+  const externalReference = `api-${label}-${slot}`;
+  const customer = await api<{ id: string }>(apiKey, '/v1/customers', {
+    method: 'POST',
+    expected: 201,
+    body: { externalReference, email, name, phone },
+  });
+  return { id: customer.body.id, email, name, phone, externalReference };
+}
+
+/**
+ * Seeds only the merchant and customer rows required to verify API authorization
+ * and idempotency. This deliberately avoids payments, notifications, documents,
+ * and external-store projections used by the full cross-store fixture.
+ */
+export async function seedApiContractFixture(slot: string): Promise<ApiContractFixture> {
+  const merchant = await provisionMerchant(slot, 'api-primary');
+  const other = await provisionMerchant(slot, 'api-other');
+  const normal = await createApiContractCustomer(merchant.key, slot, 'normal');
+  const survivor = await createApiContractCustomer(merchant.key, slot, 'survivor');
+  const rows = await pool.query<{ id: string }>(
+    `SELECT id FROM customers.customers WHERE merchant_id=$1 AND id=ANY($2::uuid[])`,
+    [merchant.id, [normal.id, survivor.id]],
+  );
+  if (rows.rowCount !== 2) throw new Error('minimal API fixture customers were not persisted');
+  return {
+    slot,
+    merchantId: merchant.id,
+    merchantKey: merchant.key,
+    otherMerchantKey: other.key,
+    normalCustomerId: normal.id,
+    survivorCustomerId: survivor.id,
+    normalSnapshot: {
+      email: normal.email,
+      name: normal.name,
+      phone: normal.phone,
+      externalReference: normal.externalReference,
+    },
+  };
+}
+
+/** Proves that a rejected cross-tenant probe did not change the seeded customer. */
+export async function verifyApiContractCustomerUnchanged(fixture: ApiContractFixture): Promise<void> {
+  const result = await pool.query<{ email: string; name: string; phone: string; external_reference: string }>(
+    `SELECT email,name,phone,external_reference FROM customers.customers WHERE merchant_id=$1 AND id=$2`,
+    [fixture.merchantId, fixture.normalCustomerId],
+  );
+  const customer = result.rows[0];
+  if (customer?.email !== fixture.normalSnapshot.email || customer.name !== fixture.normalSnapshot.name ||
+      customer.phone !== fixture.normalSnapshot.phone || customer.external_reference !== fixture.normalSnapshot.externalReference) {
+    throw new Error('cross-tenant probe changed the minimal API fixture customer');
+  }
+}
+
 async function loadProviderCustomer(subject: SubjectFixture, merchantId: string): Promise<void> {
   const result = await pool.query<{ provider_customer_id: string }>(
     `SELECT provider_customer_id FROM customers.provider_customer_mappings
@@ -319,7 +401,7 @@ async function loadProviderCustomer(subject: SubjectFixture, merchantId: string)
   subject.providerCustomerId = mapping.provider_customer_id;
 }
 
-export async function seedFixture(slot: string): Promise<BenchmarkFixture> {
+export async function seedFixture(slot: string, options: SeedFixtureOptions = {}): Promise<BenchmarkFixture> {
   const merchant = await provisionMerchant(slot, 'primary');
   const other = await provisionMerchant(slot, 'other');
   const normal = await createSubject(merchant.key, slot, 'normal');
@@ -336,7 +418,22 @@ export async function seedFixture(slot: string): Promise<BenchmarkFixture> {
   );
   const admin = await provisionMerchantAdmin(merchant.id, slot);
   const secondaryKey = await provisionSecondaryMerchantKey(merchant.id, slot);
-  const survivorPayment = await createSurvivorPaymentArtifacts(merchant.key, merchant.id, survivor, slot);
+  const survivorPayment = options.skipSurvivorPayment
+    ? null
+    : await createSurvivorPaymentArtifacts(merchant.key, merchant.id, survivor, slot);
+  if (options.skipSurvivorPayment) {
+    survivor.providerCustomerId = `pcus_hidden_${createHash('sha256').update(`${slot}:survivor-partial`).digest('hex').slice(0, 20)}`;
+    await pool.query(
+      `INSERT INTO customers.provider_customer_mappings(merchant_id,customer_id,provider_name,provider_customer_id)
+       VALUES($1,$2,'payflow_sandbox',$3)`,
+      [merchant.id, survivor.customerId, survivor.providerCustomerId],
+    );
+    await pool.query(
+      `INSERT INTO provider_sandbox.customers(id,merchant_id,payflow_customer_id,email,name,external_reference)
+       VALUES($1,$2,$3,$4,$5,$6)`,
+      [survivor.providerCustomerId, merchant.id, survivor.customerId, survivor.email, survivor.name, survivor.externalReference],
+    );
+  }
   await loadProviderCustomer(survivor, merchant.id);
 
   const payment = await api<{ id: string }>(merchant.key, '/v1/payments', { method: 'POST', expected: 202,
@@ -350,10 +447,18 @@ export async function seedFixture(slot: string): Promise<BenchmarkFixture> {
   await poll(async () => Number((await pool.query<{ count: string }>(
     `SELECT count(*)::text count FROM operations.document_manifests WHERE metadata->>'paymentId'=$1`, [normal.paymentId])).rows[0]!.count),
   (count) => count === 1, 'normal receipt');
-  await poll(async () => Number((await pool.query<{ count: string }>(
+  const normalMailpitReady = await (async () => {
+    try {
+      await poll(async () => Number((await pool.query<{ count: string }>(
     `SELECT count(*)::text count FROM operations.email_deliveries
      WHERE merchant_id=$1 AND customer_id=$2 AND status='delivered'`, [merchant.id, normal.customerId])).rows[0]!.count),
-  (count) => count >= 1, 'normal Mailpit delivery');
+        (count) => count >= 1, 'normal Mailpit delivery', options.allowMissingNormalMailpit ? 8 : 80);
+      return true;
+    } catch (error) {
+      if (options.allowMissingNormalMailpit) return false;
+      throw error;
+    }
+  })();
   await poll(async () => await redis.get(`merchant:${merchant.id}:customer:${normal.customerId}`),
   (value) => typeof value === 'string' && value.includes(normal.email), 'normal Redis projection');
   await poll(async () => (await search.exists({ index: CUSTOMER_INDEX, id: `${merchant.id}:${normal.customerId}` })).body,
@@ -453,6 +558,7 @@ export async function seedFixture(slot: string): Promise<BenchmarkFixture> {
   const invoice = invoiceFinancial.rows[0];
   if (!invoice) throw new Error('normal invoice financial snapshot was not created');
   return { slot, merchantId: merchant.id, merchantKey: merchant.key, merchantApiKey: merchant.apiKey,
+    capabilities: { normalMailpit: normalMailpitReady },
     platformSurvivor: { merchant: merchant.identity, admin, secondaryKey: secondaryKey.key,
       secondaryApiKey: secondaryKey.snapshot, payment: survivorPayment }, otherMerchantId: other.id,
     otherMerchantKey: other.key, normal, refund, refundRetry, delayed, survivor: { ...survivor, messageBody: survivorMessageBody },
@@ -460,4 +566,12 @@ export async function seedFixture(slot: string): Promise<BenchmarkFixture> {
       status: row.status, postings: row.postings, signedBalance: row.signed_balance,
       invoiceSubtotal: invoice.subtotal, invoiceTax: invoice.tax, invoiceTotal: invoice.total,
       invoiceLineQuantity: invoice.quantity, invoiceLineUnitAmount: invoice.unit_amount, invoiceLineTotal: invoice.line_total } };
+}
+
+/**
+ * Seeds the real payment, erasure, queue, worker, and replay subjects without
+ * requiring the unrelated survivor payment notification used only by the full fixture.
+ */
+export async function seedPartialCoreFixture(slot: string): Promise<BenchmarkFixture> {
+  return await seedFixture(slot, { skipSurvivorPayment: true, allowMissingNormalMailpit: true });
 }

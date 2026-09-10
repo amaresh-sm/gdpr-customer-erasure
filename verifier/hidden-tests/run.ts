@@ -1,7 +1,9 @@
 import { writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { closeClients } from './lib/clients.js';
-import { seedFixture, type BenchmarkFixture } from './lib/fixture.js';
+import { seedApiContractFixture, seedFixture, seedPartialCoreFixture, verifyApiContractCustomerUnchanged,
+  type ApiContractFixture, type BenchmarkFixture } from './lib/fixture.js';
+import { buildScoreReportV2, type DiagnosticCheck, type FixtureDiagnostic } from './lib/scoring-v2.js';
 import { assertNoErasureViolations, collectErasureViolations, installTransientPaymentWriteFailure,
   releaseDelayedWork, removeTransientPaymentWriteFailure, replayHistoricalPiiEvent, requestErasure,
   verifyAnonymousRetainedFinancialLink, verifyFinancialRetention, verifyFixtureCoverage, verifyMerchantCredentialsPreserved, verifyMerchantIdentityAndAdminPreserved,
@@ -10,18 +12,8 @@ import { assertNoErasureViolations, collectErasureViolations, installTransientPa
 import { api } from './lib/http.js';
 
 interface TestResult { name: string; durationMs: number; error?: string | undefined }
-type CheckState = 'pass' | 'fail' | 'blocked';
 
-interface DiagnosticCheck {
-  id: string;
-  label: string;
-  maximum: number;
-  earned: number;
-  state: CheckState;
-  evidence?: string | undefined;
-}
-
-interface ScoreReport {
+interface ScoreReportV1 {
   schema_version: 1;
   state: 'complete' | 'blocked';
   hard_pass: boolean;
@@ -45,9 +37,11 @@ interface ErasureResponse {
 
 const results: TestResult[] = [];
 const checks: DiagnosticCheck[] = [];
+const fixtures: FixtureDiagnostic[] = [];
 let fixture: BenchmarkFixture;
 const scoreMaximum = 1 as const;
 const rawWeightTotal = 8;
+const scoringVersion = process.env.ERASURE_SCORING_VERSION === 'v2' ? 'v2' : 'v1';
 // A correct workflow completes well inside this bound. Keep the guard outside the
 // individual polling helpers so any hung candidate participant is reported as a
 // scenario failure rather than preventing later independent checks from running.
@@ -142,18 +136,91 @@ async function writeReport(): Promise<void> {
 async function writeScoreReport(): Promise<void> {
   const fixtureResult = results.find((result) => result.name === 'deterministic fixture provisions cross-store PII');
   const blocked = Boolean(fixtureResult?.error);
+  if (scoringVersion === 'v2') {
+    const report = buildScoreReportV2(
+      checks,
+      fixtures,
+      !blocked,
+      !blocked && results.length === 13 && results.every((result) => !result.error),
+      blocked ? 'full cross-store fixture was unavailable; only independently observed checks are credited' : undefined,
+    );
+    await writeFile(process.env.ERASURE_SCORE_PATH ?? 'hidden.score.json', `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+    return;
+  }
   const diagnostics = {
     passed_checks: checks.filter((check) => check.state === 'pass').length,
     failed_checks: checks.filter((check) => check.state === 'fail').length,
     blocked_checks: checks.filter((check) => check.state === 'blocked').length,
     blocked_check_ids: checks.filter((check) => check.state === 'blocked').map((check) => check.id),
   };
-  const report: ScoreReport = blocked
+  const report: ScoreReportV1 = blocked
     ? { schema_version: 1, state: 'blocked', hard_pass: false, earned: null, maximum: scoreMaximum, checks, diagnostics,
       blocked_reason: 'fixture provisioning failed; candidate score is not comparable' }
     : { schema_version: 1, state: 'complete', hard_pass: results.length === 13 && results.every((result) => !result.error),
       earned: Number(checks.reduce((total, check) => total + check.earned, 0).toFixed(4)), maximum: scoreMaximum, checks, diagnostics };
   await writeFile(process.env.ERASURE_SCORE_PATH ?? 'hidden.score.json', `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+}
+
+/** Runs only API checks that can be proven without a payment, notification, or external-store fixture. */
+async function runIndependentApiChecks(apiFixture: ApiContractFixture): Promise<void> {
+  await test('independent API contract checks', async () => {
+    const unknown = randomUUID();
+    const unknownCustomer = await observe(async () => {
+      await api(apiFixture.merchantKey, `/v1/customers/${unknown}/erasure-requests`, {
+        method: 'POST', expected: 404, headers: { 'idempotency-key': `unknown-${apiFixture.slot}` },
+      });
+    });
+    recordCheck('api.unknown_customer', 'Unknown customer is tenant-safe', 0.1, unknownCustomer);
+
+    const crossTenantPost = await observe(async () => {
+      await api(apiFixture.otherMerchantKey, `/v1/customers/${apiFixture.normalCustomerId}/erasure-requests`, {
+        method: 'POST', expected: 404, headers: { 'idempotency-key': `cross-tenant-${apiFixture.slot}` },
+      });
+      await verifyApiContractCustomerUnchanged(apiFixture);
+    });
+    recordCheck('api.cross_tenant_rejection', 'Cross-tenant customer is hidden without mutation', 0.1, crossTenantPost);
+
+    const winningKey = `erase-canonical-${apiFixture.slot}`;
+    let requestId = '';
+    const concurrent = await observe(async () => {
+      const responses = await Promise.all([winningKey, winningKey, winningKey].map(async (key) => await api<ErasureResponse>(
+        apiFixture.merchantKey, `/v1/customers/${apiFixture.normalCustomerId}/erasure-requests`,
+        { method: 'POST', expected: 202, headers: { 'idempotency-key': key } },
+      )));
+      const ids = new Set(responses.map((response) => response.body.id));
+      if (ids.size !== 1) throw new Error('concurrent erasure requests created multiple workflows');
+      requestId = responses[0]!.body.id;
+    });
+    const concurrentOk = recordCheck('api.concurrent_idempotency', 'Concurrent same-key requests share one workflow', 0.2, concurrent);
+
+    const alternate = await observe(async () => {
+      const response = await api<ErasureResponse>(apiFixture.merchantKey,
+        `/v1/customers/${apiFixture.normalCustomerId}/erasure-requests`,
+        { method: 'POST', expected: 202, headers: { 'idempotency-key': `erase-alternate-${apiFixture.slot}` } });
+      if (response.body.id !== requestId) throw new Error('alternate key created a second customer workflow');
+    });
+    recordCheck('api.customer_deduplication', 'Alternate key reuses the customer workflow', 0.15,
+      alternate, concurrentOk, 'concurrent request did not yield a canonical request ID');
+
+    const repeated = await observe(async () => {
+      const response = await api<ErasureResponse>(apiFixture.merchantKey,
+        `/v1/customers/${apiFixture.normalCustomerId}/erasure-requests`,
+        { method: 'POST', expected: 202, headers: { 'idempotency-key': winningKey } });
+      if (response.body.id !== requestId) throw new Error('idempotent retry changed request ID');
+    });
+    recordCheck('api.key_reuse', 'Idempotent retry returns the original request', 0.1,
+      repeated, concurrentOk, 'concurrent request did not yield a canonical request ID');
+
+    const conflictingReuse = await observe(async () => {
+      await api(apiFixture.merchantKey, `/v1/customers/${apiFixture.survivorCustomerId}/erasure-requests`, {
+        method: 'POST', expected: 409, headers: { 'idempotency-key': winningKey },
+      });
+    });
+    recordCheck('api.key_conflict', 'Key reuse for another customer is rejected', 0.1, conflictingReuse);
+    if (![unknownCustomer.ok, crossTenantPost.ok, concurrentOk, alternate.ok, repeated.ok, conflictingReuse.ok].every(Boolean)) {
+      throw new Error('one or more independent API checks failed');
+    }
+  });
 }
 
 const slot = process.env.ERASURE_TEST_SLOT ?? `${Date.now()}-${process.pid}`;
@@ -162,6 +229,17 @@ try {
     fixture = await seedFixture(slot);
     await verifyFixtureCoverage(fixture);
   });
+  if (scoringVersion === 'v2') {
+    const fixtureResult = results.find((result) => result.name === 'deterministic fixture provisions cross-store PII');
+    fixtures.push({ id: 'full-cross-store', state: fixture ? 'ready' : 'failed', evidence: fixtureResult?.error });
+    if (!fixture) {
+      await test('partial core fixture provisions payment and asynchronous subjects', async () => {
+        fixture = await seedPartialCoreFixture(`v2-${randomUUID().slice(0, 12)}`);
+      });
+      const partialFixtureResult = results.find((result) => result.name === 'partial core fixture provisions payment and asynchronous subjects');
+      fixtures.push({ id: 'partial-core', state: fixture ? 'ready' : 'failed', evidence: partialFixtureResult?.error });
+    }
+  }
   if (fixture!) {
     let normalRequest = '';
     await test('request contract is tenant-safe, concurrent, and idempotent', async () => {
@@ -237,7 +315,8 @@ try {
       recordCheck('normal.redis', 'Redis no longer contains subject PII', 0.15, noViolations(grouped.redis));
       recordCheck('normal.opensearch', 'OpenSearch no longer contains subject PII', 0.15, noViolations(grouped.search));
       recordCheck('normal.minio', 'MinIO no longer contains subject PII', 0.25, noViolations(grouped.minio));
-      recordCheck('normal.mailpit', 'Mailpit no longer contains subject PII', 0.25, noViolations(grouped.mailpit));
+      recordCheck('normal.mailpit', 'Mailpit no longer contains subject PII', 0.25, noViolations(grouped.mailpit),
+        fixture.capabilities?.normalMailpit ?? true, 'normal Mailpit fixture delivery was not established');
       assertNoErasureViolations(violations, 'normal erasure');
     });
     await test('financial truth and shared unrelated records are retained', async () => {
@@ -281,11 +360,14 @@ try {
       const shared = await observe(async () => { await verifySurvivorUntouched(fixture); });
       const merchant = await observe(async () => { await verifyMerchantIdentityAndAdminPreserved(fixture); });
       const credentials = await observe(async () => { await verifySecondaryMerchantCredentialsPreserved(fixture); });
-      const artifacts = await observe(async () => { await verifyUnrelatedPaymentArtifactsPreserved(fixture); });
+      const artifacts = fixture.platformSurvivor.payment
+        ? await observe(async () => { await verifyUnrelatedPaymentArtifactsPreserved(fixture); })
+        : { ok: false, evidence: 'unrelated payment fixture was not established' };
       recordCheck('scope.unrelated_customer_and_shared_record', 'Unrelated customer and shared record remain unchanged', 0.2, shared);
       recordCheck('scope.merchant_identity_and_admin', 'Merchant identity and administrator remain unchanged', 0.1, merchant);
       recordCheck('scope.merchant_credentials', 'Independent merchant credential remains active and usable', 0.1, credentials);
-      recordCheck('scope.unrelated_payment_notification_document', 'Unrelated payment, notification, and receipt remain unchanged', 0.2, artifacts);
+      recordCheck('scope.unrelated_payment_notification_document', 'Unrelated payment, notification, and receipt remain unchanged', 0.2,
+        artifacts, fixture.platformSurvivor.payment !== null, 'unrelated payment fixture was not established');
       if (![shared.ok, merchant.ok, credentials.ok, artifacts.ok].every(Boolean)) {
         throw new Error([shared.evidence, merchant.evidence, credentials.evidence, artifacts.evidence].filter(Boolean).join('; '));
       }
@@ -370,6 +452,14 @@ try {
         replaySafe, 'replay safety was not established');
       if (!survivor.ok) throw new Error(survivor.evidence);
     });
+  } else if (scoringVersion === 'v2') {
+    let apiFixture: ApiContractFixture | undefined;
+    await test('minimal API fixture provisions isolated customer records', async () => {
+      apiFixture = await seedApiContractFixture(`${slot}-api`);
+    });
+    const apiFixtureResult = results.find((result) => result.name === 'minimal API fixture provisions isolated customer records');
+    fixtures.push({ id: 'api-contract', state: apiFixture ? 'ready' : 'failed', evidence: apiFixtureResult?.error });
+    if (apiFixture) await runIndependentApiChecks(apiFixture);
   }
 } finally {
   await writeReport();
