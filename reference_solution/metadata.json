@@ -7,5 +7,19 @@
     "scenario_checks": "40/40 pass",
     "verified_at": "2026-08-22",
     "note": "This source snapshot is the full golden implementation. It includes the shared database-startup retry needed for reliable fresh-stack runs, is evaluator-only, and is excluded from candidate exports."
+  },
+  "scoring": {
+    "verifier_ref": "404c8fe8828cda8c5ad6e5984338ce806e970bf1",
+    "junit_path": "reports/hidden.junit.xml",
+    "score_path": "reports/hidden.score.json",
+    "scenarios_total": 13,
+    "scenarios_passed": 13,
+    "score": 1,
+    "score_maximum": 1,
+    "hard_pass": true,
+    "score_state": "complete",
+    "report_sha256": "9dcf76a86af91f0b0c1ee3a050becc4c95efa68f6484e3eb0c911996f98692fd",
+    "evaluated_maximum": 1,
+    "comparable": true
   }
 }

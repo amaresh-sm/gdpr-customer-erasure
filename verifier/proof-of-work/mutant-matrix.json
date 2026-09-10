@@ -368,6 +368,38 @@
         "replay-suppression",
         "isolation-and-survivors"
       ]
+    },
+    "customer-import-manifest-retained": {
+      "patch": "verifier/mutants/customer-import-manifest-retained.patch",
+      "hidden_test": "mutation.active-store-erasure",
+      "expected_criteria": [
+        "active-store-erasure"
+      ],
+      "related_criteria": [
+        "api-contract",
+        "financial-retention",
+        "post-erasure-financial-work",
+        "failure-retry",
+        "delayed-work",
+        "replay-suppression",
+        "isolation-and-survivors"
+      ]
+    },
+    "customer-import-record-retained": {
+      "patch": "verifier/mutants/customer-import-record-retained.patch",
+      "hidden_test": "mutation.active-store-erasure",
+      "expected_criteria": [
+        "active-store-erasure"
+      ],
+      "related_criteria": [
+        "api-contract",
+        "financial-retention",
+        "post-erasure-financial-work",
+        "failure-retry",
+        "delayed-work",
+        "replay-suppression",
+        "isolation-and-survivors"
+      ]
     }
   }
 }

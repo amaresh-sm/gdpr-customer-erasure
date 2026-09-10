@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="payflow-gdpr-erasure" tests="13" failures="4">
+  <testcase classname="payflow.gdpr" name="deterministic fixture provisions cross-store PII" time="2.954"></testcase>
+  <testcase classname="payflow.gdpr" name="request contract is tenant-safe, concurrent, and idempotent" time="0.186"></testcase>
+  <testcase classname="payflow.gdpr" name="normal subject PII is absent from every active store" time="0.136">
+    <failure message="hidden verification failed">Error: normal erasure found 1 violation(s):
+- customer_import manifest retained 1 row(s)
+    at assert (/srv/payflow/hidden_tests/lib/verifier.ts:17:25)
+    at assertNoErasureViolations (/srv/payflow/hidden_tests/lib/verifier.ts:585:3)
+    at &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:440:7)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async test (/srv/payflow/hidden_tests/run.ts:96:5)
+    at async &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:430:5)</failure>
+  </testcase>
+  <testcase classname="payflow.gdpr" name="financial truth and shared unrelated records are retained" time="0.001"></testcase>
+  <testcase classname="payflow.gdpr" name="retained financial links remain anonymous and support a later private refund" time="0.000"></testcase>
+  <testcase classname="payflow.gdpr" name="post-erasure refunds preserve financial correctness without restoring PII" time="0.759">
+    <failure message="hidden verification failed">Error: post-erasure refund found 1 violation(s):
+- customer_import manifest retained 1 row(s)
+    at &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:466:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async test (/srv/payflow/hidden_tests/run.ts:96:5)
+    at async &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:462:5)</failure>
+  </testcase>
+  <testcase classname="payflow.gdpr" name="failed post-erasure refunds remain private and retry safely" time="0.759">
+    <failure message="hidden verification failed">Error: post-erasure refund failure and retry found 1 violation(s):
+- customer_import manifest retained 1 row(s)
+    at &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:472:34)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async test (/srv/payflow/hidden_tests/run.ts:96:5)
+    at async &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:468:5)</failure>
+  </testcase>
+  <testcase classname="payflow.gdpr" name="merchant credentials remain usable after customer erasure" time="0.006"></testcase>
+  <testcase classname="payflow.gdpr" name="customer erasure preserves unrelated customer and merchant-platform survivors" time="0.014"></testcase>
+  <testcase classname="payflow.gdpr" name="failed erasure retries safely and pending asynchronous work is sanitized before completion" time="0.630">
+    <failure message="hidden verification failed">Error: customer_import manifest retained 1 row(s)
+    at &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:537:35)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async test (/srv/payflow/hidden_tests/run.ts:96:5)
+    at async &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:497:5)</failure>
+  </testcase>
+  <testcase classname="payflow.gdpr" name="delayed webhook and document work cannot reintroduce PII" time="0.459"></testcase>
+  <testcase classname="payflow.gdpr" name="historical event replay is suppressed by durable erasure state" time="0.213"></testcase>
+  <testcase classname="payflow.gdpr" name="survivor remains unchanged after replay and delayed work" time="0.001"></testcase>
+</testsuite>

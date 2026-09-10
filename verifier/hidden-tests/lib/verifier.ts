@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
+import { brotliDecompressSync, gunzipSync, inflateSync } from 'node:zlib';
 import { DOCUMENT_BUCKET, CUSTOMER_INDEX, kafka, minio, pool, redis, search, settings } from './clients.js';
 import { api, poll } from './http.js';
 import type { BenchmarkFixture, MerchantApiKeySnapshot, SubjectFixture } from './fixture.js';
@@ -17,7 +18,7 @@ function assert(condition: unknown, message: string): asserts condition {
 }
 
 function needles(subject: SubjectFixture): Array<{ value: string; label: string }> {
-  return [
+  const rawNeedles = [
     { value: subject.customerId, label: 'customer UUID' },
     { value: subject.providerCustomerId, label: 'provider customer ID' },
     { value: subject.email, label: 'email' },
@@ -29,14 +30,75 @@ function needles(subject: SubjectFixture): Array<{ value: string; label: string 
     { value: subject.snapshotCanary, label: 'snapshot PII canary' },
     { value: subject.objectMetadataCanary, label: 'object metadata PII canary' },
   ].filter((needle) => needle.value.length > 0);
+  return rawNeedles.flatMap((needle) => [needle,
+    { value: Buffer.from(needle.value, 'utf8').toString('base64'), label: `${needle.label} (base64)` },
+  ]);
+}
+
+interface NeedleLocation {
+  label: string;
+  path: string;
+}
+
+function pathForKey(path: string, key: string): string {
+  return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(key) ? `${path}.${key}` : `${path}[${JSON.stringify(key)}]`;
+}
+
+function textNeedleLocations(text: string, subject: SubjectFixture,
+                             allowed: ReadonlySet<string>): NeedleLocation[] {
+  const lowerText = text.toLowerCase();
+  return needles(subject).flatMap(({ value, label }) => !allowed.has(value) &&
+    lowerText.includes(value.toLowerCase()) ? [{ label, path: '$' }] : []);
+}
+
+/** Recursively scans structured values and retains the exact JSON path for every hit. */
+function needleLocations(value: unknown, subject: SubjectFixture,
+                         allowed: ReadonlySet<string> = new Set(), path = '$', seen = new WeakSet<object>()): NeedleLocation[] {
+  if (value === null || value === undefined) return [];
+  if (typeof value === 'string') return textNeedleLocations(value, subject, allowed).map((hit) => ({ ...hit, path }));
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+    return textNeedleLocations(String(value), subject, allowed).map((hit) => ({ ...hit, path }));
+  }
+  if (Buffer.isBuffer(value)) {
+    return textNeedleLocations(value.toString('utf8'), subject, allowed).map((hit) => ({ ...hit, path }));
+  }
+  if (typeof value !== 'object') return [];
+  if (seen.has(value)) return [];
+  seen.add(value);
+  if (Array.isArray(value)) return value.flatMap((item, index) => needleLocations(item, subject, allowed, `${path}[${index}]`, seen));
+  return Object.entries(value).flatMap(([key, item]) => [
+    ...textNeedleLocations(key, subject, allowed).map((hit) => ({ ...hit, path: pathForKey(path, key) })),
+    ...needleLocations(item, subject, allowed, pathForKey(path, key), seen),
+  ]);
+}
+
+function uniqueNeedleLocations(hits: NeedleLocation[]): NeedleLocation[] {
+  return [...new Map(hits.map((hit) => [`${hit.label}:${hit.path}`, hit])).values()];
+}
+
+function needleEvidence(value: unknown, subject: SubjectFixture,
+                       allowed: ReadonlySet<string> = new Set()): string[] {
+  return uniqueNeedleLocations(needleLocations(value, subject, allowed))
+    .map(({ label, path }) => `${label} at ${path}`);
+}
+
+/**
+ * The erasure request and suppression records are the only online records that
+ * may retain the supplied customer UUID. They must still contain no other
+ * customer identifiers or embedded personal data.
+ */
+function suppressionRecordAllowedValues(schema: string, table: string, subject: SubjectFixture): ReadonlySet<string> {
+  if (!['erasure_requests', 'erasure_idempotency_keys', 'erased_subjects'].includes(table)) return new Set();
+  if (!['customers', 'operations', 'privacy'].includes(schema)) return new Set();
+  return new Set([
+    subject.customerId,
+    Buffer.from(subject.customerId, 'utf8').toString('base64'),
+  ]);
 }
 
 function needleHits(value: unknown, subject: SubjectFixture,
                     allowed: ReadonlySet<string> = new Set()): string[] {
-  const serialized = typeof value === 'string' ? value : JSON.stringify(value) ?? '';
-  const lowerSerialized = serialized.toLowerCase();
-  return needles(subject).flatMap(({ value: needle, label }) => !allowed.has(needle) &&
-    lowerSerialized.includes(needle.toLowerCase()) ? [label] : []);
+  return [...new Set(needleLocations(value, subject, allowed).map(({ label }) => label))];
 }
 
 export async function verifyRequestContract(fixture: BenchmarkFixture): Promise<string> {
@@ -248,6 +310,20 @@ async function collectPostgresViolations(fixture: BenchmarkFixture, subject: Sub
     if (check.hits !== '0') violations.push(`${check.source} retained ${check.hits} direct subject link(s)`);
   }
 
+  // Customer imports are source material, not suppression or financial
+  // history. The PII scan below cannot detect a redacted-but-retained import
+  // row, so assert the lifecycle requirement explicitly.
+  const importRows = await pool.query<{ imports: string; manifests: string }>(
+    `SELECT
+       (SELECT count(*)::text FROM customers.customer_imports WHERE merchant_id=$1 AND id=$2) imports,
+       (SELECT count(*)::text FROM operations.document_manifests
+          WHERE merchant_id=$1 AND metadata->>'importId'=$2::text) manifests`,
+    [fixture.merchantId, subject.importId],
+  );
+  const importRow = importRows.rows[0];
+  if (importRow && importRow.imports !== '0') violations.push(`customer_imports retained ${importRow.imports} source row(s)`);
+  if (importRow && importRow.manifests !== '0') violations.push(`customer_import manifest retained ${importRow.manifests} row(s)`);
+
   const payloads = await pool.query<{ source: string; value: unknown }>(
     `SELECT 'audit' source,to_jsonb(a) value FROM platform.audit_logs a WHERE merchant_id=$1
      UNION ALL SELECT 'support',to_jsonb(m) FROM customers.support_messages m WHERE merchant_id=$1
@@ -267,7 +343,7 @@ async function collectPostgresViolations(fixture: BenchmarkFixture, subject: Sub
      UNION ALL SELECT 'manifests',to_jsonb(m) FROM operations.document_manifests m WHERE merchant_id=$1`, [fixture.merchantId],
   );
   for (const row of payloads.rows) {
-    const hits = needleHits(row.value, subject);
+    const hits = needleEvidence(row.value, subject);
     if (hits.length > 0) violations.push(`PostgreSQL ${row.source} retained ${hits.join(', ')}`);
   }
 
@@ -275,46 +351,53 @@ async function collectPostgresViolations(fixture: BenchmarkFixture, subject: Sub
     `SELECT schemaname,tablename FROM pg_tables
      WHERE schemaname NOT IN ('pg_catalog','information_schema')`,
   );
-  const subjectNeedles = needles(subject).map(({ value }) => value);
   for (const table of applicationTables.rows) {
     const schema = table.schemaname.replaceAll('"', '""');
     const name = table.tablename.replaceAll('"', '""');
-    const result = await pool.query<{ hits: string }>(
-      `SELECT count(*)::text hits FROM "${schema}"."${name}" row_value
-       WHERE ${subjectNeedles.map((_, index) => `position(lower($${index + 1}::text) in lower(to_jsonb(row_value)::text)) > 0`).join(' OR ')}`,
-      subjectNeedles,
+    const result = await pool.query<{ value: unknown }>(
+      `SELECT to_jsonb(row_value) value FROM "${schema}"."${name}" row_value`,
     );
-    if (result.rows[0]?.hits !== '0') {
-      violations.push(`${table.schemaname}.${table.tablename} retained subject PII in ${result.rows[0]?.hits ?? 'unknown'} row(s)`);
+    for (const [rowIndex, row] of result.rows.entries()) {
+      const hits = needleEvidence(row.value, subject,
+        suppressionRecordAllowedValues(table.schemaname, table.tablename, subject));
+      if (hits.length > 0) {
+        violations.push(`${table.schemaname}.${table.tablename} row ${rowIndex} retained ${hits.join(', ')}`);
+      }
     }
   }
   return violations;
 }
 
-async function redisValues(pattern: string): Promise<Array<{ key: string; value: string }>> {
-  const entries: Array<{ key: string; value: string }> = [];
+async function redisValues(pattern: string): Promise<Array<{ key: string; value: unknown; type: string }>> {
+  const entries: Array<{ key: string; value: unknown; type: string }> = [];
   let cursor = '0';
   do {
     const [next, keys] = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
     cursor = next;
     for (const key of keys) {
       const type = await redis.type(key);
-      let value = '';
+      let value: unknown = '';
       if (type === 'string') value = await redis.get(key) ?? '';
       else if (type === 'hash') value = JSON.stringify(await redis.hgetall(key));
       else if (type === 'list') value = JSON.stringify(await redis.lrange(key, 0, -1));
       else if (type === 'set') value = JSON.stringify(await redis.smembers(key));
       else if (type === 'zset') value = JSON.stringify(await redis.zrange(key, 0, -1, 'WITHSCORES'));
-      entries.push({ key, value });
+      else if (type === 'stream') value = await redis.xrange(key, '-', '+');
+      else value = await redis.dump(key) ?? '';
+      entries.push({ key, value, type });
     }
   } while (cursor !== '0');
   return entries;
 }
 
-async function streamText(stream: Readable): Promise<string> {
+async function streamBytes(stream: Readable): Promise<Buffer> {
   const chunks: Buffer[] = [];
   for await (const chunk of stream) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk)));
-  return Buffer.concat(chunks).toString('utf8');
+  return Buffer.concat(chunks);
+}
+
+async function streamText(stream: Readable): Promise<string> {
+  return (await streamBytes(stream)).toString('utf8');
 }
 
 async function listObjectNames(prefix: string): Promise<string[]> {
@@ -327,41 +410,168 @@ async function listObjectNames(prefix: string): Promise<string[]> {
   });
 }
 
+interface ListedObjectVersion {
+  name?: string;
+  versionId?: string;
+  isDeleteMarker?: boolean;
+}
+
+/** Lists every object version so an erased value cannot survive only in history. */
+async function listObjectVersions(): Promise<ListedObjectVersion[]> {
+  return await new Promise((resolve, reject) => {
+    const objects: ListedObjectVersion[] = [];
+    const listing = minio.listObjects(DOCUMENT_BUCKET, '', true, { IncludeVersion: true });
+    listing.on('data', (item) => objects.push(item as ListedObjectVersion));
+    listing.on('error', reject);
+    listing.on('end', () => resolve(objects));
+  });
+}
+
+function objectHeader(metadata: Record<string, unknown>, key: string): string {
+  const match = Object.entries(metadata).find(([name]) => name.toLowerCase() === key.toLowerCase());
+  return match ? String(match[1]) : '';
+}
+
+function decodeObjectBody(bytes: Buffer, metadata: Record<string, unknown>): Buffer {
+  const encoding = objectHeader(metadata, 'content-encoding').toLowerCase();
+  try {
+    if (encoding.includes('gzip') || (bytes.length >= 2 && bytes[0] === 0x1f && bytes[1] === 0x8b)) return gunzipSync(bytes);
+    if (encoding.includes('br')) return brotliDecompressSync(bytes);
+    if (encoding.includes('deflate')) return inflateSync(bytes);
+  } catch {
+    // Keep the raw bytes below. A malformed compressed object is still inspectable
+    // as a UTF-8 payload and must not make the verifier silently pass it.
+  }
+  return bytes;
+}
+
+function parseObjectBody(bytes: Buffer): unknown {
+  const text = bytes.toString('utf8');
+  try { return JSON.parse(text); } catch { return text; }
+}
+
+interface MailpitSummary { ID?: string; Id?: string; id?: string; }
+
+function mailpitMessageId(value: MailpitSummary): string | undefined {
+  return value.ID ?? value.Id ?? value.id;
+}
+
+/** Retrieves full Mailpit messages so headers, bodies, and attachments are inspected. */
+async function listMailpitMessages(): Promise<unknown[]> {
+  const messages: unknown[] = [];
+  const limit = 1000;
+  for (let start = 0; ; start += limit) {
+    const response = await fetch(`${settings.mailpit}/api/v1/messages?limit=${limit}&start=${start}`);
+    if (!response.ok) throw new Error(`Mailpit message listing failed: ${response.status}`);
+    const body = await response.json() as { messages?: MailpitSummary[]; total?: number };
+    const summaries = body.messages ?? [];
+    for (const summary of summaries) {
+      const id = mailpitMessageId(summary);
+      if (!id) {
+        messages.push(summary);
+        continue;
+      }
+      const detail = await fetch(`${settings.mailpit}/api/v1/message/${encodeURIComponent(id)}`);
+      if (!detail.ok) throw new Error(`Mailpit message ${id} could not be fetched: ${detail.status}`);
+      const message = await detail.json();
+      // The JSON endpoint exposes headers, text/HTML, and attachment metadata.
+      // Include the raw MIME message when supported so base64-encoded attachment
+      // content is also checked by the same recursive scanner.
+      const raw = await fetch(`${settings.mailpit}/api/v1/message/${encodeURIComponent(id)}/raw`);
+      messages.push(raw.ok ? { message, raw: await raw.text() } : message);
+    }
+    if (summaries.length < limit || (body.total !== undefined && start + summaries.length >= body.total)) break;
+  }
+  return messages;
+}
+
+async function searchTargets(): Promise<string[]> {
+  const [indices, aliases] = await Promise.all([
+    search.cat.indices({ format: 'json', h: ['index'], expand_wildcards: 'all' }),
+    search.cat.aliases({ format: 'json', h: ['alias', 'index'], expand_wildcards: 'all' }),
+  ]);
+  const names = [
+    ...(indices.body as Array<{ index?: string }>).map((row) => row.index ?? ''),
+    ...(aliases.body as Array<{ alias?: string }>).map((row) => row.alias ?? ''),
+  ];
+  return [...new Set(names.filter((name) => name.length > 0 && !name.startsWith('.')))];
+}
+
+async function searchDocumentsAcrossTargets(): Promise<Array<{ target: string; id: string; source: unknown }>> {
+  const documents: Array<{ target: string; id: string; source: unknown }> = [];
+  const seen = new Set<string>();
+  for (const target of await searchTargets()) {
+    for await (const page of search.helpers.scrollSearch({
+      index: target, expand_wildcards: 'all', allow_no_indices: true, ignore_unavailable: true,
+      body: { size: 250, query: { match_all: {} } },
+    })) {
+      const hits = ((page.body as { hits?: { hits?: Array<{ _index?: unknown; _id?: unknown; _source?: unknown }> } }).hits?.hits ?? []);
+      for (const hit of hits) {
+        const index = String(hit._index ?? target);
+        const id = String(hit._id ?? '<unknown>');
+        const key = `${index}:${id}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        documents.push({ target, id: `${index}:${id}`, source: hit._source });
+      }
+    }
+  }
+  return documents;
+}
+
 async function collectExternalStoreViolations(fixture: BenchmarkFixture, subject: SubjectFixture): Promise<string[]> {
   const violations: string[] = [];
   // Scan every key, not only the canonical customer prefix. Implementations may
   // maintain provider, activity, import, or alternate customer-key projections.
   const cache = await redisValues('*');
   for (const entry of cache) {
-    const hits = needleHits(`${entry.key}\n${entry.value}`, subject);
-    if (hits.length > 0) violations.push(`Redis ${entry.key} retained ${hits.join(', ')}`);
+    const hits = needleEvidence({ key: entry.key, type: entry.type, value: entry.value }, subject);
+    if (hits.length > 0) violations.push(`Redis ${entry.key} (${entry.type}) retained ${hits.join(', ')}`);
   }
   const exists = await search.exists({ index: CUSTOMER_INDEX, id: `${fixture.merchantId}:${subject.customerId}` });
   if (exists.body) violations.push('OpenSearch retained the subject document');
-  // Inspect returned source documents directly. A query_string search can miss
-  // unanalyzed/nested fields and can interpret punctuation in canaries as syntax.
-  const result = await search.search({ index: CUSTOMER_INDEX, body: { size: 1000, query: { match_all: {} } } });
-  const documents = (result.body.hits.hits ?? []) as Array<{ _id?: unknown; _source?: unknown }>;
-  for (const document of documents) {
-    const hits = needleHits(`${String(document._id ?? '')}\n${JSON.stringify(document._source)}`, subject);
-    if (hits.length > 0) violations.push(`OpenSearch document ${String(document._id ?? '<unknown>')} retained ${hits.join(', ')}`);
+  // Inspect every application index and alias directly. A query_string search can
+  // miss unanalyzed/nested fields and can interpret punctuation in canaries as syntax.
+  for (const document of await searchDocumentsAcrossTargets()) {
+    const hits = needleEvidence({ id: document.id, source: document.source }, subject);
+    if (hits.length > 0) violations.push(`OpenSearch ${document.id} (via ${document.target}) retained ${hits.join(', ')}`);
   }
-  for (const objectName of await listObjectNames(`${fixture.merchantId}/`)) {
-    const metadata = await minio.statObject(DOCUMENT_BUCKET, objectName);
-    const metadataHits = needleHits(metadata.metaData, subject);
-    if (metadataHits.length > 0) violations.push(`MinIO ${objectName} metadata retained ${metadataHits.join(', ')}`);
-    const object = await minio.getObject(DOCUMENT_BUCKET, objectName);
-    const hits = needleHits(`${objectName}\n${await streamText(object)}`, subject);
-    if (hits.length > 0) violations.push(`MinIO ${objectName} retained ${hits.join(', ')}`);
+  // Scan the full bucket, not only the conventional merchant prefix. A random
+  // fixture canary makes this safe for unrelated tenants while catching alternate
+  // prefixes, copies, and objects retained outside the expected layout.
+  for (const listed of await listObjectVersions()) {
+    const objectName = listed.name;
+    if (!objectName || listed.isDeleteMarker) continue;
+    const versionId = listed.versionId;
+    const versionOptions = versionId ? { versionId } : undefined;
+    let metadata;
+    try {
+      metadata = await minio.statObject(DOCUMENT_BUCKET, objectName, versionOptions);
+    } catch {
+      // A concurrent delete marker can make a listed version unreadable; the
+      // remaining versions are still inspected and the live state is checked.
+      continue;
+    }
+    const tags = await minio.getObjectTagging(DOCUMENT_BUCKET, objectName, versionOptions).catch(() => []);
+    const object = await minio.getObject(DOCUMENT_BUCKET, objectName, versionOptions);
+    const rawBody = await streamBytes(object);
+    const decodedBody = decodeObjectBody(rawBody, metadata.metaData);
+    const value = {
+      objectName, versionId: versionId ?? '<current>', metadata: metadata.metaData,
+      tags, body: parseObjectBody(decodedBody),
+    };
+    const hits = needleEvidence(value, subject);
+    if (hits.length > 0) violations.push(`MinIO ${objectName} ${versionId ? `(version ${versionId}) ` : ''}retained ${hits.join(', ')}`);
   }
-  for (const { value: needle, label } of needles(subject)) {
-    const response = await fetch(`${settings.mailpit}/api/v1/search?query=${encodeURIComponent(needle)}`);
-    if (!response.ok) throw new Error(`Mailpit search failed: ${response.status}`);
-    const body = await response.json() as { messages_count?: number; messages?: unknown[] };
-    // Mailpit's `total` is the total mailbox size, not the number matching
-    // the query. Only `messages_count` represents a scoped PII hit.
-    const total = body.messages_count ?? body.messages?.length ?? 0;
-    if (total > 0) violations.push(`Mailpit retained ${label} in ${total} provider message(s)`);
+  // Search counts are insufficient because they do not expose all headers,
+  // bodies, or attachment content. Fetch and recursively inspect every message.
+  const messages = await listMailpitMessages();
+  for (const [index, message] of messages.entries()) {
+    const hits = needleEvidence(message, subject);
+    if (hits.length > 0) {
+      const id = mailpitMessageId(message as MailpitSummary) ?? String(index);
+      violations.push(`Mailpit message ${id} retained ${hits.join(', ')}`);
+    }
   }
   return violations;
 }

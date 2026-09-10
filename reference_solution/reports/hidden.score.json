@@ -1,0 +1,234 @@
+{
+  "schema_version": 1,
+  "state": "complete",
+  "comparable": true,
+  "hard_pass": true,
+  "earned": 1,
+  "maximum": 1,
+  "evaluated_maximum": 1,
+  "unverified_maximum": 0,
+  "checks": [
+    {
+      "id": "api.unknown_customer",
+      "label": "Unknown customer is tenant-safe",
+      "maximum": 0.0125,
+      "earned": 0.0125,
+      "state": "pass"
+    },
+    {
+      "id": "api.concurrent_idempotency",
+      "label": "Concurrent same-key requests share one workflow",
+      "maximum": 0.025,
+      "earned": 0.025,
+      "state": "pass"
+    },
+    {
+      "id": "api.cross_tenant",
+      "label": "Cross-tenant customer and request are hidden without mutation",
+      "maximum": 0.0125,
+      "earned": 0.0125,
+      "state": "pass"
+    },
+    {
+      "id": "api.customer_deduplication",
+      "label": "Alternate key reuses the customer workflow",
+      "maximum": 0.0187,
+      "earned": 0.0187,
+      "state": "pass"
+    },
+    {
+      "id": "api.key_reuse",
+      "label": "Idempotent retry returns the original request",
+      "maximum": 0.0125,
+      "earned": 0.0125,
+      "state": "pass"
+    },
+    {
+      "id": "api.key_conflict",
+      "label": "Key reuse for another customer is rejected",
+      "maximum": 0.0125,
+      "earned": 0.0125,
+      "state": "pass"
+    },
+    {
+      "id": "workflow.completed",
+      "label": "Request reaches completed only after convergence",
+      "maximum": 0.0313,
+      "earned": 0.0313,
+      "state": "pass"
+    },
+    {
+      "id": "normal.postgres_relational",
+      "label": "Primary relational records are removed or rekeyed",
+      "maximum": 0.0375,
+      "earned": 0.0375,
+      "state": "pass"
+    },
+    {
+      "id": "normal.postgres_payloads",
+      "label": "Embedded and operational PostgreSQL PII is redacted",
+      "maximum": 0.1,
+      "earned": 0.1,
+      "state": "pass"
+    },
+    {
+      "id": "normal.redis",
+      "label": "Redis no longer contains subject PII",
+      "maximum": 0.0187,
+      "earned": 0.0187,
+      "state": "pass"
+    },
+    {
+      "id": "normal.opensearch",
+      "label": "OpenSearch no longer contains subject PII",
+      "maximum": 0.0187,
+      "earned": 0.0187,
+      "state": "pass"
+    },
+    {
+      "id": "normal.minio",
+      "label": "MinIO no longer contains subject PII",
+      "maximum": 0.0313,
+      "earned": 0.0313,
+      "state": "pass"
+    },
+    {
+      "id": "normal.mailpit",
+      "label": "Mailpit no longer contains subject PII",
+      "maximum": 0.0313,
+      "earned": 0.0313,
+      "state": "pass"
+    },
+    {
+      "id": "financial.retention",
+      "label": "Financial facts remain intact after a successful erasure",
+      "maximum": 0.075,
+      "earned": 0.075,
+      "state": "pass"
+    },
+    {
+      "id": "financial.anonymous_retained_link",
+      "label": "Retained financial links are anonymous and support a private later refund",
+      "maximum": 0.0125,
+      "earned": 0.0125,
+      "state": "pass"
+    },
+    {
+      "id": "financial.post_erasure_refund",
+      "label": "A later refund remains balanced without restoring customer identity",
+      "maximum": 0.05,
+      "earned": 0.05,
+      "state": "pass"
+    },
+    {
+      "id": "financial.post_erasure_refund_failure_retry",
+      "label": "A failed post-erasure refund stays private and a later retry remains balanced",
+      "maximum": 0.025,
+      "earned": 0.025,
+      "state": "pass"
+    },
+    {
+      "id": "security.merchant_credentials_preserved",
+      "label": "Merchant API credential remains active and unchanged",
+      "maximum": 0,
+      "earned": 0,
+      "state": "pass"
+    },
+    {
+      "id": "scope.unrelated_customer_and_shared_record",
+      "label": "Unrelated customer and shared record remain unchanged",
+      "maximum": 0.025,
+      "earned": 0.025,
+      "state": "pass"
+    },
+    {
+      "id": "scope.merchant_identity_and_admin",
+      "label": "Merchant identity and administrator remain unchanged",
+      "maximum": 0.0125,
+      "earned": 0.0125,
+      "state": "pass"
+    },
+    {
+      "id": "scope.merchant_credentials",
+      "label": "Independent merchant credential remains active and usable",
+      "maximum": 0.0125,
+      "earned": 0.0125,
+      "state": "pass"
+    },
+    {
+      "id": "scope.unrelated_payment_notification_document",
+      "label": "Unrelated payment, notification, and receipt remain unchanged",
+      "maximum": 0.025,
+      "earned": 0.025,
+      "state": "pass"
+    },
+    {
+      "id": "async.request_accepted",
+      "label": "Delayed-subject erasure request is accepted",
+      "maximum": 0.0125,
+      "earned": 0.0125,
+      "state": "pass"
+    },
+    {
+      "id": "async.completion_gate",
+      "label": "Participant failure prevents completion and the same request converges when retried",
+      "maximum": 0.0375,
+      "earned": 0.0375,
+      "state": "pass"
+    },
+    {
+      "id": "async.pending_payloads",
+      "label": "Pending work and its payloads are fully sanitized",
+      "maximum": 0.1,
+      "earned": 0.1,
+      "state": "pass"
+    },
+    {
+      "id": "delayed.work_processes",
+      "label": "Delayed work completes with correct financial processing",
+      "maximum": 0.05,
+      "earned": 0.05,
+      "state": "pass"
+    },
+    {
+      "id": "delayed.no_reintroduction",
+      "label": "Delayed work does not reintroduce PII",
+      "maximum": 0.075,
+      "earned": 0.075,
+      "state": "pass"
+    },
+    {
+      "id": "replay.consumed",
+      "label": "Historical event is safely consumed",
+      "maximum": 0.05,
+      "earned": 0.05,
+      "state": "pass"
+    },
+    {
+      "id": "replay.no_reintroduction",
+      "label": "Historical replay does not restore PII",
+      "maximum": 0.075,
+      "earned": 0.075,
+      "state": "pass"
+    },
+    {
+      "id": "security.survivor_unchanged_after_delayed_replay",
+      "label": "Unrelated shared record remains unchanged after delayed work and replay",
+      "maximum": 0,
+      "earned": 0,
+      "state": "pass"
+    }
+  ],
+  "fixtures": [
+    {
+      "id": "full-cross-store",
+      "state": "ready"
+    }
+  ],
+  "diagnostics": {
+    "passed_checks": 30,
+    "failed_checks": 0,
+    "blocked_checks": 0,
+    "blocked_check_ids": []
+  }
+}
