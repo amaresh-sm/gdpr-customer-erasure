@@ -17,9 +17,9 @@ function elapsed(milliseconds: number): string {
   return `${(milliseconds / 60_000).toFixed(2)} minutes`;
 }
 
-/** Formats the only published score scale. Legacy local artifacts are normalized on read. */
+/** Formats the published normalized score scale. */
 function scoreSummary(manifest: CandidateRunManifest): string {
-  const activeScoring = manifest.scoring_v2 ?? manifest.scoring;
+  const activeScoring = manifest.scoring;
   if (activeScoring.score_state === null) return 'not yet scored';
   if (activeScoring.score_state === 'blocked') return 'blocked — no independently valid fixture produced a score';
   const scoring = activeScoring as CandidateRunManifest['scoring'] & {
@@ -39,7 +39,7 @@ function scoreSummary(manifest: CandidateRunManifest): string {
 
 /** States whether the score represents a complete verifier pass, independent of its magnitude. */
 function verificationResult(manifest: CandidateRunManifest): string {
-  const activeScoring = manifest.scoring_v2 ?? manifest.scoring;
+  const activeScoring = manifest.scoring;
   if (activeScoring.score_state === null) return 'not yet scored';
   if (activeScoring.score_state === 'blocked') return 'blocked — no comparable result';
   if (activeScoring.score_state === 'partial') return 'partial — independently verified checks only';

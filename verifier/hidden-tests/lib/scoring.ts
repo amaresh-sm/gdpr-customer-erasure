@@ -16,9 +16,8 @@ export interface FixtureDiagnostic {
   evidence?: string | undefined;
 }
 
-export interface ScoreReportV2 {
-  schema_version: 2;
-  scoring_version: 'v2';
+export interface ScoreReport {
+  schema_version: 1;
   state: ScoreState;
   comparable: boolean;
   hard_pass: boolean;
@@ -42,16 +41,16 @@ function rounded(value: number): number {
 }
 
 /**
- * Builds a conservative v2 score. Only checks with a pass/fail observation
+ * Builds a conservative score. Only checks with a pass/fail observation
  * contribute to the evaluated maximum; blocked checks never become zeroes.
  */
-export function buildScoreReportV2(
+export function buildScoreReport(
   checks: DiagnosticCheck[],
   fixtures: FixtureDiagnostic[],
   fullFixtureReady: boolean,
   hardPass: boolean,
   blockedReason?: string,
-): ScoreReportV2 {
+): ScoreReport {
   const diagnostics = {
     passed_checks: checks.filter((check) => check.state === 'pass').length,
     failed_checks: checks.filter((check) => check.state === 'fail').length,
@@ -64,8 +63,7 @@ export function buildScoreReportV2(
 
   if (fullFixtureReady) {
     return {
-      schema_version: 2,
-      scoring_version: 'v2',
+      schema_version: 1,
       state: 'complete',
       comparable: true,
       hard_pass: hardPass,
@@ -81,8 +79,7 @@ export function buildScoreReportV2(
 
   if (evaluatedMaximum > 0) {
     return {
-      schema_version: 2,
-      scoring_version: 'v2',
+      schema_version: 1,
       state: 'partial',
       comparable: false,
       hard_pass: false,
@@ -98,8 +95,7 @@ export function buildScoreReportV2(
   }
 
   return {
-    schema_version: 2,
-    scoring_version: 'v2',
+    schema_version: 1,
     state: 'blocked',
     comparable: false,
     hard_pass: false,

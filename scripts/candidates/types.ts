@@ -32,7 +32,6 @@ export interface CandidateScoring {
   hard_pass: boolean | null;
   score_state: 'complete' | 'partial' | 'blocked' | null;
   report_sha256: string | null;
-  scoring_version?: 'v1' | 'v2' | null;
   evaluated_maximum?: number | null;
   comparable?: boolean | null;
 }
@@ -121,5 +120,4 @@ export interface CandidateRunManifest {
     sha256: string | null;
   };
   scoring: CandidateScoring;
-  scoring_v2?: CandidateScoring;
 }
