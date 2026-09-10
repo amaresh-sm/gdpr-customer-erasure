@@ -46,8 +46,11 @@ Both commands accept `--timeout-seconds` (default `14400`), `--run-id`, `--basel
 
 ## Generate with OpenHands
 
-OpenHands runs through the OpenHands SDK inside the isolated generation container and uses the
-configured HackerRank AI gateway by default. The private environment file must be a regular file
+OpenHands runs through the reusable `hackerrank-openhands-gateway` package inside the isolated
+generation container and uses the configured HackerRank AI gateway by default. The launcher stages
+the current local package checkout into the image without its `.env`, virtual environment, git
+data, or caches. Set `HACKERRANK_OPENHANDS_GATEWAY_DIR` when the package is stored somewhere other
+than the default sibling checkout. The private environment file must be a regular file
 with mode `0600` or stricter and contain an API key:
 
 ```bash
@@ -62,9 +65,12 @@ OpenAI-compatible HackerRank gateway models use the `openai/` namespace (for exa
 The file must contain `LLM_API_KEY` or `ASTRA_GATEWAY_API_KEY`. The isolated egress relay
 allows the exact HackerRank gateway hostname in addition to public HTTPS destinations. Optional
 `LLM_BASE_URL` or `ASTRA_GATEWAY_BASE_URL` values must be credential-free HTTPS URLs; otherwise
-the default HackerRank gateway is used. OpenHands telemetry is sanitized into the same
-`metadata.json` and `logs/events.sanitized.json` format as the other generation providers, so the
-result can be scored with the normal `candidates:score` command.
+the default HackerRank gateway is used. The package’s Gemini compatibility fix removes unsupported
+`prompt_cache_key` fields before Gateway requests. Its `telemetry.json`, `trajectory.json`, and
+`gateway_responses.jsonl` are retained under the candidate’s `logs/` directory; the trusted PayFlow
+collector also maps the package event stream into the common `metadata.json` and
+`logs/events.sanitized.json` format. The result can be scored with the normal `candidates:score`
+command.
 
 ## Score a completed candidate
 

@@ -113,20 +113,25 @@ EOF
     result=$?
     ;;
   openhands)
+    openhands_output=/tmp/hackerrank-openhands-run
+    rm -rf "$openhands_output"
+    mkdir -p "$openhands_output"
     timeout --signal=TERM --kill-after=30s "${PAYFLOW_GENERATION_TIMEOUT_SECONDS}s" \
       hackerrank-openhands run \
       --workspace /workspace/source --instruction-file "$prompt_copy" \
       --model "$PAYFLOW_GENERATION_MODEL" --reasoning "$PAYFLOW_GENERATION_REASONING_EFFORT" \
-      --output /tmp/hackerrank-openhands-run
+      --output "$openhands_output" \
+      --env-file /tmp/openhands.env \
+      --redact
     result=$?
-    if [ -f /tmp/hackerrank-openhands-run/events.jsonl ]; then
-      cat /tmp/hackerrank-openhands-run/events.jsonl
+    if [ -f "$openhands_output/events.jsonl" ]; then
+      cat "$openhands_output/events.jsonl"
     fi
-    if [ -d /tmp/hackerrank-openhands-run ]; then
+    if [ -d "$openhands_output" ]; then
       mkdir -p /workspace/source/.hackerrank-openhands-run
-      for artifact in telemetry.json trajectory.json events.sanitized.json; do
-        if [ -f "/tmp/hackerrank-openhands-run/$artifact" ]; then
-          cp "/tmp/hackerrank-openhands-run/$artifact" "/workspace/source/.hackerrank-openhands-run/$artifact"
+      for artifact in telemetry.json trajectory.json gateway_responses.jsonl; do
+        if [ -f "$openhands_output/$artifact" ]; then
+          cp "$openhands_output/$artifact" "/workspace/source/.hackerrank-openhands-run/$artifact"
         fi
       done
     fi

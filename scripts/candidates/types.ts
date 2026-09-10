@@ -58,6 +58,7 @@ export interface CandidateRunManifest {
   };
   tokens: {
     cost_usd?: Evidence<number>;
+    gateway_cost_usd?: Evidence<number>;
     input: Evidence<number>;
     cached_input: Evidence<number>;
     output: Evidence<number>;

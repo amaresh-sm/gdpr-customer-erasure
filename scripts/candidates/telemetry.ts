@@ -17,6 +17,8 @@ export interface JsonlTelemetry {
   terminalEvent: string | null;
   tokens: Record<string, number> | null;
   costUsd: number | null;
+  gatewayCostUsd: number | null;
+  gatewayCostResponses: number;
   toolCalls: ToolCallEvidence[];
   errorMessages: string[];
 }
@@ -106,7 +108,7 @@ function richerUsage(current: Record<string, number> | null, candidate: Record<s
 }
 
 /** Parses structured Codex, OpenCode, and OpenHands agent JSONL defensively. */
-export async function parseCodexJsonl(path: string): Promise<JsonlTelemetry> {
+export async function parseCodexJsonl(path: string, gatewayResponsesPath?: string): Promise<JsonlTelemetry> {
   const lines = (await readFile(path, 'utf8')).split('\n');
   const pending = new Map<string, PendingCall>();
   const calls: ToolCallEvidence[] = [];
@@ -138,7 +140,10 @@ export async function parseCodexJsonl(path: string): Promise<JsonlTelemetry> {
 
     if (eventType === 'session_meta' && typeof payload.session_id === 'string') threadId = payload.session_id;
     if (typeof event.thread_id === 'string') threadId = event.thread_id;
-    if (payloadType === 'task_complete' || eventType === 'turn.completed') terminalEvent = payloadType || eventType;
+    if (payloadType === 'task_complete' || eventType === 'turn.completed' || payloadType === 'run_completed' || payloadType === 'run_failed'
+      || (eventType === 'run_event' && (event.event_type === 'run_completed' || event.event_type === 'run_failed'))) {
+      terminalEvent = typeof event.event_type === 'string' && eventType === 'run_event' ? event.event_type : payloadType || eventType;
+    }
 
     const info = isRecord(payload.info) ? payload.info : undefined;
     tokens = richerUsage(tokens, usageFrom(info?.total_token_usage));
@@ -146,7 +151,7 @@ export async function parseCodexJsonl(path: string): Promise<JsonlTelemetry> {
     tokens = richerUsage(tokens, usageFrom(event.usage));
     tokens = richerUsage(tokens, usageFrom(item?.usage));
 
-    if (eventType === 'astra_openhands_metrics') {
+    if (eventType === 'astra_openhands_metrics' || eventType === 'openhands_metrics') {
       tokens = richerUsage(tokens, usageFrom(event));
       const eventCost = [event.cost_usd, event.accumulated_cost, event.cost]
         .find((value): value is number => typeof value === 'number' && Number.isFinite(value));
@@ -255,7 +260,31 @@ export async function parseCodexJsonl(path: string): Promise<JsonlTelemetry> {
       truncated: null,
     });
   }
-  return { threadId, eventCount, invalidEventCount, terminalEvent, tokens, costUsd, toolCalls: calls, errorMessages: errors };
+  let gatewayCostUsd: number | null = null;
+  let gatewayCostResponses = 0;
+  if (gatewayResponsesPath) {
+    try {
+      const gatewayRecords = (await readFile(gatewayResponsesPath, 'utf8')).split('\n');
+      for (const line of gatewayRecords) {
+        if (!line.trim()) continue;
+        try {
+          const record = JSON.parse(line) as JsonRecord;
+          const response = isRecord(record.response) ? record.response : undefined;
+          const usage = response && isRecord(response.usage) ? response.usage : undefined;
+          const cost = usage && typeof usage.cost === 'number' && Number.isFinite(usage.cost) ? usage.cost : null;
+          if (cost !== null) {
+            gatewayCostUsd = (gatewayCostUsd ?? 0) + cost;
+            gatewayCostResponses += 1;
+          }
+        } catch {
+          // The package's own event count remains authoritative if a response line is malformed.
+        }
+      }
+    } catch {
+      // Gateway response capture is optional; missing capture must not hide the agent result.
+    }
+  }
+  return { threadId, eventCount, invalidEventCount, terminalEvent, tokens, costUsd, gatewayCostUsd, gatewayCostResponses, toolCalls: calls, errorMessages: errors };
 }
 
 export function measured<T>(value: T, source: string): Evidence<T> {

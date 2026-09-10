@@ -111,27 +111,29 @@ async function main(): Promise<void> {
   const rawEvents = join(runDirectory, 'trusted', 'events.raw.jsonl');
   const logs = await required('docker', ['logs', launch.model_container]);
   await exportWorkspace(launch, runDirectory);
-  await writeFile(rawEvents, logs);
   const logsDirectory = join(runDirectory, 'logs');
   await mkdir(logsDirectory, { recursive: true });
   // The model container's /tmp is ephemeral. The entrypoint stages the package
   // artifacts into the exported workspace so they survive until this handoff.
   const packageTelemetryDirectory = join(launch.source_directory, '.hackerrank-openhands-run');
-  for (const artifact of ['telemetry.json', 'trajectory.json', 'events.sanitized.json']) {
+  for (const artifact of ['telemetry.json', 'trajectory.json', 'gateway_responses.jsonl']) {
     const source = join(packageTelemetryDirectory, artifact);
     const destination = join(logsDirectory, `openhands-${artifact}`);
     await command('mv', [source, destination]);
   }
   await rm(packageTelemetryDirectory, { recursive: true, force: true });
+  await writeFile(rawEvents, logs);
   await writeFile(join(logsDirectory, 'container-state.json'), `${JSON.stringify(state, null, 2)}\n`);
   const status = exitCode === 0 ? 'completed' : exitCode === 124 ? 'timed_out' : 'failed';
-  const collect = await command(process.execPath, [
+  const collectArgs = [
     '--import', 'tsx', join(root, 'scripts/candidates/collect.ts'),
     '--run-dir', runDirectory, '--events', rawEvents, '--prompt-file', join(runDirectory, 'trusted', 'generation_prompt.md'),
     '--model', launch.model, '--thinking', launch.reasoning_effort, '--provider', launch.provider,
     '--baseline-ref', launch.baseline_ref, '--started-at', launch.started_at, '--completed-at', completedAt,
     '--model-elapsed-ms', String(Math.max(0, Date.parse(completedAt) - Date.parse(launch.started_at))), '--exit-code', String(exitCode), '--status', status,
-  ]);
+  ];
+  if (launch.provider === 'openhands') collectArgs.push('--gateway-responses', join(logsDirectory, 'openhands-gateway_responses.jsonl'));
+  const collect = await command(process.execPath, collectArgs);
   if (collect.code !== 0) {
     throw new Error(`could not collect candidate telemetry: ${collect.stderr.trim().slice(-1000)}`);
   }

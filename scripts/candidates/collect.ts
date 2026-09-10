@@ -15,6 +15,12 @@ function argument(name: string): string {
   return value;
 }
 
+function optionalArgument(name: string): string | undefined {
+  const index = process.argv.indexOf(name);
+  const value = index < 0 ? undefined : process.argv[index + 1];
+  return value && !value.startsWith('--') ? value : undefined;
+}
+
 async function sha256File(path: string): Promise<string> {
   return createHash('sha256').update(await readFile(path)).digest('hex');
 }
@@ -64,12 +70,13 @@ async function main(): Promise<void> {
   const modelElapsedMs = Number(argument('--model-elapsed-ms'));
   const exitCode = Number(argument('--exit-code'));
   const status = argument('--status') as CandidateRunManifest['run']['status'];
+  const gatewayResponsesPath = optionalArgument('--gateway-responses');
   const runId = runDirectory.split('/').filter(Boolean).at(-1);
   if (!runId || !Number.isFinite(modelElapsedMs) || !Number.isInteger(exitCode) || !['completed', 'failed', 'timed_out'].includes(status)) {
     throw new Error('invalid run collector arguments');
   }
 
-  const telemetry = await parseCodexJsonl(eventsPath);
+  const telemetry = await parseCodexJsonl(eventsPath, gatewayResponsesPath);
   const sourceDirectory = join(runDirectory, 'source');
   const promptHash = await sha256File(promptPath);
   const totalElapsed = Date.parse(completedAt) - Date.parse(startedAt);
@@ -80,7 +87,7 @@ async function main(): Promise<void> {
   const token = (name: string) => telemetry.tokens?.[name];
   const errorsDigest = createHash('sha256').update(telemetry.errorMessages.join('\n')).digest('hex');
   const version = provider === 'openhands' ? null : await cliVersion();
-  const telemetryLabel = provider === 'openhands' ? 'OpenHands JSONL' : 'Codex JSONL';
+  const telemetryLabel = provider === 'openhands' ? 'HackerRank OpenHands Gateway package' : 'Codex JSONL';
   const manifest: CandidateRunManifest = {
     schema_version: 1,
     run: { id: runId, status, exit_code: exitCode, timeout_exceeded: status === 'timed_out', failure_reason: status === 'completed' ? null : 'see logs/codex.stderr.log and logs/final-message.md' },
@@ -93,6 +100,7 @@ async function main(): Promise<void> {
     },
     tokens: {
       cost_usd: telemetry.costUsd === null ? unavailable(telemetryLabel, 'cost event absent') : measured(telemetry.costUsd, `${telemetryLabel} cost usage`),
+      gateway_cost_usd: telemetry.gatewayCostUsd === null ? unavailable('Gateway response capture', 'response usage.cost absent') : measured(telemetry.gatewayCostUsd, 'Gateway response usage'),
       input: token('input_tokens') === undefined ? unavailable(telemetryLabel, 'usage event absent') : measured(token('input_tokens') as number, `${telemetryLabel} token usage`),
       cached_input: token('cached_input_tokens') === undefined ? unavailable(telemetryLabel, 'usage event absent') : measured(token('cached_input_tokens') as number, `${telemetryLabel} token usage`),
       output: token('output_tokens') === undefined ? unavailable(telemetryLabel, 'usage event absent') : measured(token('output_tokens') as number, `${telemetryLabel} token usage`),
