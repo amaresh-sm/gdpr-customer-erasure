@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PayFlow Benchmark Observatory</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --panel-strong: #ffffff;
+      --line: #e4e9f2;
+      --text: #172033;
+      --muted: #68758a;
+      --cyan: #2563eb;
+      --green: #087f5b;
+      --amber: #a15c00;
+      --red: #c83e4d;
+      --purple: #7456c8;
+      --shadow: 0 12px 30px rgba(25, 43, 74, .07);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 90% -10%, rgba(37, 99, 235, .07), transparent 30rem),
+        linear-gradient(180deg, #ffffff 0, var(--bg) 420px);
+      font: 14px/1.5 "Avenir Next", Inter, "SF Pro Text", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height: 100vh;
+    }
+    .shell { max-width: 1440px; margin: 0 auto; padding: 42px 32px 64px; }
+    .eyebrow { color: var(--cyan); font-size: 11px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; }
+    h1, h2, h3, p { margin: 0; }
+    h1 { color: #111827; font-family: "Avenir Next", Inter, "SF Pro Display", ui-sans-serif, system-ui, sans-serif; font-size: clamp(24px, 3vw, 38px); line-height: 1.08; letter-spacing: -.04em; margin-top: 10px; }
+    h2 { font-size: 17px; letter-spacing: -.02em; }
+    h3 { font-size: 13px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+    .lede { color: var(--muted); max-width: 680px; margin-top: 14px; font-size: 15px; }
+    .topline { display: flex; justify-content: space-between; gap: 24px; align-items: flex-start; }
+    .snapshot { color: var(--muted); text-align: right; font-size: 12px; padding-top: 8px; }
+    .snapshot strong { display: block; color: var(--text); font-size: 13px; margin-bottom: 3px; }
+    .grid { display: grid; gap: 16px; }
+    .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 28px; }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+    }
+    .kpi { padding: 18px; min-height: 112px; }
+    .kpi .label { color: var(--muted); font-size: 12px; }
+    .kpi .value { color: #1d4ed8; font-size: 29px; font-weight: 760; letter-spacing: -.04em; margin-top: 13px; }
+    .kpi .hint { color: var(--muted); font-size: 11px; margin-top: 4px; }
+    .charts { grid-template-columns: 1fr; margin-top: 18px; }
+    .chart-card { padding: 22px; min-height: 320px; }
+    .section-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 18px; }
+    .section-head span { color: var(--muted); font-size: 12px; }
+    canvas { width: 100%; height: 240px; display: block; }
+    .main-grid { grid-template-columns: 1fr; margin-top: 18px; align-items: start; }
+    .table-card { overflow: hidden; }
+    .table-head { padding: 20px 20px 15px; display: flex; justify-content: space-between; align-items: baseline; gap: 14px; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 850px; }
+    th, td { padding: 13px 16px; border-top: 1px solid var(--line); text-align: left; white-space: nowrap; }
+    th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; }
+    tbody tr { cursor: pointer; transition: background .18s ease; }
+    tbody tr:hover, tbody tr.selected { background: #f2f6ff; }
+    .candidate { max-width: 280px; overflow: hidden; text-overflow: ellipsis; color: var(--text); font-weight: 700; }
+    .sub { display: block; color: var(--muted); font-size: 11px; font-weight: 500; margin-top: 2px; }
+    .pill { display: inline-flex; align-items: center; border-radius: 999px; padding: 4px 8px; font-size: 11px; font-weight: 800; }
+    .pill.completed { color: var(--green); background: #e9f8f1; }
+    .pill.failed, .pill.timed_out { color: var(--red); background: #fff0f1; }
+    .pill.blocked { color: var(--amber); background: #fff7e8; }
+    .score { font-weight: 800; color: var(--cyan); }
+    .score.none { color: var(--muted); font-weight: 500; }
+    .detail { padding: 20px; position: static; }
+    .detail-title { margin-top: 8px; overflow-wrap: anywhere; font-size: 17px; }
+    .detail-sub { color: var(--muted); margin-top: 5px; }
+    .detail-score { display: flex; align-items: end; justify-content: space-between; gap: 12px; padding: 18px 0; margin: 14px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .detail-score strong { font-size: 38px; letter-spacing: -.05em; color: #1d4ed8; }
+    .detail-score span { color: var(--muted); text-align: right; font-size: 12px; }
+    .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .metric { background: #f8fafc; border: 1px solid var(--line); border-radius: 10px; padding: 11px; }
+    .metric b { display: block; font-size: 16px; margin-top: 3px; }
+    .metric span { color: var(--muted); font-size: 11px; }
+    .detail-section { margin-top: 22px; }
+    .detail-section h3 { margin-bottom: 9px; }
+    .tool-row { display: grid; grid-template-columns: 92px 1fr 34px; gap: 8px; align-items: center; margin: 8px 0; font-size: 12px; }
+    .tool-row span { color: var(--muted); overflow: hidden; text-overflow: ellipsis; }
+    .bar { height: 7px; border-radius: 99px; background: #e7edf6; overflow: hidden; }
+    .bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--purple), var(--cyan)); }
+    .trace { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 14px; color: var(--muted); font-size: 12px; }
+    .trace strong { color: var(--text); font-weight: 700; }
+    .hidden-tests { max-height: 360px; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px; background: #fbfcfe; }
+    .hidden-test { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 9px 11px; border-bottom: 1px solid var(--line); font-size: 12px; }
+    .hidden-test:last-child { border-bottom: 0; }
+    .hidden-test-title { color: #3d4b61; line-height: 1.35; }
+    .test-status { flex: 0 0 auto; border-radius: 999px; padding: 3px 7px; font-size: 10px; font-weight: 800; }
+    .test-status.pass { color: var(--green); background: #e9f8f1; }
+    .test-status.fail { color: var(--red); background: #fff0f1; }
+    .test-status.blocked { color: var(--amber); background: #fff7e8; }
+    .empty { color: var(--muted); padding: 32px 16px; text-align: center; }
+    footer { color: var(--muted); font-size: 12px; margin-top: 18px; }
+    @media (max-width: 1050px) { .kpis { grid-template-columns: repeat(3, 1fr); } .main-grid, .charts { grid-template-columns: 1fr; } .detail { position: static; } }
+    @media (max-width: 640px) { .shell { padding: 24px 14px 40px; } .topline { display: block; } .snapshot { text-align: left; margin-top: 16px; } .kpis { grid-template-columns: repeat(2, 1fr); } .kpi .value { font-size: 24px; } }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topline">
+      <div>
+        <div class="eyebrow">PayFlow · benchmark observatory</div>
+        <h1>Add customer data deletion to PayFlow</h1>
+        <p class="lede">Implement customer data deletion across PayFlow’s multi-tenant payment platform without damaging financial records or affecting other customers. The workflow spans the API gateway, customer and payment services, webhook, projection, notification, and document workers, plus PostgreSQL, Redis, Redpanda, OpenSearch, MinIO, Mailpit, retries, and historical replay.</p>
+      </div>
+      <div class="snapshot"><strong>Metadata snapshot</strong>9 September 2026</div>
+    </header>
+
+    <section class="grid kpis" id="kpis"></section>
+
+    <section class="grid charts">
+      <article class="card chart-card"><div class="section-head"><h2>Score leaderboard</h2><span>normalized score · higher is better</span></div><canvas id="score-chart"></canvas></article>
+    </section>
+
+    <section class="grid main-grid">
+      <article class="card table-card">
+        <div class="table-head"><div><h2>Run inventory</h2><span class="sub">Select a row to inspect its telemetry and trace profile.</span></div><span id="table-caption"></span></div>
+        <div class="table-wrap"><table><thead><tr><th>Model</th><th>Status</th><th>Score</th><th>Duration</th><th>Tools</th></tr></thead><tbody id="candidate-rows"></tbody></table></div>
+      </article>
+      <aside class="card detail" id="detail"></aside>
+    </section>
+    <footer>Costs and telemetry are the values recorded in each run’s <code>metadata.json</code>. A blank cost means the provider did not export usage.</footer>
+  </main>
+
+  <script>
+    const RUNS = [
+      {id:"claude-sonnet-4-6-high-20260822T184658Z",location:"archived",provider:"portkey",model:"claude-sonnet-4-6",reasoning:"high",status:"completed",score:.1561,cost:null,elapsed:752292,total:null,input:4025371,cached:3910229,output:33957,reasoningTokens:10837,tools:44,successful:42,failed:2,shell:44,patch:0,byTool:{command_execution:44},events:109,invalid:0,terminal:"turn.completed",scenarios:9,passed:5,start:"2026-08-22T18:46:58.104Z"},
+      {id:"gpt-5.6-luna-ultra-20260824t141302z",location:"archived",provider:"codex-login",model:"gpt-5.6-luna",reasoning:"ultra",status:"completed",score:.4563,cost:null,elapsed:4433061,total:null,input:50372145,cached:49297408,output:189933,reasoningTokens:110408,tools:305,successful:289,failed:16,shell:305,patch:0,byTool:{command_execution:305},events:792,invalid:0,terminal:"turn.completed",scenarios:12,passed:6,start:"2026-08-24T14:13:02.939Z"},
+      {id:"gpt-5.6-sol-high-20260822t142140Z",location:"archived",provider:"codex-login",model:"gpt-5.6-sol",reasoning:"high",status:"completed",score:.1187,cost:null,elapsed:1216227,total:null,input:4149974,cached:3991040,output:46556,reasoningTokens:21118,tools:67,successful:63,failed:4,shell:67,patch:0,byTool:{command_execution:67},events:191,invalid:0,terminal:"turn.completed",scenarios:9,passed:4,start:"2026-08-22T14:21:40.601Z"},
+      {id:"gpt-5.6-sol-medium-20260823T174534Z",location:"archived",provider:"codex-login",model:"gpt-5.6-sol",reasoning:"medium",status:"completed",score:.1874,cost:null,elapsed:1352277,total:null,input:4421072,cached:4269056,output:38463,reasoningTokens:16636,tools:82,successful:80,failed:2,shell:82,patch:0,byTool:{command_execution:82},events:214,invalid:0,terminal:"turn.completed",scenarios:9,passed:5,start:"2026-08-23T17:45:34.299Z"},
+      {id:"gpt-5.6-sol-medium-20260824t050450z",location:"archived",provider:"codex-login",model:"gpt-5.6-sol",reasoning:"medium",status:"completed",score:.3875,cost:null,elapsed:1707693,total:null,input:11228684,cached:11005952,output:45730,reasoningTokens:15046,tools:82,successful:73,failed:9,shell:82,patch:0,byTool:{command_execution:82},events:227,invalid:0,terminal:"turn.completed",scenarios:12,passed:8,start:"2026-08-24T05:04:50.307Z"},
+      {id:"gpt-5.6-sol-xhigh-20260824t091500z",location:"archived",provider:"codex-login",model:"gpt-5.6-sol",reasoning:"xhigh",status:"completed",score:.65,cost:null,elapsed:2039124,total:null,input:17660896,cached:17196544,output:74209,reasoningTokens:32355,tools:80,successful:74,failed:6,shell:80,patch:0,byTool:{command_execution:80},events:240,invalid:0,terminal:"turn.completed",scenarios:12,passed:11,start:"2026-08-24T09:15:00.876Z"},
+      {id:"gpt-5.6-terra-ultra-20260822t122904z",location:"archived",provider:"codex-login",model:"gpt-5.6-terra",reasoning:"ultra",status:"timed_out",score:.1187,cost:null,elapsed:901851,total:null,input:null,cached:null,output:null,reasoningTokens:null,tools:null,successful:null,failed:null,shell:null,patch:null,byTool:{},events:36,invalid:0,terminal:null,scenarios:9,passed:5,start:"2026-08-22T12:29:04.443Z"},
+      {id:"gpt-5.6-terra-xhigh-20260822T180011Z",location:"archived",provider:"codex-login",model:"gpt-5.6-terra",reasoning:"xhigh",status:"completed",score:.2187,cost:null,elapsed:1444563,total:null,input:6687620,cached:6346240,output:72893,reasoningTokens:43104,tools:27,successful:24,failed:3,shell:27,patch:0,byTool:{command_execution:27},events:134,invalid:0,terminal:"turn.completed",scenarios:9,passed:5,start:"2026-08-22T18:00:11.882Z"},
+      {id:"gpt-5.6-terra-xhigh-20260822t131529z",location:"archived",provider:"codex-login",model:"gpt-5.6-terra",reasoning:"xhigh",status:"failed",score:.1874,cost:null,elapsed:1529323,total:null,input:null,cached:null,output:null,reasoningTokens:null,tools:49,successful:41,failed:8,shell:49,patch:0,byTool:{command_execution:49},events:141,invalid:0,terminal:null,scenarios:9,passed:4,start:"2026-08-22T13:15:29.408Z"},
+      {id:"gpt-5.6-terra-xhigh-20260824t072122z",location:"archived",provider:"codex-login",model:"gpt-5.6-terra",reasoning:"xhigh",status:"completed",score:.3875,cost:null,elapsed:1414415,total:null,input:8441155,cached:8246272,output:57499,reasoningTokens:31913,tools:52,successful:44,failed:8,shell:52,patch:0,byTool:{command_execution:52},events:170,invalid:0,terminal:"turn.completed",scenarios:12,passed:8,start:"2026-08-24T07:21:22.585Z"},
+      {id:"gpt-5.6-terra-xhigh-20260825t061247z",location:"archived",provider:"codex-login",model:"gpt-5.6-terra",reasoning:"xhigh",status:"completed",score:.3562,cost:null,elapsed:1304534,total:null,input:6524993,cached:6351616,output:52539,reasoningTokens:27244,tools:47,successful:40,failed:7,shell:47,patch:0,byTool:{command_execution:47},events:138,invalid:0,terminal:"turn.completed",scenarios:12,passed:8,start:"2026-08-25T06:12:47.466Z"},
+      {id:"gpt-5.6-terra-xhigh-20260825t141915z",location:"archived",provider:"codex-login",model:"gpt-5.6-terra",reasoning:"xhigh",status:"completed",score:.3562,cost:null,elapsed:1157362,total:null,input:4908697,cached:4756224,output:49713,reasoningTokens:24100,tools:37,successful:29,failed:8,shell:37,patch:0,byTool:{command_execution:37},events:115,invalid:0,terminal:null,scenarios:13,passed:9,start:"2026-08-25T14:19:15.638Z"},
+      {id:"kimi-k3-high-20260825t093000z",location:"archived",provider:"portkey",model:"kimi-k3",reasoning:"high",status:"completed",score:.3562,cost:null,elapsed:5350143,total:null,input:28743631,cached:28018795,output:61387,reasoningTokens:2285,tools:199,successful:195,failed:4,shell:199,patch:0,byTool:{command_execution:199},events:626,invalid:0,terminal:"turn.completed",scenarios:13,passed:8,start:"2026-08-25T09:33:05.857Z"},
+      {id:"claude-opus-4-6-max-20260825t195534z",location:"active",provider:"portkey",model:"claude-opus-4-6",reasoning:"max",status:"completed",score:.2874,cost:null,elapsed:1199582,total:null,input:7791292,cached:7652578,output:40402,reasoningTokens:13002,tools:72,successful:59,failed:13,shell:72,patch:0,byTool:{command_execution:72},events:186,invalid:0,terminal:"turn.completed",scenarios:13,passed:9,start:"2026-08-25T19:55:34.418Z"},
+      {id:"grok-4.5-high-20260825t210036z",location:"active",provider:"portkey-opencode",model:"grok-4.5",reasoning:"high",status:"completed",score:.2813,cost:null,elapsed:806283,total:null,input:null,cached:null,output:null,reasoningTokens:null,tools:0,successful:0,failed:0,shell:0,patch:0,byTool:{},events:0,invalid:48,terminal:null,scenarios:13,passed:7,start:"2026-08-25T21:00:36.717Z"},
+      {id:"kimi-k3-max-20260825t212949z",location:"active",provider:"portkey-opencode",model:"kimi-k3",reasoning:"max",status:"completed",score:.1,cost:null,elapsed:658975,total:null,input:null,cached:null,output:null,reasoningTokens:null,tools:0,successful:0,failed:0,shell:0,patch:0,byTool:{},events:0,invalid:0,terminal:null,scenarios:13,passed:6,start:"2026-08-25T21:29:50.025Z"},
+      {id:"openai-gpt-5.6-terra-medium-20260908t073825z",location:"active",provider:"openhands",model:"openai/gpt-5.6-terra",reasoning:"medium",status:"completed",score:.15,cost:.6121665,elapsed:557461,total:2690081,input:1369074,cached:1305075,output:15932,reasoningTokens:5709,tools:118,successful:118,failed:0,shell:24,patch:0,byTool:{file_editor:94,terminal:24},events:122,invalid:5854,terminal:null,scenarios:13,passed:7,start:"2026-09-08T07:38:25.539Z"},
+      {id:"openai-gpt-5.6-sol-medium-20260908t085030z",location:"active",provider:"openhands",model:"openai/gpt-5.6-sol",reasoning:"medium",status:"completed",score:.3187,cost:4.5120842,elapsed:1760091,total:14859346,input:7484019,cached:7333918,output:41409,reasoningTokens:14308,tools:236,successful:236,failed:0,shell:74,patch:0,byTool:{terminal:74,think:2,file_editor:158,finish:2},events:239,invalid:13614,terminal:null,scenarios:13,passed:7,start:"2026-09-08T08:50:30.909Z"},
+      {id:"openai-glm-5.2-medium-20260908t122615z",location:"active",provider:"openhands",model:"openai/glm-5.2",reasoning:"medium",status:"completed",score:.2625,cost:0,elapsed:2315439,total:32185396,input:16295460,cached:15823360,output:66576,reasoningTokens:10540,tools:358,successful:358,failed:0,shell:246,patch:0,byTool:{terminal:246,file_editor:108,think:2,finish:2},events:361,invalid:19629,terminal:null,scenarios:13,passed:7,start:"2026-09-08T12:26:15.561Z"},
+      {id:"openai-grok-4.6-medium-20260908t214238z",location:"active",provider:"openhands",model:"openai/grok-4.6",reasoning:"medium",status:"completed",score:.1812,cost:0,elapsed:1400571,total:4185943,input:2233812,cached:1871616,output:80515,reasoningTokens:54743,tools:270,successful:270,failed:0,shell:20,patch:0,byTool:{terminal:20,file_editor:250},events:274,invalid:13773,terminal:null,scenarios:13,passed:6,start:"2026-09-08T21:42:38.429Z",scoreState:"complete",hardPass:false},
+      {id:"openai-qwen-3.8-medium-20260908t220642z",location:"active",provider:"openhands",model:"openai/qwen-3.8",reasoning:"medium",status:"completed",score:.2625,cost:0,elapsed:2469876,total:43145214,input:21581922,cached:21382080,output:181212,reasoningTokens:107710,tools:432,successful:420,failed:12,shell:238,patch:0,byTool:{terminal:238,file_editor:190,think:2,finish:2},events:445,invalid:26527,terminal:null,scenarios:13,passed:8,start:"2026-09-08T22:06:42.124Z",scoreState:"complete",hardPass:false},
+      {id:"openai-gemini-3.7-flash-medium-20260909t081644z",location:"active",provider:"openhands",model:"openai/gemini-3.7-flash",reasoning:"medium",status:"completed",score:.1,cost:null,elapsed:null,total:null,input:null,cached:null,output:null,reasoningTokens:null,tools:null,successful:null,failed:null,shell:null,patch:null,byTool:{},events:3,invalid:342,terminal:null,scenarios:13,passed:6,start:"2026-09-09T08:16:44Z"},
+      {id:"openai-gemini-3.7-flash-medium-20260909t141459z",location:"active",provider:"openhands",model:"openai/gemini-3.7-flash",reasoning:"medium",status:"completed",score:.1125,cost:null,elapsed:null,total:null,input:null,cached:null,output:null,reasoningTokens:null,tools:189,successful:189,failed:0,shell:null,patch:null,byTool:{},events:381,invalid:16797,terminal:null,scenarios:13,passed:6,start:"2026-09-09T14:14:59Z"},
+      {id:"openai-gpt-5.6-luna-high-20260910t080210z",location:"active",provider:"openhands",model:"openai/gpt-5.6-luna",reasoning:"high",status:"completed",score:.1812,cost:.10495462,elapsed:707970,total:3968677,input:2018783,cached:1915811,output:34083,reasoningTokens:18903,tools:226,successful:226,failed:0,shell:null,patch:null,byTool:{terminal:26,file_editor:198,finish:2},events:231,invalid:0,terminal:"turn.completed",scenarios:13,passed:6,start:"2026-09-10T08:02:10Z",scoreState:"complete",hardPass:false},
+      {id:"openai-gpt-5.6-luna-medium-20260910t070914z",location:"active",provider:"openhands",model:"openai/gpt-5.6-luna",reasoning:"medium",status:"completed",score:.0875,cost:.06382597,elapsed:null,total:null,input:null,cached:null,output:null,reasoningTokens:null,tools:63,successful:63,failed:0,shell:null,patch:null,byTool:{},events:132,invalid:5984,terminal:null,scenarios:13,passed:6,start:"2026-09-10T07:09:14Z",scoreState:"complete",hardPass:false},
+      {id:"openai-gpt-5.6-luna-medium-20260910t080210z",location:"active",provider:"openhands",model:"openai/gpt-5.6-luna",reasoning:"medium",status:"blocked",score:null,cost:.05488326,elapsed:445970,total:2398578,input:1223752,cached:1161428,output:13398,reasoningTokens:4377,tools:86,successful:86,failed:0,shell:null,patch:null,byTool:{terminal:38,file_editor:48},events:92,invalid:0,terminal:"turn.completed",scenarios:1,passed:0,start:"2026-09-10T08:02:10Z",scoreState:"blocked",hardPass:false},
+    ];
+
+    const HIDDEN_TESTS = [
+      "Unknown customer is tenant-safe",
+      "Concurrent same-key requests share one workflow",
+      "Cross-tenant customer and request are hidden without mutation",
+      "Alternate key reuses the customer workflow",
+      "Idempotent retry returns the original request",
+      "Key reuse for another customer is rejected",
+      "Request reaches completed only after convergence",
+      "Primary relational records are removed or rekeyed",
+      "Embedded and operational PostgreSQL PII is redacted",
+      "Redis no longer contains subject PII",
+      "OpenSearch no longer contains subject PII",
+      "MinIO no longer contains subject PII",
+      "Mailpit no longer contains subject PII",
+      "Financial facts remain intact after a successful erasure",
+      "Retained financial links are anonymous and support a private later refund",
+      "A later refund remains balanced without restoring customer identity",
+      "A failed post-erasure refund stays private and a later retry remains balanced",
+      "Merchant API credential remains active and unchanged",
+      "Unrelated customer and shared record remain unchanged",
+      "Merchant identity and administrator remain unchanged",
+      "Independent merchant credential remains active and usable",
+      "Unrelated payment, notification, and receipt remain unchanged",
+      "Delayed-subject erasure request is accepted",
+      "Participant failure prevents completion and the same request converges when retried",
+      "Pending work and its payloads are fully sanitized",
+      "Delayed work completes with correct financial processing",
+      "Delayed work does not reintroduce PII",
+      "Historical event is safely consumed",
+      "Historical replay does not restore PII",
+      "Unrelated shared record remains unchanged after delayed work and replay"
+    ];
+    const HIDDEN_STATES = {
+      "claude-opus-4-6-max-20260825t195534z": "PPPPPPPFFPPFFBBFFPPPPPPPFBBBBB",
+      "grok-4.5-high-20260825t210036z": "PPPPPPPFFFFFPBBFFPPPPPPPFBBBBB",
+      "kimi-k3-max-20260825t212949z": "PFPBBFBFFFFFFBBFFPPPPPFBBBBBBB",
+      "openai-glm-5.2-medium-20260908t122615z": "PPPPPPPFFPFFPBBFFPPPPPPFBBBBBB",
+      "openai-gpt-5.6-sol-medium-20260908t085030z": "PPPPPPPFFPPFPBBFFPPPPPPPFBBBBB",
+      "openai-gpt-5.6-terra-medium-20260908t073825z": "PFFBBPBFFFFFFBBFFPPPPPPPFBBBBB",
+      "openai-grok-4.6-medium-20260908t214238z": "PPPPPPFFFFFFFBBFFPPPPPPFBBBBBB",
+      "openai-qwen-3.8-medium-20260908t220642z": "PPPPPPPFFPFFPBBFFPPPPPPFBBBBBB",
+      "openai-gemini-3.7-flash-medium-20260909t081644z": "PFPBBFBFFFFFFBBFFPPPPPFBBBBBBB",
+      "openai-gemini-3.7-flash-medium-20260909t141459z": "PFFBBPBFFFFFFBBFFPPPPPPFBBBBBB",
+      "openai-gpt-5.6-luna-high-20260910t080210z": "PPPPPPFFFFFFFBBFFPPPPPPFBBBBBB",
+      "openai-gpt-5.6-luna-medium-20260910t070914z": "PFFBBFBFFFFFFBBFFPPPPPFBBBBBBB"
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const fmtInt = (n) => n == null ? "—" : new Intl.NumberFormat("en-US", {notation: n > 999999 ? "compact" : "standard", maximumFractionDigits: 1}).format(n);
+    const fmtScore = (n) => n == null ? "—" : n.toFixed(4);
+    const fmtCost = (n) => n == null ? "—" : `$${n.toFixed(6)}`;
+    const fmtTime = (ms) => {
+      if (ms == null) return "—";
+      const sec = Math.round(ms / 1000), h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+      return h ? `${h}h ${m}m` : `${m}m ${s}s`;
+    };
+    const label = (value) => value.replaceAll("_", " ");
+    const modelLabel = (model) => model.replace(/^openai\//, "");
+    const state = {selected: null};
+
+    function visibleRuns() {
+      return RUNS.filter((run) => run.location === "active").sort((a, b) => {
+        const scoreDifference = (b.score ?? -Infinity) - (a.score ?? -Infinity);
+        return scoreDifference || new Date(b.start) - new Date(a.start);
+      });
+    }
+
+    function renderKpis() {
+      const runs = visibleRuns(), scored = runs.filter((r) => r.score != null);
+      const best = scored.length ? Math.max(...scored.map((r) => r.score)) : null;
+      const tokens = runs.reduce((sum, r) => sum + (r.total ?? 0), 0);
+      $("kpis").innerHTML = [
+        ["Runs shown", runs.length, `${scored.length} scored`],
+        ["Total tokens", fmtInt(tokens), "across available telemetry"],
+        ["Best score", best == null ? "—" : best.toFixed(4), "normalized benchmark score"],
+        ["Passed scenarios", scored.length ? `${runs.reduce((s, r) => s + (r.passed ?? 0), 0)} / ${runs.reduce((s, r) => s + (r.scenarios ?? 0), 0)}` : "—", "sum of recorded scenario results"]
+      ].map(([labelText, value, hint]) => `<div class="card kpi"><div class="label">${labelText}</div><div class="value">${value}</div><div class="hint">${hint}</div></div>`).join("");
+    }
+
+    function renderTable(runs) {
+      $("table-caption").textContent = `${runs.filter(r => r.status === "completed").length} completed`;
+      $("candidate-rows").innerHTML = runs.length ? runs.map((r) => `
+        <tr class="${r.id === state.selected ? "selected" : ""}" data-id="${r.id}">
+          <td><span class="candidate">${modelLabel(r.model)}</span><span class="sub">reasoning: ${r.reasoning}</span></td>
+          <td><span class="pill ${r.status}">${label(r.status)}</span></td>
+          <td class="score ${r.score == null ? "none" : ""}">${fmtScore(r.score)}</td>
+          <td>${fmtTime(r.elapsed)}</td>
+          <td>${fmtInt(r.tools)}</td>
+        </tr>`).join("") : `<tr><td colspan="5" class="empty">No runs match the current filters.</td></tr>`;
+      document.querySelectorAll("tbody tr[data-id]").forEach((row) => row.addEventListener("click", () => { state.selected = row.dataset.id; render(); }));
+    }
+
+    function setupCanvas(canvas, height = 240) {
+      const ratio = window.devicePixelRatio || 1, width = Math.max(canvas.clientWidth, 300);
+      canvas.width = width * ratio; canvas.height = height * ratio;
+      const ctx = canvas.getContext("2d"); ctx.scale(ratio, ratio); return {ctx, width, height};
+    }
+    function renderScoreChart(runs) {
+      const {ctx, width, height} = setupCanvas($("score-chart")); ctx.clearRect(0, 0, width, height);
+      const data = runs.filter(r => r.score != null).slice(0, 12), left = 154, right = 36, top = 10, row = Math.max(18, Math.min(31, (height - 25) / Math.max(data.length, 1)));
+      ctx.font = "11px system-ui"; ctx.textBaseline = "middle";
+      [0, .25, .5, .75, 1].forEach((tick) => { const x = left + (width - left - right) * tick; ctx.strokeStyle = "rgba(100,116,139,.16)"; ctx.beginPath(); ctx.moveTo(x, 4); ctx.lineTo(x, height - 18); ctx.stroke(); ctx.fillStyle = "#68758a"; ctx.fillText(tick.toFixed(2), x - 10, height - 7); });
+      data.forEach((r, i) => { const y = top + i * row + 5, barW = (width - left - right) * r.score, chartLabel = `${modelLabel(r.model)} · ${r.reasoning}`; ctx.fillStyle = "#526176"; ctx.fillText(chartLabel.length > 27 ? `${chartLabel.slice(0, 25)}…` : chartLabel, 0, y + 7); ctx.fillStyle = r.location === "active" ? "#2563eb" : "#7456c8"; ctx.globalAlpha = .86; ctx.fillRect(left, y, Math.max(barW, 2), 14); ctx.globalAlpha = 1; ctx.fillStyle = "#172033"; ctx.fillText(r.score.toFixed(4), Math.min(left + barW + 7, width - 31), y + 7); });
+      if (!data.length) { ctx.fillStyle = "#68758a"; ctx.fillText("No scored runs in this view", 12, height / 2); }
+    }
+    function renderDetail(runs) {
+      const selected = runs.find((r) => r.id === state.selected) || runs[0];
+      if (!selected) { $("detail").innerHTML = `<h3>Run detail</h3><p class="empty">Select a candidate to inspect it.</p>`; return; }
+      state.selected = selected.id;
+      const toolEntries = Object.entries(selected.byTool || {}).sort((a, b) => b[1] - a[1]), toolMax = Math.max(...toolEntries.map(([, n]) => n), 1);
+      const hiddenStates = HIDDEN_STATES[selected.id];
+      const hiddenMarkup = hiddenStates ? HIDDEN_TESTS.map((title, index) => {
+        const code = hiddenStates[index], status = code === "P" ? "pass" : code === "F" ? "fail" : "blocked";
+        return `<div class="hidden-test"><span class="hidden-test-title">${title}</span><span class="test-status ${status}">${status === "pass" ? "Passed" : status === "fail" ? "Failed" : "Blocked"}</span></div>`;
+      }).join("") : `<div class="empty">No hidden test report.</div>`;
+      $("detail").innerHTML = `
+        <h3>Run detail</h3><div class="detail-sub">${selected.provider} · ${selected.model} · ${selected.reasoning} · ${selected.location}</div>
+        <div class="detail-score"><strong>${fmtScore(selected.score)}</strong><span>${selected.passed == null ? "No scoring report" : `${selected.passed} / ${selected.scenarios} scenarios passed`}<br><span class="pill ${selected.status}">${label(selected.status)}</span>${selected.scoreState ? `<br><span class="sub">verifier: ${selected.hardPass ? "hard pass" : "hard pass failed"}</span>` : ""}</span></div>
+        <div class="grid metrics">
+          <div class="metric"><span>Generation time</span><b>${fmtTime(selected.elapsed)}</b></div><div class="metric"><span>Recorded cost</span><b>${fmtCost(selected.cost)}</b></div>
+          <div class="metric"><span>Total tokens</span><b>${fmtInt(selected.total)}</b></div><div class="metric"><span>Input / cached</span><b>${fmtInt(selected.input)} / ${fmtInt(selected.cached)}</b></div>
+          <div class="metric"><span>Output / reasoning</span><b>${fmtInt(selected.output)} / ${fmtInt(selected.reasoningTokens)}</b></div><div class="metric"><span>Tool calls</span><b>${fmtInt(selected.tools)}</b></div>
+        </div>
+        <div class="detail-section"><h3>Tool trajectory</h3>${toolEntries.length ? toolEntries.map(([name, count]) => `<div class="tool-row"><span>${name}</span><div class="bar"><i style="width:${count / toolMax * 100}%"></i></div><b>${count}</b></div>`).join("") : `<div class="sub">No tool trajectory was recorded.</div>`}</div>
+        <div class="detail-section"><h3>Trace integrity</h3><div class="trace"><div>Valid events <strong>${fmtInt(selected.events)}</strong></div><div>Invalid events <strong>${fmtInt(selected.invalid)}</strong></div><div>Terminal event <strong>${selected.terminal || "absent"}</strong></div><div>Tool success <strong>${selected.successful == null ? "—" : `${selected.successful}/${selected.tools}`}</strong></div></div></div>
+        <div class="detail-section"><h3>Hidden verifier tests</h3><div class="hidden-tests">${hiddenMarkup}</div></div>`;
+    }
+
+    function render() { const runs = visibleRuns(); renderKpis(); renderTable(runs); renderScoreChart(runs); renderDetail(runs); }
+    window.addEventListener("resize", () => { const runs = visibleRuns(); renderScoreChart(runs); });
+    render();
+  </script>
+</body>
+</html>

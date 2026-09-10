@@ -3,7 +3,7 @@
 Use the provider-specific generation commands below for every new model attempt. They create a
 timestamped, ignored local artifact, wait for generation to end, and finalize its trusted telemetry.
 The model receives only the copied `codebase/` plus the public task prompt; it cannot mount
-`hidden_tests/`, `reference_solution/`, calibration records, or other candidates. The lower-level
+`verifier/hidden-tests/`, `reference_solution/`, calibration records, or other candidates. The lower-level
 launcher commands remain available only for troubleshooting a detached generation container.
 
 The model container owns a private rootless Docker daemon, so the public `docker compose` commands
@@ -73,6 +73,17 @@ the verifier, writes JUnit and score reports into the candidate artifact, and cl
 
 ```bash
 npm run candidates:score -- candidates/gpt-5.6-sol-xhigh-<timestamp>
+```
+
+The scorer may return `partial` when independently provisioned checks ran but another fixture was
+unavailable. Partial results are explicitly marked as non-comparable to complete benchmark scores.
+
+Use the stable scorer for leaderboard results. It runs three fresh isolated stacks and selects the
+lowest score, so timing-dependent behavior cannot improve a candidate result. It keeps each attempt
+and its selection record under `reports/stability/`.
+
+```bash
+npm run candidates:score:stable -- candidates/gpt-5.6-sol-xhigh-<timestamp>
 ```
 
 Render the comparable headline table from the recorded evidence:

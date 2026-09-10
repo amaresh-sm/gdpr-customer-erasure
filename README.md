@@ -8,14 +8,14 @@ attempts are distinct and auditable.
 instruction/                candidate-facing task instruction
 codebase/                   incomplete PayFlow app copied to a candidate
 reference_solution/source/  frozen complete reference app
-hidden_tests/               evaluator-only scorer
+verifier/hidden-tests/      evaluator-only scorer
 candidates/                 ignored local model-run artifacts
 calibration/                evaluator-only calibration record
 ```
 
 Never give a candidate this repository. A candidate run receives only a fresh copy of
 `instruction/task.md` and `codebase/`. The scorer freezes that copy, starts its Docker project from
-`source/`, and mounts `hidden_tests/` read-only into the one-off verifier container only.
+`source/`, and mounts `verifier/hidden-tests/` read-only into the one-off verifier container only.
 
 Use `npm run candidates:run` to create a rootless isolated candidate artifact and
 `scripts/candidates/score.sh` to score it after generation. See

@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { copyFile, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { CandidateRunManifest } from './types.js';
+import type { CandidateRunManifest, CandidateScoring } from './types.js';
 
 function argument(name: string): string {
   const index = process.argv.indexOf(name);
@@ -23,25 +23,28 @@ async function main(): Promise<void> {
   const scenariosTotal = Number(match[1]);
   const failures = Number(match[2]);
   const score = JSON.parse(await readFile(scoreSource, 'utf8')) as {
-    state: 'complete' | 'blocked';
+    schema_version?: number;
+    state: 'complete' | 'partial' | 'blocked';
     hard_pass: boolean;
     earned: number | null;
     maximum: number;
+    evaluated_maximum?: number;
+    comparable?: boolean;
   };
-  if (score.state !== 'complete' && score.state !== 'blocked') throw new Error('score report state was invalid');
+  if (score.state !== 'complete' && score.state !== 'partial' && score.state !== 'blocked') throw new Error('score report state was invalid');
   if (score.state === 'complete' && (!Number.isFinite(score.earned) || !Number.isFinite(score.maximum))) {
     throw new Error('complete score report did not contain numeric score values');
   }
   if (score.maximum !== 1) throw new Error('score report maximum must be normalized to 1.0');
-  if (score.state === 'complete' && (score.earned! < 0 || score.earned! > 1)) {
-    throw new Error('complete score report was outside the normalized 0.0–1.0 range');
+  if (score.state !== 'blocked' && (score.earned! < 0 || score.earned! > 1)) {
+    throw new Error('numeric score report was outside the normalized 0.0–1.0 range');
   }
   const manifest = JSON.parse(await readFile(metadataPath, 'utf8')) as CandidateRunManifest;
   const target = join(runDirectory, 'reports', 'hidden.junit.xml');
   const scoreTarget = join(runDirectory, 'reports', 'hidden.score.json');
   await copyFile(junitSource, target);
   await copyFile(scoreSource, scoreTarget);
-  manifest.scoring = {
+  const scoring: CandidateScoring = {
     verifier_ref: verifierRef,
     junit_path: 'reports/hidden.junit.xml',
     score_path: 'reports/hidden.score.json',
@@ -52,7 +55,10 @@ async function main(): Promise<void> {
     hard_pass: score.hard_pass,
     score_state: score.state,
     report_sha256: createHash('sha256').update(report).digest('hex'),
+    evaluated_maximum: score.evaluated_maximum ?? (score.state === 'complete' ? 1 : null),
+    comparable: score.comparable ?? (score.state === 'complete'),
   };
+  manifest.scoring = scoring;
   await writeFile(metadataPath, `${JSON.stringify(manifest, null, 2)}\n`);
 }
 

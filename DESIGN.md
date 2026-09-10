@@ -6,7 +6,7 @@ This file is evaluator-only. It must never appear in a candidate workspace.
 
 The benchmark now uses one physical evaluator tree. `instruction/task.md` and `codebase/` are the
 only assets copied into an isolated candidate workspace. `reference_solution/source/` is the frozen
-golden source snapshot, and `hidden_tests/` is mounted read-only only into a scorer after candidate
+golden source snapshot, and `verifier/hidden-tests/` is mounted read-only only into a scorer after candidate
 generation has finished. `candidates/` is local-only, Git-ignored, and retains model source snapshots
 with telemetry and score reports. Historical references below to `question/...` and `solution/...`
 describe the Git states from which these two source snapshots were reconstructed; they are not part
@@ -139,7 +139,7 @@ against the exact `git archive question/gdpr-customer-erasure` candidate workspa
   exposes its `payload` and `error` fields; and both the webhook and document workers visibly copy
   failed payloads into it. Testing pre-existing PII in those fields follows directly from the
   documented completion rule and production retry topology.
-- The candidate export contains all of those clues and excludes `hidden_tests/`, `DESIGN.md`, and
+- The candidate export contains all of those clues and excludes `verifier/hidden-tests/`, `DESIGN.md`, and
   `calibration/` as intended.
 
 Verdict: both expectations are fair, repository-discoverable, production-authentic, and already
@@ -220,7 +220,7 @@ provisional at N=2.
 ## Physical-layout certification — 2026-08-22
 
 The benchmark is now distributed as one physical repository layout: `instruction/` and
-`codebase/` are the only candidate-facing inputs; `reference_solution/`, `hidden_tests/`, and
+`codebase/` are the only candidate-facing inputs; `reference_solution/`, `verifier/hidden-tests/`, and
 `candidates/` are evaluator or local-authoring surfaces. Candidate exports copy only `codebase/`
 into a fresh source directory with no `.git` metadata or private directories. The hidden verifier
 is mounted read-only only into the one-off verifier container after generation has finished.

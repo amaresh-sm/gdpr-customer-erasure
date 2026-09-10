@@ -24,7 +24,7 @@ bash internal/mutations/run.sh all
 
 The runner copies the frozen reference source to a temporary directory, applies
 exactly one patch, starts an isolated Docker Compose project with no host ports,
-and mounts `hidden_tests/` read-only only for the final verifier container. It
+and mounts `verifier/hidden-tests/` read-only only for the final verifier container. It
 writes logs, reports, source and patch digests, and the assertion result under
 `internal/mutation-runs/`, which is also ignored by Git. Containers and volumes
 are removed on exit.

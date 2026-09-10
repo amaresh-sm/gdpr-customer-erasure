@@ -26,12 +26,16 @@ if [[ ! -f "$run_dir/metadata.json" ]]; then
   echo "candidate generation has not completed and cannot be scored" >&2
   exit 64
 fi
-if [[ ! -d "$root_dir/hidden_tests" ]]; then
-  echo "private hidden_tests directory is unavailable to the scorer" >&2
+hidden_tests_dir="$root_dir/verifier/hidden-tests"
+if [[ ! -d "$hidden_tests_dir" ]]; then
+  echo "private verifier/hidden-tests directory is unavailable to the scorer" >&2
   exit 65
 fi
 
 mkdir -p "$report_dir"
+junit_name='hidden.junit.xml'
+score_name='hidden.score.json'
+log_name='hidden-scorer.log'
 cleanup() {
   docker compose -p "$project" -f "$source_dir/docker-compose.yml" -f "$override_file" down -v --remove-orphans >/dev/null 2>&1 || true
 }
@@ -65,19 +69,19 @@ wait_for_health 'customer-service' '3001' 'customer-service'
 wait_for_health 'api-gateway' '3000' 'api-gateway'
 set +e
 docker compose -p "$project" -f "$source_dir/docker-compose.yml" -f "$override_file" run --rm --no-deps \
-  -v "$root_dir/hidden_tests:/srv/payflow/hidden_tests:ro" \
+  -v "$hidden_tests_dir:/srv/payflow/hidden_tests:ro" \
   -v "$report_dir:/reports" \
-  -e JUNIT_PATH=/reports/hidden.junit.xml \
-  -e ERASURE_SCORE_PATH=/reports/hidden.score.json \
+  -e JUNIT_PATH="/reports/$junit_name" \
+  -e ERASURE_SCORE_PATH="/reports/$score_name" \
   -e ERASURE_TEST_SLOT="$run_id" \
-  verifier node --import tsx hidden_tests/run.ts 2>&1 | tee "$report_dir/hidden-scorer.log"
+  verifier node --import tsx hidden_tests/run.ts 2>&1 | tee "$report_dir/$log_name"
 score_status=${PIPESTATUS[0]}
 set -e
 
 npx --prefix "$root_dir/codebase" tsx "$root_dir/scripts/candidates/record-score.ts" \
   --run-dir "$run_dir" \
-  --junit "$report_dir/hidden.junit.xml" \
-  --score "$report_dir/hidden.score.json" \
+  --junit "$report_dir/$junit_name" \
+  --score "$report_dir/$score_name" \
   --verifier-ref "$(git -C "$root_dir" rev-parse HEAD)"
 
 exit "$score_status"

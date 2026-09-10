@@ -17,11 +17,12 @@ function elapsed(milliseconds: number): string {
   return `${(milliseconds / 60_000).toFixed(2)} minutes`;
 }
 
-/** Formats the only published score scale. Legacy local artifacts are normalized on read. */
+/** Formats the published normalized score scale. */
 function scoreSummary(manifest: CandidateRunManifest): string {
-  if (manifest.scoring.score_state === null) return 'not yet scored';
-  if (manifest.scoring.score_state === 'blocked') return 'blocked — fixture did not produce a comparable score';
-  const scoring = manifest.scoring as CandidateRunManifest['scoring'] & {
+  const activeScoring = manifest.scoring;
+  if (activeScoring.score_state === null) return 'not yet scored';
+  if (activeScoring.score_state === 'blocked') return 'blocked — no independently valid fixture produced a score';
+  const scoring = activeScoring as CandidateRunManifest['scoring'] & {
     weighted_score?: number | null;
     weighted_maximum?: number | null;
   };
@@ -30,14 +31,19 @@ function scoreSummary(manifest: CandidateRunManifest): string {
   if (earned === null || earned === undefined || maximum === null || maximum === undefined || maximum <= 0) {
     return 'not available';
   }
+  if (activeScoring.score_state === 'partial') {
+    return `${(earned ?? 0).toFixed(4)} / ${(activeScoring.evaluated_maximum ?? 0).toFixed(4)} verified — non-comparable`;
+  }
   return `${(earned / maximum).toFixed(4)} / 1.0000`;
 }
 
 /** States whether the score represents a complete verifier pass, independent of its magnitude. */
 function verificationResult(manifest: CandidateRunManifest): string {
-  if (manifest.scoring.score_state === null) return 'not yet scored';
-  if (manifest.scoring.score_state === 'blocked') return 'blocked — no comparable result';
-  return manifest.scoring.hard_pass ? 'hard pass' : 'not a hard pass';
+  const activeScoring = manifest.scoring;
+  if (activeScoring.score_state === null) return 'not yet scored';
+  if (activeScoring.score_state === 'blocked') return 'blocked — no comparable result';
+  if (activeScoring.score_state === 'partial') return 'partial — independently verified checks only';
+  return activeScoring.hard_pass ? 'hard pass' : 'not a hard pass';
 }
 
 /** Renders the comparable headline table for a locally retained candidate artifact. */

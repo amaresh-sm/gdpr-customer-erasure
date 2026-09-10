@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { cp, lstat, mkdir, readFile, writeFile } from 'node:fs/promises';
-import { homedir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { cp, lstat, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { homedir, tmpdir } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 
@@ -37,7 +37,7 @@ interface LaunchRecord {
 }
 
 const root = resolve(process.cwd());
-const generationImage = 'payflow-candidate-generation-rootless:v6';
+const generationImage = 'payflow-candidate-generation-rootless:v10';
 const egressImage = 'payflow-codex-egress:v4';
 const proxyImage = 'payflow-provider-proxy:v1';
 const innerImages = [
@@ -89,10 +89,33 @@ async function imageId(tag: string): Promise<string | null> {
   return result.code === 0 && result.stdout.trim().startsWith('sha256:') ? result.stdout.trim() : null;
 }
 
-async function ensureImage(tag: string, dockerfile: string): Promise<string> {
+interface BuildContextEntry {
+  source: string;
+  target: string;
+}
+
+async function ensureImage(tag: string, dockerfile: string, entries: BuildContextEntry[] = []): Promise<string> {
   let id = await imageId(tag);
   if (id) return id;
-  await required('docker', ['build', '--tag', tag, '--file', dockerfile, '.']);
+  if (entries.length === 0) {
+    await required('docker', ['build', '--tag', tag, '--file', dockerfile, '.']);
+  } else {
+    const context = await mkdtemp(join(tmpdir(), 'hackerrank-openhands-build-'));
+    try {
+      await mkdir(join(context, dirname(dockerfile)), { recursive: true });
+      await cp(resolve(root, dockerfile), join(context, dockerfile), { recursive: false });
+      for (const entry of entries) {
+        await mkdir(join(context, dirname(entry.target)), { recursive: true });
+        await cp(entry.source, join(context, entry.target), {
+          recursive: true,
+          filter: (path) => !/(^|\/)(\.env|\.venv|__pycache__|node_modules|dist|build|run-output)(\/|$)/.test(path),
+        });
+      }
+      await required('docker', ['build', '--tag', tag, '--file', join(context, dockerfile), context]);
+    } finally {
+      await rm(context, { recursive: true, force: true });
+    }
+  }
   id = await imageId(tag);
   if (!id) throw new Error(`Docker did not produce ${tag}`);
   return id;
@@ -286,7 +309,16 @@ async function main(): Promise<void> {
   let proxyConfig: string | null = null;
   let openhandsEnvironment: Record<string, string> = {};
   try {
-    generationId = await ensureImage(generationImage, 'docker/candidate-generation/rootless-dind.Dockerfile');
+    generationId = await ensureImage(generationImage, 'docker/candidate-generation/rootless-dind.Dockerfile', [
+      {
+        source: resolve(root, '../../hackerrank-openhands-gateway'),
+        target: 'hackerrank-openhands-gateway',
+      },
+      {
+        source: resolve(root, 'docker/candidate-generation/rootless-dind-entrypoint.sh'),
+        target: 'docker/candidate-generation/rootless-dind-entrypoint.sh',
+      },
+    ]);
     artifactId = await ensureImage(egressImage, 'docker/codex-egress/Dockerfile');
     if (provider === 'codex-login') {
       gatewayId = artifactId;

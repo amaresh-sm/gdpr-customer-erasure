@@ -21,6 +21,21 @@ export interface ToolCallEvidence {
   truncated: boolean | null;
 }
 
+export interface CandidateScoring {
+  verifier_ref: string | null;
+  junit_path: string | null;
+  score_path: string | null;
+  scenarios_total: number | null;
+  scenarios_passed: number | null;
+  score: number | null;
+  score_maximum: 1 | null;
+  hard_pass: boolean | null;
+  score_state: 'complete' | 'partial' | 'blocked' | null;
+  report_sha256: string | null;
+  evaluated_maximum?: number | null;
+  comparable?: boolean | null;
+}
+
 export interface CandidateRunManifest {
   schema_version: 1;
   run: {
@@ -104,16 +119,5 @@ export interface CandidateRunManifest {
     baseline_commit: string;
     sha256: string | null;
   };
-  scoring: {
-    verifier_ref: string | null;
-    junit_path: string | null;
-    score_path: string | null;
-    scenarios_total: number | null;
-    scenarios_passed: number | null;
-    score: number | null;
-    score_maximum: 1 | null;
-    hard_pass: boolean | null;
-    score_state: 'complete' | 'blocked' | null;
-    report_sha256: string | null;
-  };
+  scoring: CandidateScoring;
 }

@@ -13,7 +13,9 @@ override_file="$root_dir/internal/compose-no-host-ports.yml"
 reference_source="$root_dir/reference_solution/source"
 export PAYFLOW_EVALUATOR_DIR="$root_dir/evaluator/provider-simulator"
 
-if [[ ! -d "$reference_source" || ! -d "$root_dir/hidden_tests" ]]; then
+hidden_tests_dir="$root_dir/verifier/hidden-tests"
+
+if [[ ! -d "$reference_source" || ! -d "$hidden_tests_dir" ]]; then
   echo 'reference source or hidden tests are unavailable' >&2
   exit 64
 fi
@@ -89,7 +91,7 @@ run_one() (
 
   set +e
   "${compose[@]}" run --rm --no-deps \
-    -v "$root_dir/hidden_tests:/srv/payflow/hidden_tests:ro" \
+    -v "$hidden_tests_dir:/srv/payflow/hidden_tests:ro" \
     -v "$report_dir:/reports" \
     -e JUNIT_PATH=/reports/hidden.junit.xml \
     -e ERASURE_SCORE_PATH=/reports/hidden.score.json \
