@@ -7,7 +7,6 @@
     "astra:build:images": "python3 scripts/build_images.py",
     "astra:generate": "python3 -m astra_harness.generate",
     "astra:verify": "python3 -m astra_harness.verify",
-    "astra:score": "python3 -m astra_harness.score",
     "astra:package": "python3 scripts/package_task.py",
     "astra:check:package": "python3 readiness_checks/check_package.py",
     "astra:check:acceptance": "python3 readiness_checks/check_acceptance.py",
