@@ -84,7 +84,9 @@ function classifyNormalViolations(violations: string[]): Record<'relational' | '
     else if (violation.startsWith('OpenSearch ')) output.search.push(violation);
     else if (violation.startsWith('MinIO ')) output.minio.push(violation);
     else if (violation.startsWith('Mailpit ')) output.mailpit.push(violation);
-    else if (violation.startsWith('PostgreSQL ') || /^[a-z_]+\.[a-z_]+ retained human PII/.test(violation)) output.payload.push(violation);
+    else if (violation.startsWith('PostgreSQL ') ||
+      violation.startsWith('platform.audit_logs ') || violation.startsWith('operations.provider_webhooks ') ||
+      /^[a-z_]+\.[a-z_]+ retained human PII/.test(violation)) output.payload.push(violation);
     else output.relational.push(violation);
   }
   return output;
@@ -230,9 +232,15 @@ async function runPartialDomainCells(slot: string): Promise<void> {
       });
       const completed = accepted.ok ? await observe(async () => { await waitForCompletion(normalFixture.merchantKey, requestId); })
         : { ok: false, evidence: accepted.evidence };
-      recordCheck('workflow.completed', 'Request reaches completed only after convergence', 0.25, completed);
       const violations = completed.ok ? await observeValue(async () => collectErasureViolations(normalFixture, normalFixture.normal))
         : { ok: false, evidence: completed.evidence };
+      // A public completed status is meaningful only when the active-store
+      // verification immediately following it is clean. Keep other cells
+      // independently observable so this failure does not mask their results.
+      const truthfulCompletion = completed.ok && violations.ok
+        ? noViolations(violations.value as unknown as string[])
+        : { ok: false, evidence: violations.evidence ?? completed.evidence };
+      recordCheck('workflow.completed', 'Request reaches completed only after active-store convergence', 0.25, truthfulCompletion);
       const grouped = violations.ok ? classifyNormalViolations(violations.value as unknown as string[]) : undefined;
       const normalCheck = (id: string, label: string, weight: number, key: keyof NonNullable<typeof grouped>) => {
         const observed = grouped ? noViolations(grouped[key]) : { ok: false, evidence: violations.evidence };
@@ -422,8 +430,11 @@ try {
       });
       recordCheck('api.key_conflict', 'Key reuse for another customer is rejected', 0.1, conflictingReuse);
       const completion = await observe(async () => { await waitForCompletion(fixture.merchantKey, requestId); });
-      const completionOk = recordCheck('workflow.completed', 'Request reaches completed only after convergence', 0.25,
-        completion, concurrentOk && alternateOk, 'a canonical request was not established');
+      const activeStoreClean = completion.ok
+        ? await observe(async () => { assertNoErasureViolations(await collectErasureViolations(fixture, fixture.normal)); })
+        : { ok: false, evidence: completion.evidence };
+      const completionOk = recordCheck('workflow.completed', 'Request reaches completed only after active-store convergence', 0.25,
+        activeStoreClean, concurrentOk && alternateOk, 'a canonical request was not established');
       if (![unknownCustomer.ok, crossTenant.ok, concurrentOk, alternateOk, repeated.ok, conflictingReuse.ok, completionOk].every(Boolean)) {
         throw new Error('one or more request-contract checks failed');
       }

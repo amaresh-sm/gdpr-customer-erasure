@@ -400,6 +400,70 @@
         "replay-suppression",
         "isolation-and-survivors"
       ]
+    },
+    "operational-audit-unsanitized": {
+      "patch": "verifier/mutants/operational-audit-unsanitized.patch",
+      "hidden_test": "mutation.active-store-erasure",
+      "expected_criteria": [
+        "active-store-erasure"
+      ],
+      "related_criteria": [
+        "api-contract",
+        "financial-retention",
+        "post-erasure-financial-work",
+        "failure-retry",
+        "delayed-work",
+        "replay-suppression",
+        "isolation-and-survivors"
+      ]
+    },
+    "provider-webhook-unsanitized": {
+      "patch": "verifier/mutants/provider-webhook-unsanitized.patch",
+      "hidden_test": "mutation.active-store-erasure",
+      "expected_criteria": [
+        "active-store-erasure"
+      ],
+      "related_criteria": [
+        "api-contract",
+        "financial-retention",
+        "post-erasure-financial-work",
+        "failure-retry",
+        "delayed-work",
+        "replay-suppression",
+        "isolation-and-survivors"
+      ]
+    },
+    "shared-ticket-context-discarded": {
+      "patch": "verifier/mutants/shared-ticket-context-discarded.patch",
+      "hidden_test": "mutation.isolation-and-survivors",
+      "expected_criteria": [
+        "isolation-and-survivors"
+      ],
+      "related_criteria": [
+        "api-contract",
+        "active-store-erasure",
+        "financial-retention",
+        "post-erasure-financial-work",
+        "failure-retry",
+        "delayed-work",
+        "replay-suppression"
+      ]
+    },
+    "completion-before-convergence": {
+      "patch": "verifier/mutants/completion-before-convergence.patch",
+      "hidden_test": "mutation.active-store-erasure",
+      "expected_criteria": [
+        "active-store-erasure"
+      ],
+      "related_criteria": [
+        "api-contract",
+        "financial-retention",
+        "post-erasure-financial-work",
+        "failure-retry",
+        "delayed-work",
+        "replay-suppression",
+        "isolation-and-survivors"
+      ]
     }
   }
 }

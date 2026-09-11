@@ -30,7 +30,7 @@ export interface CandidateScoring {
   score: number | null;
   score_maximum: 1 | null;
   hard_pass: boolean | null;
-  score_state: 'complete' | 'partial' | 'blocked' | null;
+  score_state: 'complete' | null;
   report_sha256: string | null;
   evaluated_maximum?: number | null;
   comparable?: boolean | null;

@@ -59,6 +59,12 @@ MUTANT_CRITERIA = {
     "replay-suppression-omitted": "replay-suppression",
     "shared-survivor-redacted": "isolation-and-survivors",
     "tenant-request-read-leak": "api-contract",
+    "customer-import-manifest-retained": "active-store-erasure",
+    "customer-import-record-retained": "active-store-erasure",
+    "operational-audit-unsanitized": "active-store-erasure",
+    "provider-webhook-unsanitized": "active-store-erasure",
+    "shared-ticket-context-discarded": "isolation-and-survivors",
+    "completion-before-convergence": "active-store-erasure",
 }
 
 
@@ -157,12 +163,18 @@ def adapt_reference() -> None:
 
 
 def adapt_mutants() -> None:
-    source_root = ROOT / "internal/mutation-runs/20260825T122909Z"
     target_root = PROOF / "mutant-runs"
-    matrix: dict[str, object] = {}
+    existing_matrix = read(PROOF / "mutant-matrix.json") if (PROOF / "mutant-matrix.json").is_file() else {}
+    matrix_value = existing_matrix.get("mutants", {})
+    matrix: dict[str, object] = dict(matrix_value) if isinstance(matrix_value, dict) else {}
     for name, criterion in MUTANT_CRITERIA.items():
-        raw_path = source_root / name / "attempt-1/hidden.score.json"
-        patch = ROOT / "internal/mutations/patches" / f"{name}.patch"
+        evidence = sorted(
+            ROOT.joinpath("internal/mutation-runs").glob(f"*/{name}/attempt-1/hidden.score.json"),
+            key=lambda path: path.parts[-4],
+            reverse=True,
+        )
+        raw_path = evidence[0] if evidence else ROOT / "missing-hidden.score.json"
+        patch = ROOT / "verifier/mutants" / f"{name}.patch"
         if not raw_path.is_file() or not patch.is_file():
             continue
         scenario = "mutation." + criterion

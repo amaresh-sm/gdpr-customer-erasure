@@ -1,5 +1,5 @@
 export type CheckState = 'pass' | 'fail' | 'blocked';
-export type ScoreState = 'complete' | 'partial' | 'blocked';
+export type ScoreState = 'complete';
 
 export interface DiagnosticCheck {
   id: string;
@@ -41,13 +41,14 @@ function rounded(value: number): number {
 }
 
 /**
- * Builds a conservative score. Only checks with a pass/fail observation
- * contribute to the evaluated maximum; blocked checks never become zeroes.
+ * Builds the single normalized benchmark score. Passing checks earn their weight;
+ * failed and blocked checks earn zero. Blocked checks remain visible in diagnostics,
+ * but they do not create a second score or an alternate score state.
  */
 export function buildScoreReport(
   checks: DiagnosticCheck[],
   fixtures: FixtureDiagnostic[],
-  fullFixtureReady: boolean,
+  _fullFixtureReady: boolean,
   hardPass: boolean,
   blockedReason?: string,
 ): ScoreReport {
@@ -57,55 +58,20 @@ export function buildScoreReport(
     blocked_checks: checks.filter((check) => check.state === 'blocked').length,
     blocked_check_ids: checks.filter((check) => check.state === 'blocked').map((check) => check.id),
   };
-  const observed = checks.filter((check) => check.state !== 'blocked');
-  const evaluatedMaximum = rounded(observed.reduce((total, check) => total + check.maximum, 0));
   const earned = rounded(checks.reduce((total, check) => total + check.earned, 0));
-
-  if (fullFixtureReady) {
-    return {
-      schema_version: 1,
-      state: 'complete',
-      comparable: true,
-      hard_pass: hardPass,
-      earned,
-      maximum: 1,
-      evaluated_maximum: 1,
-      unverified_maximum: 0,
-      checks,
-      fixtures,
-      diagnostics,
-    };
-  }
-
-  if (evaluatedMaximum > 0) {
-    return {
-      schema_version: 1,
-      state: 'partial',
-      comparable: false,
-      hard_pass: false,
-      earned,
-      maximum: 1,
-      evaluated_maximum: evaluatedMaximum,
-      unverified_maximum: rounded(1 - evaluatedMaximum),
-      checks,
-      fixtures,
-      diagnostics,
-      blocked_reason: blockedReason,
-    };
-  }
 
   return {
     schema_version: 1,
-    state: 'blocked',
-    comparable: false,
-    hard_pass: false,
-    earned: null,
+    state: 'complete',
+    comparable: true,
+    hard_pass: hardPass && diagnostics.blocked_checks === 0,
+    earned,
     maximum: 1,
-    evaluated_maximum: 0,
-    unverified_maximum: 1,
+    evaluated_maximum: 1,
+    unverified_maximum: 0,
     checks,
     fixtures,
     diagnostics,
-    blocked_reason: blockedReason ?? 'no independently valid fixture produced an observable check',
+    blocked_reason: blockedReason,
   };
 }

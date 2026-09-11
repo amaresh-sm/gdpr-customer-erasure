@@ -185,8 +185,13 @@ export async function verifyFixtureCoverage(fixture: BenchmarkFixture): Promise<
        (SELECT jsonb_build_object('mapping',to_jsonb(m),'profile',to_jsonb(p))
           FROM customers.provider_customer_mappings m
           JOIN provider_sandbox.customers p ON p.id=m.provider_customer_id
-          WHERE m.merchant_id=$1 AND m.customer_id=$2 LIMIT 1) provider_customer`,
-    [fixture.merchantId, subject.customerId, subject.ticketId, subject.paymentId, subject.invoiceId],
+          WHERE m.merchant_id=$1 AND m.customer_id=$2 LIMIT 1) provider_customer,
+       (SELECT to_jsonb(a) FROM platform.audit_logs a
+          WHERE a.merchant_id=$1 AND a.target_type='payment' AND a.target_id=$4::text LIMIT 1) cross_entity_audit,
+       (SELECT to_jsonb(w) FROM operations.provider_webhooks w
+          WHERE w.provider_event_id=$6 LIMIT 1) provider_webhook`,
+    [fixture.merchantId, subject.customerId, subject.ticketId, subject.paymentId, subject.invoiceId,
+      `evt_cross_entity_${fixture.slot}`],
   );
   const payloadRow = postgresPayloads.rows[0];
   assert(payloadRow !== undefined && Object.values(payloadRow)
@@ -335,6 +340,7 @@ async function collectPostgresViolations(fixture: BenchmarkFixture, subject: Sub
      UNION ALL SELECT 'invoice-lines',to_jsonb(l) FROM payments.invoice_lines l JOIN payments.invoices i ON i.id=l.invoice_id WHERE i.merchant_id=$1
      UNION ALL SELECT 'outbox',to_jsonb(o) FROM operations.outbox_events o WHERE merchant_id=$1
      UNION ALL SELECT 'jobs',to_jsonb(j) FROM operations.jobs j WHERE merchant_id=$1
+     UNION ALL SELECT 'provider-webhooks',to_jsonb(w) FROM operations.provider_webhooks w
      UNION ALL SELECT 'dead-letters',to_jsonb(d) FROM operations.dead_letters d
      UNION ALL SELECT 'idempotency',to_jsonb(k) FROM operations.idempotency_keys k WHERE merchant_id=$1
      UNION ALL SELECT 'analytics',to_jsonb(a) FROM operations.analytics_events a WHERE merchant_id=$1
@@ -849,6 +855,14 @@ export async function verifySurvivorUntouched(fixture: BenchmarkFixture): Promis
   );
   assert(message.rows[0]?.body === fixture.survivor.messageBody,
     'shared-ticket survivor message was changed');
+  const ticket = await pool.query<{ subject: string }>(
+    `SELECT subject FROM customers.support_tickets WHERE merchant_id=$1 AND id=$2`,
+    [fixture.merchantId, fixture.normal.ticketId],
+  );
+  assert(ticket.rows[0]?.subject.includes(fixture.survivor.sharedTicketContext),
+    'shared-ticket neutral business context was discarded');
+  assert(needleHits(ticket.rows[0]?.subject ?? '', fixture.normal).length === 0,
+    'shared-ticket subject retained erased customer PII');
 }
 
 function sameScopes(left: readonly string[], right: readonly string[]): boolean {

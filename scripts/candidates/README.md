@@ -81,8 +81,9 @@ the verifier, writes JUnit and score reports into the candidate artifact, and cl
 npm run candidates:score -- candidates/gpt-5.6-sol-xhigh-<timestamp>
 ```
 
-The scorer may return `partial` when independently provisioned checks ran but another fixture was
-unavailable. Partial results are explicitly marked as non-comparable to complete benchmark scores.
+The scorer always returns one normalized score from 0 to 1. A passing check earns its weight; a
+failed or blocked check earns zero. Blocked checks remain visible in the report diagnostics, but
+there is no separate partial or non-comparable score.
 
 Use the stable scorer for leaderboard results. It runs three fresh isolated stacks and selects the
 lowest score, so timing-dependent behavior cannot improve a candidate result. It keeps each attempt

@@ -1,0 +1,12 @@
+diff --git a/apps/privacy-service/src/handlers/operational-records.ts b/apps/privacy-service/src/handlers/operational-records.ts
+--- a/apps/privacy-service/src/handlers/operational-records.ts
++++ b/apps/privacy-service/src/handlers/operational-records.ts
+@@ -10,7 +10,7 @@ export async function sanitizeOperationalRecords(request: ErasureRequestRecord): Promise<void> {
+       `SELECT id,actor_id,target_id,metadata FROM platform.audit_logs WHERE merchant_id=$1 FOR UPDATE`,
+       [request.merchant_id],
+     );
+-    for (const row of audits.rows) {
++    if (false) for (const row of audits.rows) {
+       if (!containsSubjectValue({ actorId: row.actor_id, targetId: row.target_id, metadata: row.metadata }, context)) continue;
+       await client.query(`UPDATE platform.audit_logs SET actor_id=$2,target_id=$3,metadata=$4 WHERE id=$1`, [
+         row.id,

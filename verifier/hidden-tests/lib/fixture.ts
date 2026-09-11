@@ -84,7 +84,15 @@ export interface BenchmarkFixture {
   refund: SubjectFixture;
   refundRetry: SubjectFixture;
   delayed: SubjectFixture;
-  survivor: { customerId: string; email: string; name: string; phone: string; externalReference: string; messageBody: string };
+  survivor: {
+    customerId: string;
+    email: string;
+    name: string;
+    phone: string;
+    externalReference: string;
+    messageBody: string;
+    sharedTicketContext: string;
+  };
   delayedWebhookId: string;
   delayedJobId: string;
   delayedEmailDeliveryId: string;
@@ -447,6 +455,12 @@ export async function seedFixture(slot: string, options: SeedFixtureOptions = {}
   await pool.query(`INSERT INTO customers.support_participants(ticket_id,customer_id) VALUES($1,$2)`,
     [normal.ticketId, survivor.customerId]);
   const survivorMessageBody = `SURVIVOR_MESSAGE_${slot}`;
+  // The ticket belongs to both customers. Its subject deliberately combines a
+  // unique subject canary with a survivor-relevant business reference: erasure
+  // must redact only the former, not discard the shared record's useful context.
+  const sharedTicketContext = `settlement review SR-${slot}`;
+  await pool.query(`UPDATE customers.support_tickets SET subject=$3 WHERE merchant_id=$1 AND id=$2`,
+    [merchant.id, normal.ticketId, `Shared case ${normal.canary}: ${sharedTicketContext}`]);
   await pool.query(
     `INSERT INTO customers.support_messages(merchant_id,ticket_id,author_type,author_id,body)
      VALUES($1,$2,'customer',$3,$4)`, [merchant.id, normal.ticketId, survivor.customerId, survivorMessageBody],
@@ -479,6 +493,26 @@ export async function seedFixture(slot: string, options: SeedFixtureOptions = {}
     `SELECT status FROM payments.payment_intents WHERE id=$1`, [normal.paymentId])).rows[0]?.status,
   (status) => status === 'succeeded', 'normal payment success');
   await loadProviderCustomer(normal, merchant.id);
+  // These records are intentionally not directly keyed by the customer. Real
+  // systems retain audit trails and provider callbacks by payment or provider
+  // event, so a customer erasure must detect and sanitize embedded PII there.
+  await pool.query(
+    `INSERT INTO platform.audit_logs(merchant_id,actor_type,actor_id,target_type,target_id,action,metadata,correlation_id)
+     VALUES($1,'system',$2,'payment',$3,'payment.reconciled',$4,$5)`,
+    [merchant.id, survivor.customerId, normal.paymentId, {
+      subject: { customerId: normal.customerId, email: normal.email, canary: normal.canary },
+      reason: 'reconciliation review',
+    }, fixtureUuid(`${slot}:cross-entity-audit`)],
+  );
+  await pool.query(
+    `INSERT INTO operations.provider_webhooks(id,provider_event_id,event_type,signature,payload,status,processed_at,next_attempt_at)
+     VALUES($1,$2,'provider.customer.updated','hidden-fixture',$3,'processed',now(),now()+interval '1 day')`,
+    [fixtureUuid(`${slot}:cross-entity-webhook`), `evt_cross_entity_${slot}`, {
+      event: 'provider.customer.updated',
+      paymentId: normal.paymentId,
+      data: { customer: { id: normal.customerId, email: normal.email, name: normal.name, canary: normal.canary } },
+    }],
+  );
   await poll(async () => Number((await pool.query<{ count: string }>(
     `SELECT count(*)::text count FROM operations.document_manifests WHERE metadata->>'paymentId'=$1`, [normal.paymentId])).rows[0]!.count),
   (count) => count === 1, 'normal receipt');
@@ -596,7 +630,8 @@ export async function seedFixture(slot: string, options: SeedFixtureOptions = {}
     capabilities: { normalMailpit: normalMailpitReady },
     platformSurvivor: { merchant: merchant.identity, admin, secondaryKey: secondaryKey.key,
       secondaryApiKey: secondaryKey.snapshot, payment: survivorPayment }, otherMerchantId: other.id,
-    otherMerchantKey: other.key, normal, refund, refundRetry, delayed, survivor: { ...survivor, messageBody: survivorMessageBody },
+    otherMerchantKey: other.key, normal, refund, refundRetry, delayed,
+    survivor: { ...survivor, messageBody: survivorMessageBody, sharedTicketContext },
     delayedWebhookId: webhookId, delayedJobId, delayedEmailDeliveryId, normalFinancial: { amount: row.amount, currency: row.currency,
       status: row.status, postings: row.postings, signedBalance: row.signed_balance,
       invoiceSubtotal: invoice.subtotal, invoiceTax: invoice.tax, invoiceTotal: invoice.total,

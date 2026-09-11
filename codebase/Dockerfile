@@ -1,7 +1,7 @@
 FROM node:22-bookworm-slim AS dependencies
 WORKDIR /srv/payflow
 COPY package.json package-lock.json* ./
-RUN npm install
+RUN npm ci
 
 FROM dependencies AS runtime
 COPY . .
