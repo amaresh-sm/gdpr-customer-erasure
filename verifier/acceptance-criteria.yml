@@ -5,43 +5,36 @@ criteria:
     contract: public/contracts/privacy-erasure.contract.json
     hidden_test: request contract is tenant-safe, concurrent, and idempotent
     mutant: canonical-workflow-duplicate
-    weight: 0.15
   - id: active-store-erasure
     requirement: Customer PII is removed or redacted from every active application store.
     contract: public/contracts/privacy-erasure.contract.json
     hidden_test: normal subject PII is absent from every active store
     mutant: financial-invoice-lines-unsanitized
-    weight: 0.20
   - id: financial-retention
     requirement: Retained financial facts remain correct while customer identity is removed.
     contract: public/contracts/privacy-erasure.contract.json
     hidden_test: financial truth and shared unrelated records are retained
     mutant: financial-facts-destroyed
-    weight: 0.15
   - id: post-erasure-financial-work
     requirement: Later refunds and provider work remain financially correct without restoring PII.
     contract: public/contracts/privacy-erasure.contract.json
     hidden_test: delayed webhook and document work cannot reintroduce PII
     mutant: post-erasure-refund-provider-pii
-    weight: 0.15
   - id: failure-retry
     requirement: Partial failures expose a failed state and resume safely without repeating completed work.
     contract: public/contracts/privacy-erasure.contract.json
     hidden_test: failed erasure retries safely and pending asynchronous work is sanitized before completion
     mutant: participant-failure-marked-complete
-    weight: 0.10
   - id: delayed-work
     requirement: Delayed jobs, callbacks, and queued notifications are sanitized before completion.
     contract: public/contracts/privacy-erasure.contract.json
     hidden_test: delayed webhook and document work cannot reintroduce PII
     mutant: operational-dead-letter-unsanitized
-    weight: 0.10
   - id: replay-suppression
     requirement: Historical event replay cannot recreate erased customer projections or notifications.
     contract: public/contracts/privacy-erasure.contract.json
     hidden_test: historical event replay is suppressed by durable erasure state
     mutant: replay-suppression-omitted
-    weight: 0.10
   - id: isolation-and-survivors
     requirement: Other customers, merchants, shared records, credentials, and survivor content remain unchanged.
     contract: public/contracts/privacy-erasure.contract.json

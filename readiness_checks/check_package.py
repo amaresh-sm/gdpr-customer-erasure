@@ -100,7 +100,6 @@ def _missing_paths(task_dir: Path, verifier_dir: Path) -> list[str]:
         task_dir / "task.toml",
         task_dir / "instruction.md",
         verifier_dir / "run.py",
-        verifier_dir / "score_adapter.py",
         verifier_dir / "acceptance-criteria.yml",
         verifier_dir / "scoring.yml",
         verifier_dir / "reference-solution/app-setup/manifest.json",

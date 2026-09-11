@@ -10,7 +10,7 @@
     "astra:package": "python3 scripts/package_task.py",
     "astra:check:package": "python3 readiness_checks/check_package.py",
     "astra:check:acceptance": "python3 readiness_checks/check_acceptance.py",
-    "astra:check:scoring": "python3 readiness_checks/check_scoring.py",
+    "astra:check:scoring-manifest": "python3 readiness_checks/check_scoring.py",
     "astra:check:determinism": "python3 readiness_checks/check_determinism.py",
     "astra:check:proof": "python3 readiness_checks/check_proof_work.py",
     "astra:check:reference": "python3 readiness_checks/check_reference.py --proof-dir verifier/proof-of-work",

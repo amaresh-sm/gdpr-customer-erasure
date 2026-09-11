@@ -1,92 +1,154 @@
 #!/usr/bin/env python3
-"""Validate scoring configuration and the zero-value policy for blocked results."""
+"""Validate the private score manifest used by the single PayFlow scorer."""
 
 from __future__ import annotations
 
 import argparse
+import json
 import math
 import sys
+import tomllib
 from pathlib import Path
 from typing import Any
 
 try:
-    from astra_harness.score import read_scoring
-    from .common import load_json, emit_result, status_value
-except ImportError:  # Direct execution from a checkout.
+    from astra_harness.acceptance import read_acceptance
+    from .common import emit_result
+except ImportError:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-    from astra_harness.score import read_scoring
-    from common import load_json, emit_result, status_value
+    from astra_harness.acceptance import read_acceptance
+    from common import emit_result
 
 
-def _blocked_violations(proof_dir: Path) -> list[str]:
-    """Find score reports that award anything to a blocked criterion."""
+def task_id(task_dir: Path) -> str:
+    """Read the task's stable ID without relying on its directory name."""
 
-    violations: list[str] = []
-    for report_path in sorted(proof_dir.rglob("reports/score.json")):
-        try:
-            report = load_json(report_path)
-        except (OSError, ValueError, TypeError) as exc:
-            violations.append(f"{report_path}: malformed score report ({exc})")
-            continue
-        criteria = report.get("criteria")
-        if not isinstance(criteria, dict):
-            violations.append(f"{report_path}: score report has no criteria object")
-            continue
-        for criterion_id, value in criteria.items():
-            if status_value(value) != "blocked":
-                continue
-            if not isinstance(value, dict):
-                violations.append(f"{report_path}: blocked criterion {criterion_id!r} has no score object")
-                continue
-            if value.get("score") != 0 or value.get("awarded") != 0:
-                violations.append(
-                    f"{report_path}: blocked criterion {criterion_id!r} has "
-                    f"score={value.get('score')!r}, awarded={value.get('awarded')!r}"
-                )
-    return violations
-
-
-def check_scoring(verifier_dir: Path, proof_dir: Path) -> dict[str, Any]:
-    """Validate the scoring schema and every recorded blocked-result award."""
-
-    verifier_dir = verifier_dir.resolve()
-    proof_dir = proof_dir.resolve()
-    scoring_path = verifier_dir / "scoring.yml"
-    result: dict[str, Any] = {
-        "check": "scoring-validity",
-        "scoring_file": str(scoring_path),
-        "proof_dir": str(proof_dir),
-        "failures": [],
-    }
     try:
-        criteria = read_scoring(scoring_path)
-    except SystemExit as exc:
+        data = tomllib.loads((task_dir / "task.toml").read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError) as exc:
+        raise SystemExit(f"cannot read task.toml: {exc}") from exc
+    value = data.get("id")
+    if not isinstance(value, str) or not value:
+        raise SystemExit("task.toml has no valid id")
+    return value
+
+
+def check_scoring(task_dir: Path, verifier_dir: Path) -> dict[str, Any]:
+    """Validate manifest structure, acceptance coverage, and normalized weights."""
+
+    result: dict[str, Any] = {"check": "scoring-manifest", "failures": []}
+    manifest_path = verifier_dir / "scoring.yml"
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        expected_task_id = task_id(task_dir)
+        acceptance_task_id, criteria = read_acceptance(verifier_dir / "acceptance-criteria.yml")
+    except (OSError, json.JSONDecodeError, SystemExit) as exc:
         result["failures"].append(str(exc))
         result["ok"] = False
         return result
-    ids = [str(item["id"]) for item in criteria]
-    weights = [float(item["weight"]) for item in criteria]
-    total = sum(weights)
-    result.update({"criterion_ids": ids, "criterion_count": len(ids), "weight_total": total})
-    if len(ids) != len(set(ids)):
-        result["failures"].append("criterion IDs are not unique")
-    if any(weight <= 0 for weight in weights):
-        result["failures"].append("criterion weights must be positive")
-    if not math.isclose(total, 1.0, rel_tol=0.0, abs_tol=1e-9):
-        result["failures"].append(f"criterion weights total {total:.12g}, expected 1.0")
-    result["blocked_result_violations"] = _blocked_violations(proof_dir)
-    result["failures"].extend(result["blocked_result_violations"])
+
+    if not isinstance(manifest, dict):
+        result["failures"].append("scoring manifest must be an object")
+        result["ok"] = False
+        return result
+
+    result.update({
+        "task_id": expected_task_id,
+        "criterion_count": len(criteria),
+        "check_count": len(manifest.get("checks", [])) if isinstance(manifest.get("checks"), list) else 0,
+    })
+    if manifest.get("task_id") != expected_task_id:
+        result["failures"].append("scoring manifest task_id does not match task.toml")
+    if acceptance_task_id != expected_task_id:
+        result["failures"].append("acceptance criteria task_id does not match task.toml")
+    if manifest.get("schema_version") != 1:
+        result["failures"].append("scoring manifest schema_version must be 1")
+    if manifest.get("scale") != "normalized_1":
+        result["failures"].append("scoring manifest scale must be normalized_1")
+    if manifest.get("blocked_policy") != "zero":
+        result["failures"].append("scoring manifest blocked_policy must be zero")
+
+    manifest_criteria = manifest.get("criteria")
+    checks = manifest.get("checks")
+    if not isinstance(manifest_criteria, list) or not isinstance(checks, list):
+        result["failures"].append("scoring manifest must contain criteria and checks arrays")
+        result["ok"] = False
+        return result
+
+    acceptance_ids = {criterion.get("id") for criterion in criteria if isinstance(criterion, dict)}
+    criterion_ids: set[str] = set()
+    criterion_check_ids: list[str] = []
+    for criterion in manifest_criteria:
+        if not isinstance(criterion, dict) or not isinstance(criterion.get("id"), str):
+            result["failures"].append("each scoring criterion needs a string id")
+            continue
+        criterion_id = criterion["id"]
+        if criterion_id in criterion_ids:
+            result["failures"].append(f"duplicate scoring criterion id: {criterion_id}")
+        criterion_ids.add(criterion_id)
+        check_ids = criterion.get("check_ids")
+        if not isinstance(check_ids, list) or not all(isinstance(item, str) for item in check_ids):
+            result["failures"].append(f"criterion {criterion_id!r} needs a string check_ids list")
+            continue
+        if len(check_ids) != len(set(check_ids)):
+            result["failures"].append(f"criterion {criterion_id!r} repeats a check id")
+        criterion_check_ids.extend(check_ids)
+
+    if criterion_ids != acceptance_ids:
+        result["failures"].append("scoring criteria do not match acceptance criteria")
+
+    canonical_ids: set[str] = set()
+    alias_ids: set[str] = set()
+    total = 0.0
+    for check in checks:
+        if not isinstance(check, dict):
+            result["failures"].append("each scoring check must be an object")
+            continue
+        check_id = check.get("id")
+        if not isinstance(check_id, str) or not check_id.strip():
+            result["failures"].append("each scoring check needs a string id")
+            continue
+        if check_id in canonical_ids or check_id in alias_ids:
+            result["failures"].append(f"duplicate scoring check id: {check_id}")
+        canonical_ids.add(check_id)
+        if not isinstance(check.get("label"), str) or not check["label"].strip():
+            result["failures"].append(f"check {check_id!r} has no label")
+        maximum = check.get("maximum")
+        if isinstance(maximum, bool) or not isinstance(maximum, (int, float)) or not math.isfinite(maximum):
+            result["failures"].append(f"check {check_id!r} has no finite numeric maximum")
+        elif maximum < 0 or maximum > 1:
+            result["failures"].append(f"check {check_id!r} maximum is outside [0, 1]")
+        else:
+            total += float(maximum)
+        criterion = check.get("criterion")
+        if criterion not in criterion_ids:
+            result["failures"].append(f"check {check_id!r} references unknown criterion {criterion!r}")
+        aliases = check.get("aliases", [])
+        if not isinstance(aliases, list) or not all(isinstance(alias, str) and alias.strip() for alias in aliases):
+            result["failures"].append(f"check {check_id!r} has invalid aliases")
+            continue
+        for alias in aliases:
+            if alias == check_id or alias in canonical_ids or alias in alias_ids:
+                result["failures"].append(f"duplicate scoring check alias: {alias}")
+            alias_ids.add(alias)
+
+    if abs(total - 1.0) > 0.0001:
+        result["failures"].append(f"scoring maximums sum to {total:.4f}, expected 1.0000")
+    if set(criterion_check_ids) != canonical_ids:
+        result["failures"].append("criteria check_ids do not cover each canonical scoring check exactly")
+
+    result["maximum_total"] = round(total, 4)
     result["ok"] = not result["failures"]
     return result
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--task-dir", type=Path, default=Path("tasks"))
     parser.add_argument("--verifier-dir", type=Path, default=Path("verifier"))
-    parser.add_argument("--proof-dir", type=Path, default=Path("verifier/proof-of-work"))
-    parser.add_argument("--json", action="store_true", help="emit a machine-readable result")
+    parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
-    result = check_scoring(args.verifier_dir, args.proof_dir)
+    result = check_scoring(args.task_dir.resolve(), args.verifier_dir.resolve())
     emit_result(result, args.json)
     return 0 if result["ok"] else 1
 

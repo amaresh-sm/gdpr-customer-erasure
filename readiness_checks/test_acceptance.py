@@ -1,4 +1,4 @@
-"""Tests for acceptance/scoring alignment validation."""
+"""Tests for acceptance-criteria completeness validation."""
 
 from __future__ import annotations
 
@@ -20,33 +20,20 @@ class AcceptanceReadinessTests(unittest.TestCase):
         (verifier / "acceptance-criteria.yml").write_text(
             "task_id: example-task\ncriteria:\n"
             "  - id: api\n    requirement: The API works.\n    hidden_test: backend.api\n"
-            "    mutant: api-noop\n    weight: 1.0\n"
-        )
-        (verifier / "scoring.yml").write_text(
-            "scale: normalized_1\ncriteria:\n  - id: api\n    weight: 1.0\n    blocked_policy: zero\n"
+            "    mutant: api-noop\n"
         )
         return task, verifier
 
-    def test_matching_acceptance_and_scoring_pass(self) -> None:
+    def test_complete_acceptance_passes(self) -> None:
         task, verifier = self._package()
         self.assertTrue(check_acceptance(task, verifier)["ok"])
-
-    def test_weight_mismatch_fails(self) -> None:
-        task, verifier = self._package()
-        (verifier / "scoring.yml").write_text(
-            "scale: normalized_1\ncriteria:\n  - id: api\n    weight: 0.5\n    blocked_policy: zero\n"
-            "  - id: other\n    weight: 0.5\n    blocked_policy: zero\n"
-        )
-        result = check_acceptance(task, verifier)
-        self.assertFalse(result["ok"])
-        self.assertTrue(any("weight differs" in failure for failure in result["failures"]))
 
     def test_task_id_mismatch_fails(self) -> None:
         task, verifier = self._package()
         (verifier / "acceptance-criteria.yml").write_text(
             "task_id: wrong-task\ncriteria:\n"
             "  - id: api\n    requirement: The API works.\n    hidden_test: backend.api\n"
-            "    mutant: api-noop\n    weight: 1.0\n"
+            "    mutant: api-noop\n"
         )
         result = check_acceptance(task, verifier)
         self.assertFalse(result["ok"])

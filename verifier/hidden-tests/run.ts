@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { closeClients } from './lib/clients.js';
 import { seedApiContractFixture, seedFixture, seedPartialCoreFixture, verifyApiContractCustomerUnchanged,
   type ApiContractFixture, type BenchmarkFixture } from './lib/fixture.js';
-import { buildScoreReport, type DiagnosticCheck, type FixtureDiagnostic } from './lib/scoring.js';
+import { buildScoreReport, loadScoringManifest, scoringMaximums, type DiagnosticCheck, type FixtureDiagnostic } from './lib/scoring.js';
 import { assertNoErasureViolations, assertReplaySideEffectsUnchanged, collectErasureViolations, historicalCustomerAggregateEvent,
   installTransientPaymentWriteFailure, publishHistoricalEvent, releaseDelayedWork, removeTransientPaymentWriteFailure,
   replayHistoricalPiiEvent, requestErasure, snapshotReplaySideEffects, waitForHistoricalConsumerOffsets, waitForHistoricalInbox,
@@ -25,6 +25,8 @@ const checks: DiagnosticCheck[] = [];
 const fixtures: FixtureDiagnostic[] = [];
 let fixture: BenchmarkFixture;
 const rawWeightTotal = 8;
+const scoringManifest = await loadScoringManifest();
+const configuredMaximums = scoringMaximums(scoringManifest);
 // A correct workflow completes well inside this bound. Keep the guard outside the
 // individual polling helpers so any hung candidate participant is reported as a
 // scenario failure rather than preventing later independent checks from running.
@@ -58,7 +60,12 @@ async function observeValue<T>(operation: () => Promise<T>): Promise<{ ok: boole
 
 function recordCheck(id: string, label: string, rawWeight: number, observed: { ok: boolean; evidence?: string | undefined },
                      eligible = true, ineligibleReason = 'a prerequisite safety check failed'): boolean {
-  const maximum = Number((rawWeight / rawWeightTotal).toFixed(4));
+  const maximum = configuredMaximums.get(id);
+  if (maximum === undefined) throw new Error(`scoring manifest is missing check ${id}`);
+  const declaredMaximum = Number((rawWeight / rawWeightTotal).toFixed(4));
+  if (maximum !== declaredMaximum) {
+    throw new Error(`scoring manifest weight mismatch for ${id}: manifest=${maximum}, verifier=${declaredMaximum}`);
+  }
   if (!eligible) {
     checks.push({ id, label, maximum, earned: 0, state: 'blocked', evidence: ineligibleReason });
     return false;

@@ -1,27 +1,261 @@
-task_id: gdpr-customer-erasure
-scale: normalized_1
-criteria:
-  - id: api-contract
-    weight: 0.15
-    blocked_policy: zero
-  - id: active-store-erasure
-    weight: 0.20
-    blocked_policy: zero
-  - id: financial-retention
-    weight: 0.15
-    blocked_policy: zero
-  - id: post-erasure-financial-work
-    weight: 0.15
-    blocked_policy: zero
-  - id: failure-retry
-    weight: 0.10
-    blocked_policy: zero
-  - id: delayed-work
-    weight: 0.10
-    blocked_policy: zero
-  - id: replay-suppression
-    weight: 0.10
-    blocked_policy: zero
-  - id: isolation-and-survivors
-    weight: 0.05
-    blocked_policy: zero
+{
+  "task_id": "gdpr-customer-erasure",
+  "schema_version": 1,
+  "scale": "normalized_1",
+  "blocked_policy": "zero",
+  "criteria": [
+    {
+      "id": "api-contract",
+      "check_ids": [
+        "api.unknown_customer",
+        "api.concurrent_idempotency",
+        "api.cross_tenant",
+        "api.customer_deduplication",
+        "api.key_reuse",
+        "api.key_conflict"
+      ]
+    },
+    {
+      "id": "active-store-erasure",
+      "check_ids": [
+        "workflow.completed",
+        "normal.postgres_relational",
+        "normal.postgres_payloads",
+        "normal.redis",
+        "normal.opensearch",
+        "normal.minio",
+        "normal.mailpit"
+      ]
+    },
+    {
+      "id": "financial-retention",
+      "check_ids": [
+        "financial.retention",
+      "financial.anonymous_retained_link"
+      ]
+    },
+    {
+      "id": "post-erasure-financial-work",
+      "check_ids": [
+        "financial.post_erasure_refund",
+        "financial.post_erasure_refund_failure_retry"
+      ]
+    },
+    {
+      "id": "failure-retry",
+      "check_ids": [
+        "async.completion_gate"
+      ]
+    },
+    {
+      "id": "delayed-work",
+      "check_ids": [
+        "async.request_accepted",
+        "async.pending_payloads",
+        "delayed.work_processes",
+        "delayed.no_reintroduction"
+      ]
+    },
+    {
+      "id": "replay-suppression",
+      "check_ids": [
+        "replay.consumed",
+        "replay.no_reintroduction"
+      ]
+    },
+    {
+      "id": "isolation-and-survivors",
+      "check_ids": [
+        "security.merchant_credentials_preserved",
+        "scope.unrelated_customer_and_shared_record",
+        "scope.merchant_identity_and_admin",
+        "scope.merchant_credentials",
+        "scope.unrelated_payment_notification_document",
+        "security.survivor_unchanged_after_delayed_replay"
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "id": "api.unknown_customer",
+      "label": "Unknown customer is tenant-safe",
+      "maximum": 0.0125,
+      "criterion": "api-contract"
+    },
+    {
+      "id": "api.concurrent_idempotency",
+      "label": "Concurrent same-key requests share one workflow",
+      "maximum": 0.025,
+      "criterion": "api-contract"
+    },
+    {
+      "id": "api.cross_tenant",
+      "aliases": ["api.cross_tenant_rejection"],
+      "label": "Cross-tenant customer and request are hidden without mutation",
+      "maximum": 0.0125,
+      "criterion": "api-contract"
+    },
+    {
+      "id": "api.customer_deduplication",
+      "label": "Alternate key reuses the customer workflow",
+      "maximum": 0.0187,
+      "criterion": "api-contract"
+    },
+    {
+      "id": "api.key_reuse",
+      "label": "Idempotent retry returns the original request",
+      "maximum": 0.0125,
+      "criterion": "api-contract"
+    },
+    {
+      "id": "api.key_conflict",
+      "label": "Key reuse for another customer is rejected",
+      "maximum": 0.0125,
+      "criterion": "api-contract"
+    },
+    {
+      "id": "workflow.completed",
+      "label": "Request reaches completed only after active-store convergence",
+      "maximum": 0.0313,
+      "criterion": "active-store-erasure"
+    },
+    {
+      "id": "normal.postgres_relational",
+      "label": "Primary relational records are removed or rekeyed",
+      "maximum": 0.0375,
+      "criterion": "active-store-erasure"
+    },
+    {
+      "id": "normal.postgres_payloads",
+      "label": "Embedded and operational PostgreSQL PII is redacted",
+      "maximum": 0.1,
+      "criterion": "active-store-erasure"
+    },
+    {
+      "id": "normal.redis",
+      "label": "Redis no longer contains subject PII",
+      "maximum": 0.0187,
+      "criterion": "active-store-erasure"
+    },
+    {
+      "id": "normal.opensearch",
+      "label": "OpenSearch no longer contains subject PII",
+      "maximum": 0.0187,
+      "criterion": "active-store-erasure"
+    },
+    {
+      "id": "normal.minio",
+      "label": "MinIO no longer contains subject PII",
+      "maximum": 0.0313,
+      "criterion": "active-store-erasure"
+    },
+    {
+      "id": "normal.mailpit",
+      "label": "Mailpit no longer contains subject PII",
+      "maximum": 0.0313,
+      "criterion": "active-store-erasure"
+    },
+    {
+      "id": "financial.retention",
+      "label": "Financial facts remain intact after a successful erasure",
+      "maximum": 0.075,
+      "criterion": "financial-retention"
+    },
+    {
+      "id": "financial.anonymous_retained_link",
+      "label": "Retained financial links are anonymous and support a private later refund",
+      "maximum": 0.0125,
+      "criterion": "financial-retention"
+    },
+    {
+      "id": "financial.post_erasure_refund",
+      "label": "A later refund remains balanced without restoring customer identity",
+      "maximum": 0.05,
+      "criterion": "post-erasure-financial-work"
+    },
+    {
+      "id": "financial.post_erasure_refund_failure_retry",
+      "label": "A failed post-erasure refund stays private and a later retry remains balanced",
+      "maximum": 0.025,
+      "criterion": "post-erasure-financial-work"
+    },
+    {
+      "id": "async.request_accepted",
+      "label": "Delayed-subject erasure request is accepted",
+      "maximum": 0.0125,
+      "criterion": "delayed-work"
+    },
+    {
+      "id": "async.completion_gate",
+      "label": "Participant failure prevents completion and the same request converges when retried",
+      "maximum": 0.0375,
+      "criterion": "failure-retry"
+    },
+    {
+      "id": "async.pending_payloads",
+      "label": "Pending work and its payloads are fully sanitized",
+      "maximum": 0.1,
+      "criterion": "delayed-work"
+    },
+    {
+      "id": "delayed.work_processes",
+      "label": "Delayed work completes with correct financial processing",
+      "maximum": 0.05,
+      "criterion": "delayed-work"
+    },
+    {
+      "id": "delayed.no_reintroduction",
+      "label": "Delayed work does not reintroduce PII",
+      "maximum": 0.075,
+      "criterion": "delayed-work"
+    },
+    {
+      "id": "replay.consumed",
+      "label": "Historical event is safely consumed",
+      "maximum": 0.05,
+      "criterion": "replay-suppression"
+    },
+    {
+      "id": "replay.no_reintroduction",
+      "label": "Historical replay does not restore PII",
+      "maximum": 0.075,
+      "criterion": "replay-suppression"
+    },
+    {
+      "id": "scope.unrelated_customer_and_shared_record",
+      "label": "Unrelated customer and shared record remain unchanged",
+      "maximum": 0.025,
+      "criterion": "isolation-and-survivors"
+    },
+    {
+      "id": "scope.merchant_identity_and_admin",
+      "label": "Merchant identity and administrator remain unchanged",
+      "maximum": 0.0125,
+      "criterion": "isolation-and-survivors"
+    },
+    {
+      "id": "scope.merchant_credentials",
+      "label": "Independent merchant credential remains active and usable",
+      "maximum": 0.0125,
+      "criterion": "isolation-and-survivors"
+    },
+    {
+      "id": "scope.unrelated_payment_notification_document",
+      "label": "Unrelated payment, notification, and receipt remain unchanged",
+      "maximum": 0.025,
+      "criterion": "isolation-and-survivors"
+    },
+    {
+      "id": "security.merchant_credentials_preserved",
+      "label": "Merchant API credential remains active and unchanged",
+      "maximum": 0,
+      "criterion": "isolation-and-survivors"
+    },
+    {
+      "id": "security.survivor_unchanged_after_delayed_replay",
+      "label": "Unrelated shared record remains unchanged after delayed work and replay",
+      "maximum": 0,
+      "criterion": "isolation-and-survivors"
+    }
+  ]
+}

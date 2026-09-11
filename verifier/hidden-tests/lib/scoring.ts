@@ -1,5 +1,24 @@
+import { readFile } from 'node:fs/promises';
+
 export type CheckState = 'pass' | 'fail' | 'blocked';
 export type ScoreState = 'complete';
+
+export interface ScoringManifestCheck {
+  id: string;
+  aliases?: string[];
+  label: string;
+  maximum: number;
+  criterion: string;
+}
+
+export interface ScoringManifest {
+  task_id: string;
+  schema_version: number;
+  scale: 'normalized_1';
+  blocked_policy: 'zero';
+  criteria: Array<{ id: string; check_ids: string[] }>;
+  checks: ScoringManifestCheck[];
+}
 
 export interface DiagnosticCheck {
   id: string;
@@ -34,6 +53,40 @@ export interface ScoreReport {
     blocked_check_ids: string[];
   };
   blocked_reason?: string | undefined;
+}
+
+/**
+ * Loads the private score manifest shared by the verifier and readiness checks.
+ * The file is JSON-compatible YAML so the runtime needs no third-party parser.
+ */
+export async function loadScoringManifest(path?: string): Promise<ScoringManifest> {
+  const manifestPath = path ?? process.env.ERASURE_SCORING_PATH ??
+    new URL('../../scoring.yml', import.meta.url);
+  const content = await readFile(manifestPath, 'utf8');
+  const manifest = JSON.parse(content) as ScoringManifest;
+  if (manifest.schema_version !== 1 || manifest.scale !== 'normalized_1' || manifest.blocked_policy !== 'zero') {
+    throw new Error('scoring manifest has an unsupported schema, scale, or blocked policy');
+  }
+  if (!Array.isArray(manifest.checks) || !Array.isArray(manifest.criteria)) {
+    throw new Error('scoring manifest must contain checks and criteria arrays');
+  }
+  return manifest;
+}
+
+/**
+ * Builds an ID lookup, including explicitly declared equivalent check aliases.
+ */
+export function scoringMaximums(manifest: ScoringManifest): Map<string, number> {
+  const maximums = new Map<string, number>();
+  for (const check of manifest.checks) {
+    if (maximums.has(check.id)) throw new Error(`duplicate scoring check ID: ${check.id}`);
+    maximums.set(check.id, check.maximum);
+    for (const alias of check.aliases ?? []) {
+      if (maximums.has(alias)) throw new Error(`duplicate scoring check alias: ${alias}`);
+      maximums.set(alias, check.maximum);
+    }
+  }
+  return maximums;
 }
 
 function rounded(value: number): number {
