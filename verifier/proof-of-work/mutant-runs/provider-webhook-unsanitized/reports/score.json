@@ -1,0 +1,55 @@
+{
+  "task_id": "gdpr-customer-erasure",
+  "score": 0.1,
+  "hard_pass": false,
+  "criteria": {
+    "api-contract": {
+      "status": "fail",
+      "score": 0.0,
+      "weight": 0.15,
+      "awarded": 0.0
+    },
+    "active-store-erasure": {
+      "status": "fail",
+      "score": 0.0,
+      "weight": 0.2,
+      "awarded": 0.0
+    },
+    "financial-retention": {
+      "status": "fail",
+      "score": 0.0,
+      "weight": 0.15,
+      "awarded": 0.0
+    },
+    "post-erasure-financial-work": {
+      "status": "fail",
+      "score": 0.0,
+      "weight": 0.15,
+      "awarded": 0.0
+    },
+    "failure-retry": {
+      "status": "pass",
+      "score": 1.0,
+      "weight": 0.1,
+      "awarded": 0.1
+    },
+    "delayed-work": {
+      "status": "fail",
+      "score": 0.0,
+      "weight": 0.1,
+      "awarded": 0.0
+    },
+    "replay-suppression": {
+      "status": "fail",
+      "score": 0.0,
+      "weight": 0.1,
+      "awarded": 0.0
+    },
+    "isolation-and-survivors": {
+      "status": "fail",
+      "score": 0.0,
+      "weight": 0.05,
+      "awarded": 0.0
+    }
+  }
+}

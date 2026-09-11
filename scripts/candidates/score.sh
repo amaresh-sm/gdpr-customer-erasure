@@ -27,8 +27,13 @@ if [[ ! -f "$run_dir/metadata.json" ]]; then
   exit 64
 fi
 hidden_tests_dir="$root_dir/verifier/hidden-tests"
+scoring_manifest="$root_dir/verifier/scoring.yml"
 if [[ ! -d "$hidden_tests_dir" ]]; then
   echo "private verifier/hidden-tests directory is unavailable to the scorer" >&2
+  exit 65
+fi
+if [[ ! -f "$scoring_manifest" ]]; then
+  echo "private verifier/scoring.yml manifest is unavailable to the scorer" >&2
   exit 65
 fi
 
@@ -70,9 +75,11 @@ wait_for_health 'api-gateway' '3000' 'api-gateway'
 set +e
 docker compose -p "$project" -f "$source_dir/docker-compose.yml" -f "$override_file" run --rm --no-deps \
   -v "$hidden_tests_dir:/srv/payflow/hidden_tests:ro" \
+  -v "$scoring_manifest:/srv/payflow/scoring.yml:ro" \
   -v "$report_dir:/reports" \
   -e JUNIT_PATH="/reports/$junit_name" \
   -e ERASURE_SCORE_PATH="/reports/$score_name" \
+  -e ERASURE_SCORING_PATH="/srv/payflow/scoring.yml" \
   -e ERASURE_TEST_SLOT="$run_id" \
   verifier node --import tsx hidden_tests/run.ts 2>&1 | tee "$report_dir/$log_name"
 score_status=${PIPESTATUS[0]}

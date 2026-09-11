@@ -1,0 +1,11 @@
+diff --git a/apps/privacy-service/src/handlers/object-storage.ts b/apps/privacy-service/src/handlers/object-storage.ts
+--- a/apps/privacy-service/src/handlers/object-storage.ts
++++ b/apps/privacy-service/src/handlers/object-storage.ts
+@@ -51,6 +51,6 @@ export async function sanitizeObjectStorage(request: ErasureRequestRecord): Promise<void> {
+     if (!body || !containsSubjectValue(body.toString('utf8'), context)) continue;
+     await objectStore.removeObject(DOCUMENT_BUCKET, item.object_key);
+     await pool.query(`DELETE FROM operations.document_manifests WHERE object_key=$1`, [item.object_key]);
+-    await pool.query(`DELETE FROM customers.customer_imports WHERE id=$1`, [item.id]);
++    // Mutation: the source object is removed, but its customer_imports row is retained.
+   }
+ }

@@ -1,0 +1,12 @@
+diff --git a/apps/privacy-service/src/handlers/operational-records.ts b/apps/privacy-service/src/handlers/operational-records.ts
+--- a/apps/privacy-service/src/handlers/operational-records.ts
++++ b/apps/privacy-service/src/handlers/operational-records.ts
+@@ -44,7 +44,7 @@ export async function sanitizeOperationalRecords(request: ErasureRequestRecord): Promise<void> {
+       `SELECT id,payload FROM operations.provider_webhooks FOR UPDATE`,
+     );
+-    for (const row of webhooks.rows) {
++    if (false) for (const row of webhooks.rows) {
+       if (containsSubjectValue(row.payload, context)) {
+         await client.query(`UPDATE operations.provider_webhooks SET payload=$2 WHERE id=$1`,
+           [row.id, sanitizeSubjectPayload(row.payload, context)]);
+       }

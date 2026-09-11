@@ -14,19 +14,21 @@ test('emits a comparable complete score after the full fixture is ready', () => 
   assert.equal(report.evaluated_maximum, 1);
 });
 
-test('awards only observed independent checks after a full-fixture failure', () => {
+test('awards zero to blocked checks on the single normalized scale', () => {
   const report = buildScoreReport([pass, fail, blocked], [{ id: 'full-cross-store', state: 'failed' }, { id: 'api-contract', state: 'ready' }], false, false, 'full fixture failed');
-  assert.equal(report.state, 'partial');
-  assert.equal(report.comparable, false);
+  assert.equal(report.state, 'complete');
+  assert.equal(report.comparable, true);
   assert.equal(report.earned, 0.0125);
-  assert.equal(report.evaluated_maximum, 0.0375);
-  assert.equal(report.unverified_maximum, 0.9625);
+  assert.equal(report.evaluated_maximum, 1);
+  assert.equal(report.unverified_maximum, 0);
   assert.deepEqual(report.diagnostics.blocked_check_ids, ['normal.redis']);
 });
 
-test('keeps an unobservable run blocked instead of assigning zero', () => {
+test('assigns a numeric zero when every check is blocked', () => {
   const report = buildScoreReport([blocked], [{ id: 'full-cross-store', state: 'failed' }], false, false);
-  assert.equal(report.state, 'blocked');
-  assert.equal(report.earned, null);
-  assert.equal(report.evaluated_maximum, 0);
+  assert.equal(report.state, 'complete');
+  assert.equal(report.comparable, true);
+  assert.equal(report.earned, 0);
+  assert.equal(report.evaluated_maximum, 1);
+  assert.equal(report.unverified_maximum, 0);
 });

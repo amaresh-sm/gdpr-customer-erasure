@@ -1,5 +1,24 @@
+import { readFile } from 'node:fs/promises';
+
 export type CheckState = 'pass' | 'fail' | 'blocked';
-export type ScoreState = 'complete' | 'partial' | 'blocked';
+export type ScoreState = 'complete';
+
+export interface ScoringManifestCheck {
+  id: string;
+  aliases?: string[];
+  label: string;
+  maximum: number;
+  criterion: string;
+}
+
+export interface ScoringManifest {
+  task_id: string;
+  schema_version: number;
+  scale: 'normalized_1';
+  blocked_policy: 'zero';
+  criteria: Array<{ id: string; check_ids: string[] }>;
+  checks: ScoringManifestCheck[];
+}
 
 export interface DiagnosticCheck {
   id: string;
@@ -36,18 +55,53 @@ export interface ScoreReport {
   blocked_reason?: string | undefined;
 }
 
+/**
+ * Loads the private score manifest shared by the verifier and readiness checks.
+ * The file is JSON-compatible YAML so the runtime needs no third-party parser.
+ */
+export async function loadScoringManifest(path?: string): Promise<ScoringManifest> {
+  const manifestPath = path ?? process.env.ERASURE_SCORING_PATH ??
+    new URL('../../scoring.yml', import.meta.url);
+  const content = await readFile(manifestPath, 'utf8');
+  const manifest = JSON.parse(content) as ScoringManifest;
+  if (manifest.schema_version !== 1 || manifest.scale !== 'normalized_1' || manifest.blocked_policy !== 'zero') {
+    throw new Error('scoring manifest has an unsupported schema, scale, or blocked policy');
+  }
+  if (!Array.isArray(manifest.checks) || !Array.isArray(manifest.criteria)) {
+    throw new Error('scoring manifest must contain checks and criteria arrays');
+  }
+  return manifest;
+}
+
+/**
+ * Builds an ID lookup, including explicitly declared equivalent check aliases.
+ */
+export function scoringMaximums(manifest: ScoringManifest): Map<string, number> {
+  const maximums = new Map<string, number>();
+  for (const check of manifest.checks) {
+    if (maximums.has(check.id)) throw new Error(`duplicate scoring check ID: ${check.id}`);
+    maximums.set(check.id, check.maximum);
+    for (const alias of check.aliases ?? []) {
+      if (maximums.has(alias)) throw new Error(`duplicate scoring check alias: ${alias}`);
+      maximums.set(alias, check.maximum);
+    }
+  }
+  return maximums;
+}
+
 function rounded(value: number): number {
   return Number(value.toFixed(4));
 }
 
 /**
- * Builds a conservative score. Only checks with a pass/fail observation
- * contribute to the evaluated maximum; blocked checks never become zeroes.
+ * Builds the single normalized benchmark score. Passing checks earn their weight;
+ * failed and blocked checks earn zero. Blocked checks remain visible in diagnostics,
+ * but they do not create a second score or an alternate score state.
  */
 export function buildScoreReport(
   checks: DiagnosticCheck[],
   fixtures: FixtureDiagnostic[],
-  fullFixtureReady: boolean,
+  _fullFixtureReady: boolean,
   hardPass: boolean,
   blockedReason?: string,
 ): ScoreReport {
@@ -57,55 +111,20 @@ export function buildScoreReport(
     blocked_checks: checks.filter((check) => check.state === 'blocked').length,
     blocked_check_ids: checks.filter((check) => check.state === 'blocked').map((check) => check.id),
   };
-  const observed = checks.filter((check) => check.state !== 'blocked');
-  const evaluatedMaximum = rounded(observed.reduce((total, check) => total + check.maximum, 0));
   const earned = rounded(checks.reduce((total, check) => total + check.earned, 0));
-
-  if (fullFixtureReady) {
-    return {
-      schema_version: 1,
-      state: 'complete',
-      comparable: true,
-      hard_pass: hardPass,
-      earned,
-      maximum: 1,
-      evaluated_maximum: 1,
-      unverified_maximum: 0,
-      checks,
-      fixtures,
-      diagnostics,
-    };
-  }
-
-  if (evaluatedMaximum > 0) {
-    return {
-      schema_version: 1,
-      state: 'partial',
-      comparable: false,
-      hard_pass: false,
-      earned,
-      maximum: 1,
-      evaluated_maximum: evaluatedMaximum,
-      unverified_maximum: rounded(1 - evaluatedMaximum),
-      checks,
-      fixtures,
-      diagnostics,
-      blocked_reason: blockedReason,
-    };
-  }
 
   return {
     schema_version: 1,
-    state: 'blocked',
-    comparable: false,
-    hard_pass: false,
-    earned: null,
+    state: 'complete',
+    comparable: true,
+    hard_pass: hardPass && diagnostics.blocked_checks === 0,
+    earned,
     maximum: 1,
-    evaluated_maximum: 0,
-    unverified_maximum: 1,
+    evaluated_maximum: 1,
+    unverified_maximum: 0,
     checks,
     fixtures,
     diagnostics,
-    blocked_reason: blockedReason ?? 'no independently valid fixture produced an observable check',
+    blocked_reason: blockedReason,
   };
 }

@@ -3,9 +3,10 @@ import { randomUUID } from 'node:crypto';
 import { closeClients } from './lib/clients.js';
 import { seedApiContractFixture, seedFixture, seedPartialCoreFixture, verifyApiContractCustomerUnchanged,
   type ApiContractFixture, type BenchmarkFixture } from './lib/fixture.js';
-import { buildScoreReport, type DiagnosticCheck, type FixtureDiagnostic } from './lib/scoring.js';
-import { assertNoErasureViolations, collectErasureViolations, installTransientPaymentWriteFailure,
-  releaseDelayedWork, removeTransientPaymentWriteFailure, replayHistoricalPiiEvent, requestErasure,
+import { buildScoreReport, loadScoringManifest, scoringMaximums, type DiagnosticCheck, type FixtureDiagnostic } from './lib/scoring.js';
+import { assertNoErasureViolations, assertReplaySideEffectsUnchanged, collectErasureViolations, historicalCustomerAggregateEvent,
+  installTransientPaymentWriteFailure, publishHistoricalEvent, releaseDelayedWork, removeTransientPaymentWriteFailure,
+  replayHistoricalPiiEvent, requestErasure, snapshotReplaySideEffects, waitForHistoricalConsumerOffsets, waitForHistoricalInbox,
   verifyAnonymousRetainedFinancialLink, verifyFinancialRetention, verifyFixtureCoverage, verifyMerchantCredentialsPreserved, verifyMerchantIdentityAndAdminPreserved,
   verifyPostErasureRefund, verifyPostErasureRefundFailureRetry, verifySecondaryMerchantCredentialsPreserved, verifySubjectUnchanged, verifySurvivorUntouched, verifyUnrelatedPaymentArtifactsPreserved,
   waitForCompletion, waitForStatus } from './lib/verifier.js';
@@ -24,6 +25,8 @@ const checks: DiagnosticCheck[] = [];
 const fixtures: FixtureDiagnostic[] = [];
 let fixture: BenchmarkFixture;
 const rawWeightTotal = 8;
+const scoringManifest = await loadScoringManifest();
+const configuredMaximums = scoringMaximums(scoringManifest);
 // A correct workflow completes well inside this bound. Keep the guard outside the
 // individual polling helpers so any hung candidate participant is reported as a
 // scenario failure rather than preventing later independent checks from running.
@@ -57,7 +60,12 @@ async function observeValue<T>(operation: () => Promise<T>): Promise<{ ok: boole
 
 function recordCheck(id: string, label: string, rawWeight: number, observed: { ok: boolean; evidence?: string | undefined },
                      eligible = true, ineligibleReason = 'a prerequisite safety check failed'): boolean {
-  const maximum = Number((rawWeight / rawWeightTotal).toFixed(4));
+  const maximum = configuredMaximums.get(id);
+  if (maximum === undefined) throw new Error(`scoring manifest is missing check ${id}`);
+  const declaredMaximum = Number((rawWeight / rawWeightTotal).toFixed(4));
+  if (maximum !== declaredMaximum) {
+    throw new Error(`scoring manifest weight mismatch for ${id}: manifest=${maximum}, verifier=${declaredMaximum}`);
+  }
   if (!eligible) {
     checks.push({ id, label, maximum, earned: 0, state: 'blocked', evidence: ineligibleReason });
     return false;
@@ -83,7 +91,9 @@ function classifyNormalViolations(violations: string[]): Record<'relational' | '
     else if (violation.startsWith('OpenSearch ')) output.search.push(violation);
     else if (violation.startsWith('MinIO ')) output.minio.push(violation);
     else if (violation.startsWith('Mailpit ')) output.mailpit.push(violation);
-    else if (violation.startsWith('PostgreSQL ') || /^[a-z_]+\.[a-z_]+ retained human PII/.test(violation)) output.payload.push(violation);
+    else if (violation.startsWith('PostgreSQL ') ||
+      violation.startsWith('platform.audit_logs ') || violation.startsWith('operations.provider_webhooks ') ||
+      /^[a-z_]+\.[a-z_]+ retained human PII/.test(violation)) output.payload.push(violation);
     else output.relational.push(violation);
   }
   return output;
@@ -229,9 +239,15 @@ async function runPartialDomainCells(slot: string): Promise<void> {
       });
       const completed = accepted.ok ? await observe(async () => { await waitForCompletion(normalFixture.merchantKey, requestId); })
         : { ok: false, evidence: accepted.evidence };
-      recordCheck('workflow.completed', 'Request reaches completed only after convergence', 0.25, completed);
       const violations = completed.ok ? await observeValue(async () => collectErasureViolations(normalFixture, normalFixture.normal))
         : { ok: false, evidence: completed.evidence };
+      // A public completed status is meaningful only when the active-store
+      // verification immediately following it is clean. Keep other cells
+      // independently observable so this failure does not mask their results.
+      const truthfulCompletion = completed.ok && violations.ok
+        ? noViolations(violations.value as unknown as string[])
+        : { ok: false, evidence: violations.evidence ?? completed.evidence };
+      recordCheck('workflow.completed', 'Request reaches completed only after active-store convergence', 0.25, truthfulCompletion);
       const grouped = violations.ok ? classifyNormalViolations(violations.value as unknown as string[]) : undefined;
       const normalCheck = (id: string, label: string, weight: number, key: keyof NonNullable<typeof grouped>) => {
         const observed = grouped ? noViolations(grouped[key]) : { ok: false, evidence: violations.evidence };
@@ -421,8 +437,11 @@ try {
       });
       recordCheck('api.key_conflict', 'Key reuse for another customer is rejected', 0.1, conflictingReuse);
       const completion = await observe(async () => { await waitForCompletion(fixture.merchantKey, requestId); });
-      const completionOk = recordCheck('workflow.completed', 'Request reaches completed only after convergence', 0.25,
-        completion, concurrentOk && alternateOk, 'a canonical request was not established');
+      const activeStoreClean = completion.ok
+        ? await observe(async () => { assertNoErasureViolations(await collectErasureViolations(fixture, fixture.normal)); })
+        : { ok: false, evidence: completion.evidence };
+      const completionOk = recordCheck('workflow.completed', 'Request reaches completed only after active-store convergence', 0.25,
+        activeStoreClean, concurrentOk && alternateOk, 'a canonical request was not established');
       if (![unknownCustomer.ok, crossTenant.ok, concurrentOk, alternateOk, repeated.ok, conflictingReuse.ok, completionOk].every(Boolean)) {
         throw new Error('one or more request-contract checks failed');
       }
@@ -552,17 +571,34 @@ try {
       if (!release.ok || !introduced.ok) throw new Error([release.evidence, introduced.evidence].filter(Boolean).join('; ') || 'delayed-work verification failed');
     });
     await test('historical event replay is suppressed by durable erasure state', async () => {
-      const replay = await observe(async () => { await replayHistoricalPiiEvent(fixture); });
+      let replayEvent: Awaited<ReturnType<typeof replayHistoricalPiiEvent>> | undefined;
+      const replay = await observe(async () => { replayEvent = await replayHistoricalPiiEvent(fixture); });
       const delayedSafe = checks.find((check) => check.id === 'delayed.no_reintroduction')?.state === 'pass';
       const replayOk = recordCheck('replay.consumed', 'Historical event is safely consumed', 0.4, replay,
         delayedSafe, 'delayed-work safety was not established');
-      const current = replay.ok ? await collectErasureViolations(fixture, fixture.delayed) : [];
+      let current = replay.ok ? await collectErasureViolations(fixture, fixture.delayed) : [];
       const introduced = replay.ok ? noViolations(newlyIntroduced(delayedViolations, current))
         : { ok: false, evidence: replay.evidence };
-      recordCheck('replay.no_reintroduction', 'Historical replay does not restore PII', 0.6, introduced,
+      let replaySafe = introduced;
+      if (replay.ok && replayEvent) {
+        const beforeDuplicate = await snapshotReplaySideEffects(fixture, replayEvent);
+        const duplicatePosition = await publishHistoricalEvent(replayEvent);
+        await waitForHistoricalConsumerOffsets(duplicatePosition, ['payflow-projections-v1', 'payflow-notifications-v1']);
+        await waitForHistoricalInbox(replayEvent.eventId, ['projection-worker', 'notification-worker']);
+        const afterDuplicate = await snapshotReplaySideEffects(fixture, replayEvent);
+        assertReplaySideEffectsUnchanged(beforeDuplicate, afterDuplicate);
+
+        const aggregateEvent = historicalCustomerAggregateEvent(fixture);
+        const aggregatePosition = await publishHistoricalEvent(aggregateEvent);
+        await waitForHistoricalInbox(aggregateEvent.eventId, ['projection-worker']);
+        await waitForHistoricalConsumerOffsets(aggregatePosition, ['payflow-projections-v1']);
+        current = await collectErasureViolations(fixture, fixture.delayed);
+        replaySafe = noViolations(newlyIntroduced(delayedViolations, current));
+      }
+      recordCheck('replay.no_reintroduction', 'Historical replay does not restore PII', 0.6, replaySafe,
         delayedSafe && replayOk, 'historical replay could not be safely evaluated');
       if (replay.ok) delayedViolations = current;
-      if (!replay.ok || !introduced.ok) throw new Error([replay.evidence, introduced.evidence].filter(Boolean).join('; ') || 'replay verification failed');
+      if (!replay.ok || !replaySafe.ok) throw new Error([replay.evidence, replaySafe.evidence].filter(Boolean).join('; ') || 'replay verification failed');
     });
     await test('survivor remains unchanged after replay and delayed work', async () => {
       const survivor = await observe(async () => { await verifySurvivorUntouched(fixture); });

@@ -1,0 +1,9 @@
+{
+  "source_run_id": "openai-grok-4.6-medium-20260908t214238z",
+  "provider": "openhands",
+  "model": "openai/grok-4.6",
+  "reasoning": "medium",
+  "generation_elapsed_seconds": 1400.571,
+  "source_exit_code": 0,
+  "source_tamper_check": "clean"
+}

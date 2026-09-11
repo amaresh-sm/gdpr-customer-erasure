@@ -28,7 +28,7 @@ function collectIdentityValues(customer: Record<string, unknown>, related: Array
   addNestedStrings(output, customer.metadata);
   for (const row of related.flat()) {
     for (const field of ['value', 'line1', 'line2', 'city', 'region', 'postal_code', 'provider_token',
-      'provider_customer_id', 'email', 'name', 'external_reference', 'billing_name', 'body', 'subject']) {
+      'provider_customer_id', 'email', 'name', 'external_reference', 'billing_name', 'body']) {
       addString(output, row[field]);
     }
     for (const field of ['billing_address', 'attachments']) addNestedStrings(output, row[field]);

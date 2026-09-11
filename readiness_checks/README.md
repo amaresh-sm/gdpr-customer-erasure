@@ -9,8 +9,8 @@ Run them from the repository root:
 ```bash
 python3 readiness_checks/check_package.py
 python3 readiness_checks/check_acceptance.py
-python3 readiness_checks/check_report_privacy.py
 python3 readiness_checks/check_scoring.py
+python3 readiness_checks/check_report_privacy.py
 python3 readiness_checks/check_determinism.py
 python3 readiness_checks/check_proof_work.py
 python3 readiness_checks/check_reference.py --proof-dir verifier/proof-of-work
@@ -35,23 +35,24 @@ and secret-like values. It also requires the task metadata, public contract file
 inputs, and the reference application's `app-setup/manifest.json`, `build.sh`, `start.sh`, and
 `reset.sh`.
 
-## Acceptance and scoring alignment
+## Acceptance criteria
 
 `check_acceptance.py` requires the acceptance file's task ID to match `task.toml`. Each criterion
-must have a requirement, hidden-test reference, mutant reference, and positive weight. Its IDs and
-weights must match `scoring.yml` exactly.
+must have a requirement, hidden-test reference, and mutant reference. Scoring weights are owned by
+the PayFlow hidden verifier and are not duplicated in the task package metadata.
+
+## Scoring manifest
+
+`check_scoring.py` validates the private `verifier/scoring.yml` manifest. It checks that normalized
+check maximums sum to `1.0`, every check belongs to an acceptance criterion, and the blocked policy
+is `zero`. The manifest is consumed by the same PayFlow hidden verifier at runtime; this validates
+the one scorer and does not create a second scoring implementation.
 
 ## Persisted report privacy
 
 `check_report_privacy.py` rejects host-local paths in retained candidate and proof-of-work reports.
 The harness sanitizes new reports automatically; `scripts/sanitize_reports.py` can clean older
 evidence once.
-
-## Scoring validity
-
-`check_scoring.py` loads the same `scoring.yml` format as the scorer and validates non-empty,
-unique criterion IDs, positive weights, and a total weight of `1.0`. It also scans recorded proof
-reports and rejects any blocked criterion that has a non-zero score or award.
 
 ## Reference determinism
 

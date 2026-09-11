@@ -1,0 +1,9 @@
+{
+  "source_run_id": "openai-qwen-3.8-medium-20260908t220642z",
+  "provider": "openhands",
+  "model": "openai/qwen-3.8",
+  "reasoning": "medium",
+  "generation_elapsed_seconds": 2469.876,
+  "source_exit_code": 0,
+  "source_tamper_check": "clean"
+}

@@ -1,8 +1,8 @@
 {
   "task_id": "gdpr-customer-erasure",
   "status": "passed",
-  "started_at": "2026-09-06T08:22:36.969052+00:00",
-  "finished_at": "2026-09-06T08:22:36.969052+00:00",
+  "started_at": "2026-09-11T06:23:00.185012+00:00",
+  "finished_at": "2026-09-11T06:23:00.185012+00:00",
   "duration_seconds": 0,
   "exit_code": 0
 }

@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Check that acceptance criteria are complete and agree with scoring.yml."""
+"""Check that acceptance criteria are complete and reference private checks."""
 
 from __future__ import annotations
 
 import argparse
-import math
 import sys
 import tomllib
 from pathlib import Path
@@ -12,16 +11,14 @@ from typing import Any
 
 try:
     from astra_harness.acceptance import read_acceptance
-    from astra_harness.score import read_scoring
     from .common import emit_result
 except ImportError:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
     from astra_harness.acceptance import read_acceptance
-    from astra_harness.score import read_scoring
     from common import emit_result
 
 
-REQUIRED_FIELDS = ("id", "requirement", "hidden_test", "mutant", "weight")
+REQUIRED_FIELDS = ("id", "requirement", "hidden_test", "mutant")
 
 
 def task_id(task_dir: Path) -> str:
@@ -38,13 +35,12 @@ def task_id(task_dir: Path) -> str:
 
 
 def check_acceptance(task_dir: Path, verifier_dir: Path) -> dict[str, Any]:
-    """Validate acceptance completeness and exact scoring alignment."""
+    """Validate acceptance completeness independently of score weights."""
 
-    result: dict[str, Any] = {"check": "acceptance-and-scoring-alignment", "failures": []}
+    result: dict[str, Any] = {"check": "acceptance-criteria-completeness", "failures": []}
     try:
         expected_task_id = task_id(task_dir)
         acceptance_task_id, criteria = read_acceptance(verifier_dir / "acceptance-criteria.yml")
-        scoring = read_scoring(verifier_dir / "scoring.yml")
     except SystemExit as exc:
         result["failures"].append(str(exc))
         result["ok"] = False
@@ -72,30 +68,7 @@ def check_acceptance(task_dir: Path, verifier_dir: Path) -> dict[str, Any]:
         for field in ("requirement", "hidden_test", "mutant"):
             if not isinstance(criterion.get(field), str) or not str(criterion[field]).strip():
                 result["failures"].append(f"criterion {criterion_id!r} has no valid {field}")
-        weight = criterion.get("weight")
-        if not isinstance(weight, float) or weight <= 0:
-            result["failures"].append(f"criterion {criterion_id!r} has no positive weight")
         acceptance_by_id[criterion_id] = criterion
-
-    scoring_by_id = {str(item["id"]): item for item in scoring}
-    acceptance_ids = set(acceptance_by_id)
-    scoring_ids = set(scoring_by_id)
-    if acceptance_ids != scoring_ids:
-        missing_from_scoring = sorted(acceptance_ids - scoring_ids)
-        missing_from_acceptance = sorted(scoring_ids - acceptance_ids)
-        if missing_from_scoring:
-            result["failures"].append("acceptance criteria absent from scoring.yml: " + ", ".join(missing_from_scoring))
-        if missing_from_acceptance:
-            result["failures"].append("scoring criteria absent from acceptance-criteria.yml: " + ", ".join(missing_from_acceptance))
-    for criterion_id in sorted(acceptance_ids & scoring_ids):
-        acceptance_weight = acceptance_by_id[criterion_id].get("weight")
-        scoring_weight = scoring_by_id[criterion_id].get("weight")
-        if not isinstance(acceptance_weight, float) or not isinstance(scoring_weight, float):
-            continue
-        if not math.isclose(acceptance_weight, scoring_weight, rel_tol=0.0, abs_tol=1e-9):
-            result["failures"].append(
-                f"weight differs for {criterion_id}: acceptance={acceptance_weight}, scoring={scoring_weight}"
-            )
     result["ok"] = not result["failures"]
     return result
 

@@ -22,3 +22,7 @@ post-erasure-refund-failure-not-observable	patches/post-erasure-refund-failure-n
 shared-survivor-redacted	patches/shared-survivor-redacted.patch	scope.unrelated_customer_and_shared_record	false	Unrelated participants and their shared content must remain unchanged.
 participant-failure-marked-complete	patches/participant-failure-marked-complete.patch	async.completion_gate	false	A participant failure must not be reported as completed and the same request must retry safely.
 replay-suppression-omitted	patches/replay-suppression-omitted.patch	replay.no_reintroduction	false	Delayed and replayed work must not restore erased identity.
+operational-audit-unsanitized	patches/operational-audit-unsanitized.patch	normal.postgres_payloads	false	Cross-entity audit records must not retain erased customer PII.
+provider-webhook-unsanitized	patches/provider-webhook-unsanitized.patch	normal.postgres_payloads	false	Retained provider callbacks must not retain erased customer PII.
+shared-ticket-context-discarded	patches/shared-ticket-context-discarded.patch	scope.unrelated_customer_and_shared_record	false	Shared support records must preserve neutral survivor context while removing erased PII.
+completion-before-convergence	patches/completion-before-convergence.patch	workflow.completed	false	A request must not be reported completed before every erasure participant converges.

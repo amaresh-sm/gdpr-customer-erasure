@@ -1,0 +1,12 @@
+diff --git a/apps/privacy-service/src/handlers/customer-records.ts b/apps/privacy-service/src/handlers/customer-records.ts
+--- a/apps/privacy-service/src/handlers/customer-records.ts
++++ b/apps/privacy-service/src/handlers/customer-records.ts
+@@ -17,7 +17,7 @@ export async function eraseCustomerRecords(request: ErasureRequestRecord): Promise<void> {
+       );
+       if (ticket.rows[0]) {
+         await client.query(`UPDATE customers.support_tickets SET subject=$2 WHERE id=$1`,
+-          [ticketId, redactSubjectValue(ticket.rows[0].subject, context)]);
++          [ticketId, '[redacted]']);
+       }
+       const messages = await client.query<{ id: string; author_type: string; author_id: string | null; body: string; attachments: unknown }>(
+         `SELECT id,author_type,author_id,body,attachments FROM customers.support_messages

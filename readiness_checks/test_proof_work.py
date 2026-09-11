@@ -45,7 +45,7 @@ class ProofWorkTests(unittest.TestCase):
             (run / "reports/score.json").write_text(json.dumps({"score": 1.0, "hard_pass": True, "criteria": {"a": {"status": "pass"}}}))
         matrix = proof / "mutant-matrix.json"
         (verifier / "mutants").mkdir(parents=True)
-        (verifier / "scoring.yml").parent.mkdir(parents=True, exist_ok=True)
+        verifier.mkdir(parents=True, exist_ok=True)
         (verifier / "mutants/example.patch").write_text("patch")
         mutant = proof / "mutant-runs/example"
         (mutant / "reports/backend").mkdir(parents=True)

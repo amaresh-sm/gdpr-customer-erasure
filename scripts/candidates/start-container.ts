@@ -37,7 +37,9 @@ interface LaunchRecord {
 }
 
 const root = resolve(process.cwd());
-const generationImage = 'payflow-candidate-generation-rootless:v11';
+// Bump the generation image when the staged reusable gateway changes so a
+// previously built image cannot silently hide a newer gateway revision.
+const generationImage = 'payflow-candidate-generation-rootless:v12';
 const egressImage = 'payflow-codex-egress:v4';
 const proxyImage = 'payflow-provider-proxy:v1';
 const innerImages = [

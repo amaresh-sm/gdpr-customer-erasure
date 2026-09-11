@@ -26,7 +26,7 @@ class PackageReadinessTests(unittest.TestCase):
         (task / "instruction.md").write_text("Build the application.\n")
         (task / "public/contracts/openapi.contract.json").write_text("{}\n")
         (task / "public/contracts/ui.contract.json").write_text("{}\n")
-        for name in ("run.py", "score_adapter.py", "acceptance-criteria.yml", "scoring.yml"):
+        for name in ("run.py", "acceptance-criteria.yml", "scoring.yml"):
             (verifier / name).write_text("placeholder\n")
         for name in ("manifest.json", "build.sh", "start.sh", "reset.sh"):
             (verifier / "reference-solution/app-setup" / name).write_text("placeholder\n")
