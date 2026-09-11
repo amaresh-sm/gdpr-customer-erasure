@@ -40,4 +40,3 @@ criteria:
     contract: public/contracts/privacy-erasure.contract.json
     hidden_test: survivor remains unchanged after replay and delayed work
     mutant: shared-survivor-redacted
-    weight: 0.05
