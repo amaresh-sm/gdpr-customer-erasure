@@ -37,6 +37,7 @@ interface LaunchRecord {
 }
 
 const root = resolve(process.cwd());
+const candidateRoot = join(root, 'benchmarking-candidates');
 // Bump the generation image when the staged reusable gateway changes so a
 // previously built image cannot silently hide a newer gateway revision.
 const generationImage = 'payflow-candidate-generation-rootless:v12';
@@ -47,7 +48,7 @@ const innerImages = [
   'postgres:16-alpine',
   'redis:7.4-alpine',
   'redpandadata/redpanda:v24.3.6',
-  'minio/minio:RELEASE.2025-02-28T09-55-16Z',
+  'quay.io/minio/minio:RELEASE.2025-02-28T09-55-16Z',
   'opensearchproject/opensearch:2.18.0',
   'axllent/mailpit:v1.24.1',
 ] as const;
@@ -126,7 +127,7 @@ async function ensureImage(tag: string, dockerfile: string, entries: BuildContex
 async function copyBaseline(source: string, destination: string): Promise<void> {
   await cp(source, destination, {
     recursive: true,
-    filter: (path) => !/(^|\/)(node_modules|dist|\.git|hidden_tests|reference_solution|candidates|calibration|internal|evaluator)(\/|$)/.test(path),
+    filter: (path) => !/(^|\/)(node_modules|dist|\.git|hidden_tests|reference_solution|candidates|benchmarking-candidates|calibration|internal|evaluator)(\/|$)/.test(path),
   });
 }
 
@@ -278,7 +279,7 @@ async function main(): Promise<void> {
   const promptFile = resolve(value('--prompt-file', 'instruction/task.md'));
   const id = value('--run-id', runId(model, reasoning));
   if (!/^[a-z0-9][a-z0-9.-]{2,127}$/.test(id)) throw new Error('--run-id is unsafe');
-  const runDirectory = join(root, 'candidates', id);
+  const runDirectory = join(candidateRoot, id);
   const sourceDirectory = join(runDirectory, 'source');
   const trustedDirectory = join(runDirectory, 'trusted');
   const launchPath = join(trustedDirectory, 'launch.json');

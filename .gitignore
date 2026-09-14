@@ -13,3 +13,7 @@ __pycache__/
 *.log
 *.zip
 .DS_Store
+
+# Benchmark artifacts are versioned in full; only generated dependency trees stay ignored.
+!/benchmarking-candidates/**
+/benchmarking-candidates/**/node_modules/

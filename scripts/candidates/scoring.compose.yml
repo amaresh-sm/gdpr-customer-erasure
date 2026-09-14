@@ -19,7 +19,9 @@ services:
   postgres: { ports: !reset [] }
   redis: { ports: !reset [] }
   redpanda: { ports: !reset [] }
-  minio: { ports: !reset [] }
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-02-28T09-55-16Z
+    ports: !reset []
   opensearch: { ports: !reset [] }
   mailpit: { ports: !reset [] }
   customer-service: { ports: !reset [] }

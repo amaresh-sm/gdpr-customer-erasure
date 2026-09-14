@@ -41,7 +41,8 @@ async function required(program: string, args: string[]): Promise<string> {
 
 function resultPath(output: string): string {
   const candidate = output.trim().split(/\r?\n/).filter(Boolean).at(-1);
-  if (!candidate || !candidate.startsWith(`${root}/candidates/`)) throw new Error('launcher did not return a candidate run directory');
+  const allowedRoots = [`${root}/benchmarking-candidates/`, `${root}/candidates/`];
+  if (!candidate || !allowedRoots.some((allowedRoot) => candidate.startsWith(allowedRoot))) throw new Error('launcher did not return a candidate run directory');
   return candidate;
 }
 

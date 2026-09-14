@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const dashboardRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const projectRoot = path.resolve(dashboardRoot, '..');
-const candidatesRoot = path.join(projectRoot, 'candidates');
+const candidatesRoot = path.join(projectRoot, 'benchmarking-candidates');
 const outputPath = path.join(dashboardRoot, 'app', 'data', 'runs.json');
 const displayRunIds = new Set([
   'kimi-k3-high-20260825t093000z',

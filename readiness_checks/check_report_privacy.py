@@ -15,16 +15,16 @@ except ImportError:
     from common import emit_result
 
 
-EVIDENCE_ROOTS = (Path("candidates"), Path("verifier/proof-of-work"))
+EVIDENCE_ROOTS = (Path("candidates"), Path("benchmarking-candidates"), Path("verifier/proof-of-work"))
 
 
 def _evidence_roots(repository_root: Path) -> list[Path]:
     """Return only generated evidence, never candidate or verifier source."""
 
     roots: list[Path] = []
-    candidates = repository_root / "candidates"
-    if candidates.is_dir():
-        roots.extend(path for path in candidates.glob("*/evaluation-*") if path.is_dir())
+    for candidates in (repository_root / "candidates", repository_root / "benchmarking-candidates"):
+        if candidates.is_dir():
+            roots.extend(path for path in candidates.glob("*/evaluation-*") if path.is_dir())
     proof = repository_root / "verifier/proof-of-work"
     if proof.is_dir():
         roots.extend(path for path in proof.iterdir() if path.is_dir())
