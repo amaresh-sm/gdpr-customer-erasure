@@ -1,7 +1,8 @@
 # Candidate calibration launcher
 
 Use the provider-specific generation commands below for every new model attempt. They create a
-timestamped, ignored local artifact, wait for generation to end, and finalize its trusted telemetry.
+timestamped artifact under `benchmarking-candidates/`, wait for generation to end, and finalize its
+trusted telemetry. Older runs under `candidates/` remain readable and scoreable.
 The model receives only the copied `codebase/` plus the public task prompt; it cannot mount
 `verifier/hidden-tests/`, `reference_solution/`, calibration records, or other candidates. The lower-level
 launcher commands remain available only for troubleshooting a detached generation container.
@@ -78,7 +79,7 @@ This is the only scoring command. It starts a fresh isolated stack, mounts hidde
 the verifier, writes JUnit and score reports into the candidate artifact, and cleans the stack up.
 
 ```bash
-npm run candidates:score -- candidates/gpt-5.6-sol-xhigh-<timestamp>
+npm run candidates:score -- benchmarking-candidates/gpt-5.6-sol-xhigh-<timestamp>
 ```
 
 The scorer always returns one normalized score from 0 to 1. A passing check earns its weight; a
@@ -90,13 +91,13 @@ lowest score, so timing-dependent behavior cannot improve a candidate result. It
 and its selection record under `reports/stability/`.
 
 ```bash
-npm run candidates:score:stable -- candidates/gpt-5.6-sol-xhigh-<timestamp>
+npm run candidates:score:stable -- benchmarking-candidates/gpt-5.6-sol-xhigh-<timestamp>
 ```
 
 Render the comparable headline table from the recorded evidence:
 
 ```bash
-npx --prefix codebase tsx scripts/candidates/summary.ts -- --run-dir candidates/gpt-5.6-sol-high-<timestamp>
+npx --prefix codebase tsx scripts/candidates/summary.ts -- --run-dir benchmarking-candidates/gpt-5.6-sol-high-<timestamp>
 ```
 
 The Portkey key is streamed only into a trusted proxy container's tmpfs and is not a model-container

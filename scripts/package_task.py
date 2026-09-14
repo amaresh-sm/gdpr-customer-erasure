@@ -20,7 +20,7 @@ EXCLUDED_PARTS = frozenset({
     ".git", "__pycache__", ".pytest_cache", ".venv", "dist", "node_modules", "runs",
 })
 EXCLUDED_TOP_LEVEL = frozenset({
-    "candidates", "calibration", "internal", "benchmarking-dashboard", "codebase",
+    "candidates", "benchmarking-candidates", "calibration", "internal", "benchmarking-dashboard", "codebase",
     "reference_solution", "hidden_tests", "instruction", "evaluator", "docker", "platform",
 })
 EXCLUDED_FILES = frozenset({".DS_Store", ".env", "auth.json"})
