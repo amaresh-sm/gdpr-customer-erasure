@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "state": "finalized",
+  "run_id": "openai-grok-4.6-medium-20260915t050430z",
+  "provider": "openhands",
+  "model": "openai/grok-4.6",
+  "reasoning_effort": "medium",
+  "timeout_seconds": 14400,
+  "started_at": "2026-09-15T05:04:30.856Z",
+  "prompt_sha256": "96911c13dbb68853376e3be46ad8758a5acbde1c3a466f1c1595d002dbfd0b64",
+  "baseline_ref": "HEAD",
+  "source_directory": "/Users/amaresh/Desktop/repositories/gdpr_benchmark/payflow_platform/benchmarking-candidates/openai-grok-4.6-medium-20260915t050430z/source",
+  "network": "payflow-generation-fe4c2a2ad9304aeebd82cfb316d8221b",
+  "model_container": "payflow-model-fe4c2a2ad9304aeebd82cfb316d8221b",
+  "gateway_container": null,
+  "artifact_container": "payflow-artifacts-fe4c2a2ad9304aeebd82cfb316d8221b",
+  "docker_volume": "payflow-inner-docker-fe4c2a2ad9304aeebd82cfb316d8221b",
+  "workspace_volume": "payflow-workspace-fe4c2a2ad9304aeebd82cfb316d8221b",
+  "generation_image": {
+    "tag": "payflow-candidate-generation-rootless:v13",
+    "id": "sha256:a7b7b644e1144ad325920b3b8e3762c008b41f6af1b3daf8b80e9e2acf0db1b5"
+  },
+  "gateway_image": {
+    "tag": "payflow-codex-egress:v4",
+    "id": "sha256:8e3597e1df8524d544359daff478f242ddc691c9024a50320c0eb74e816be201"
+  },
+  "artifact_image": {
+    "tag": "payflow-codex-egress:v4",
+    "id": "sha256:8e3597e1df8524d544359daff478f242ddc691c9024a50320c0eb74e816be201"
+  },
+  "portkey_route": null,
+  "failure": null,
+  "completed_at": "2026-09-15T05:31:27.000Z",
+  "exit_code": 0,
+  "run_status": "completed",
+  "cleanup_completed": true
+}

@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "state": "finalized",
+  "run_id": "openai-gpt-5.6-terra-medium-20260914t204720z",
+  "provider": "openhands",
+  "model": "openai/gpt-5.6-terra",
+  "reasoning_effort": "medium",
+  "timeout_seconds": 14400,
+  "started_at": "2026-09-14T20:47:20.060Z",
+  "prompt_sha256": "96911c13dbb68853376e3be46ad8758a5acbde1c3a466f1c1595d002dbfd0b64",
+  "baseline_ref": "HEAD",
+  "source_directory": "/Users/amaresh/Desktop/repositories/gdpr_benchmark/payflow_platform/benchmarking-candidates/openai-gpt-5.6-terra-medium-20260914t204720z/source",
+  "network": "payflow-generation-b8c875539aa7424e9c60e32097ee46af",
+  "model_container": "payflow-model-b8c875539aa7424e9c60e32097ee46af",
+  "gateway_container": null,
+  "artifact_container": "payflow-artifacts-b8c875539aa7424e9c60e32097ee46af",
+  "docker_volume": "payflow-inner-docker-b8c875539aa7424e9c60e32097ee46af",
+  "workspace_volume": "payflow-workspace-b8c875539aa7424e9c60e32097ee46af",
+  "generation_image": {
+    "tag": "payflow-candidate-generation-rootless:v13",
+    "id": "sha256:e8d2c34bb9ef3a513091fc411e66ecbfcfdf55a8686d6c3df573e4fce7698ef4"
+  },
+  "gateway_image": {
+    "tag": "payflow-codex-egress:v4",
+    "id": "sha256:99956276c3e89487e974cb162642d0d2abda0ee76c27ab639376debb4a21a6cc"
+  },
+  "artifact_image": {
+    "tag": "payflow-codex-egress:v4",
+    "id": "sha256:99956276c3e89487e974cb162642d0d2abda0ee76c27ab639376debb4a21a6cc"
+  },
+  "portkey_route": null,
+  "failure": null,
+  "completed_at": "2026-09-14T21:00:33.000Z",
+  "exit_code": 0,
+  "run_status": "completed",
+  "cleanup_completed": true
+}
