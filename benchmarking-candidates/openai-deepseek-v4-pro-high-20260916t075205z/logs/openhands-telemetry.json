@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "harness": {
+    "name": "hackerrank-openhands-gateway",
+    "version": "0.1.0"
+  },
+  "run": {
+    "status": "failed",
+    "exit_code": 1,
+    "error": {
+      "type": "ConversationRunError",
+      "message": "Conversation run failed for id=dbf6ef8e-d2c0-431e-8d3f-f11d347c363e: litellm.APIError: APIError: OpenAIException - Error code: 403"
+    }
+  },
+  "model": {
+    "name": "openai/deepseek-v4-pro",
+    "reasoning": "high",
+    "provider": "hackerrank-gateway"
+  },
+  "timing": {
+    "started_at": "2026-09-16T07:53:06.502101Z",
+    "completed_at": "2026-09-16T07:53:11.322663Z",
+    "duration_ms": 4820,
+    "llm_requests": {
+      "count": 0,
+      "with_latency": 0,
+      "successful": 0,
+      "failed": 0,
+      "total_latency_ms": 0.0,
+      "average_latency_ms": null,
+      "min_latency_ms": null,
+      "max_latency_ms": null
+    }
+  },
+  "usage": {
+    "source": null,
+    "input_tokens": null,
+    "cached_input_tokens": null,
+    "cache_read_tokens": null,
+    "cache_write_tokens": null,
+    "output_tokens": null,
+    "reasoning_tokens": null,
+    "total_tokens": null
+  },
+  "cost": {
+    "gateway": {
+      "amount_usd": null,
+      "currency": "USD",
+      "status": "unavailable",
+      "source": "gateway",
+      "responses_with_cost": 0
+    },
+    "openhands": {
+      "amount_usd": null,
+      "currency": "USD",
+      "status": "unavailable",
+      "source": "openhands"
+    },
+    "custom_estimation": {
+      "amount_usd": null,
+      "currency": "USD",
+      "status": "unavailable",
+      "source": "custom_pricing_table",
+      "pricing_version": 1,
+      "model": "openai/deepseek-v4-pro",
+      "normalized_model": "deepseek-v4-pro",
+      "requests": 0,
+      "requests_with_usage": 0,
+      "requests_missing_usage": 0,
+      "reason": "token_usage_unavailable"
+    }
+  },
+  "workspace": {
+    "type": "workspace_metrics",
+    "status": "available",
+    "files": {
+      "added": 0,
+      "modified": 0,
+      "deleted": 0,
+      "renamed": 0,
+      "total_changed": 0
+    },
+    "lines": {
+      "added": 0,
+      "deleted": 0,
+      "changed": 0
+    },
+    "renames": []
+  },
+  "tools": {
+    "total": 0,
+    "successful": 0,
+    "failed": 0,
+    "cancelled": 0,
+    "rejected": 0,
+    "unknown": 0,
+    "by_tool": {}
+  },
+  "trace": {
+    "events_path": "events.jsonl",
+    "event_count": 6,
+    "invalid_event_count": 0,
+    "integrity_sha256": "5bdaf331e7f5fd335789862577956df03ab67367cc065484244fe85fc33604ff"
+  }
+}

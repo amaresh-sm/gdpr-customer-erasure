@@ -1,0 +1,94 @@
+ Container candidate-openai-kimi-k3-medium-20260916t021346z-verifier-run-5ea09ac3d377 Creating 
+ Container candidate-openai-kimi-k3-medium-20260916t021346z-verifier-run-5ea09ac3d377 Created 
+PASS deterministic fixture provisions cross-store PII
+FAIL request contract is tenant-safe, concurrent, and idempotent: Error: one or more request-contract checks failed
+    at <anonymous> (/srv/payflow/hidden_tests/run.ts:446:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async test (/srv/payflow/hidden_tests/run.ts:106:5)
+    at async <anonymous> (/srv/payflow/hidden_tests/run.ts:381:5)
+FAIL normal subject PII is absent from every active store: Error: normal erasure found 40 violation(s):
+- PostgreSQL audit retained email at $.metadata.subject.email, PII canary at $.metadata.subject.canary, customer UUID at $.metadata.subject.customerId
+- PostgreSQL audit retained customer UUID at $.target_id
+- PostgreSQL audit retained customer UUID at $.target_id
+- PostgreSQL audit retained customer UUID at $.target_id
+- PostgreSQL audit retained customer UUID at $.target_id
+- PostgreSQL invoice-lines retained name at $.description
+- PostgreSQL outbox retained customer UUID at $.aggregate_id
+- PostgreSQL outbox retained customer UUID at $.aggregate_id
+- PostgreSQL outbox retained customer UUID at $.aggregate_id
+- PostgreSQL outbox retained customer UUID at $.aggregate_id
+- PostgreSQL outbox retained customer UUID at $.aggregate_id
+- PostgreSQL outbox retained customer UUID at $.payload.customerId, customer UUID at $.aggregate_id
+- PostgreSQL provider-webhooks retained customer UUID at $.payload.data.customer.id, name at $.payload.data.customer.name, email at $.payload.data.customer.email, PII canary at $.payload.data.customer.canary
+- PostgreSQL idempotency retained customer UUID at $.response_body.customerId
+- PostgreSQL analytics retained customer UUID at $.anonymous_id
+- platform.audit_logs row 16 retained email at $.metadata.subject.email, PII canary at $.metadata.subject.canary, customer UUID at $.metadata.subject.customerId
+- platform.audit_logs row 18 retained customer UUID at $.target_id
+- platform.audit_logs row 19 retained customer UUID at $.target_id
+- platform.audit_logs row 20 retained customer UUID at $.target_id
+- platform.audit_logs row 21 retained customer UUID at $.target_id
+- customers.support_tickets row 4 retained PII canary at $.subject
+- payments.invoice_lines row 0 retained name at $.description
+- operations.outbox_events row 6 retained customer UUID at $.aggregate_id
+- operations.outbox_events row 7 retained customer UUID at $.aggregate_id
+- operations.outbox_events row 8 retained customer UUID at $.aggregate_id
+- operations.outbox_events row 9 retained customer UUID at $.aggregate_id
+- operations.outbox_events row 10 retained customer UUID at $.aggregate_id
+- operations.outbox_events row 45 retained customer UUID at $.payload.customerId, customer UUID at $.aggregate_id
+- operations.provider_webhooks row 2 retained customer UUID at $.payload.data.customer.id, name at $.payload.data.customer.name, email at $.payload.data.customer.email, PII canary at $.payload.data.customer.canary
+- operations.idempotency_keys row 1 retained customer UUID at $.response_body.customerId
+- operations.analytics_events row 35 retained customer UUID at $.anonymous_id
+- provider_sandbox.customers row 4 retained provider customer ID at $.id, provider customer ID at $.email
+- customers.erasure_request_keys row 0 retained customer UUID at $.customer_id
+- customers.erasure_request_keys row 1 retained customer UUID at $.customer_id
+- Redis merchant:381882d2-046f-4d05-915a-e3308d80fa7e:customer:a13899e8-d350-4cd0-9f21-1980f98380e7 (string) retained customer UUID at $.key, customer UUID at $.value
+- OpenSearch retained the subject document
+- OpenSearch payflow-customers-v1:381882d2-046f-4d05-915a-e3308d80fa7e:a13899e8-d350-4cd0-9f21-1980f98380e7 (via payflow-customers-v1) retained customer UUID at $.id, customer UUID at $.source.customerId
+- MinIO 381882d2-046f-4d05-915a-e3308d80fa7e/invoices/cdcbbe17-87e8-41ac-9d08-e69b8dd9c8d4.json (version null) retained name at $.body.lines[0].description
+- Mailpit message 2 retained email at $.message.To[0].Address, customer UUID at $.message.Text, email at $.message.Text, customer UUID at $.message.HTML, email at $.message.HTML, customer UUID at $.raw, email at $.raw
+- Mailpit message 8 retained email at $.message.To[0].Address, customer UUID at $.message.Text, email at $.message.Text, customer UUID at $.message.HTML, email at $.message.HTML, customer UUID at $.raw, email at $.raw
+    at assert (/srv/payflow/hidden_tests/lib/verifier.ts:17:25)
+    at assertNoErasureViolations (/srv/payflow/hidden_tests/lib/verifier.ts:591:3)
+    at <anonymous> (/srv/payflow/hidden_tests/run.ts:459:7)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async test (/srv/payflow/hidden_tests/run.ts:106:5)
+    at async <anonymous> (/srv/payflow/hidden_tests/run.ts:449:5)
+PASS financial truth and shared unrelated records are retained
+PASS retained financial links remain anonymous and support a later private refund
+FAIL post-erasure refunds preserve financial correctness without restoring PII: Error: post-erasure refund retained customer identity
+    at <anonymous> (/srv/payflow/hidden_tests/run.ts:485:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async test (/srv/payflow/hidden_tests/run.ts:106:5)
+    at async <anonymous> (/srv/payflow/hidden_tests/run.ts:481:5)
+FAIL failed post-erasure refunds remain private and retry safely: Error: failed post-erasure refund retained customer identity
+    at <anonymous> (/srv/payflow/hidden_tests/run.ts:491:34)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async test (/srv/payflow/hidden_tests/run.ts:106:5)
+    at async <anonymous> (/srv/payflow/hidden_tests/run.ts:487:5)
+PASS merchant credentials remain usable after customer erasure
+FAIL customer erasure preserves unrelated customer and merchant-platform survivors: Error: shared-ticket subject retained erased customer PII
+    at <anonymous> (/srv/payflow/hidden_tests/run.ts:511:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async test (/srv/payflow/hidden_tests/run.ts:106:5)
+    at async <anonymous> (/srv/payflow/hidden_tests/run.ts:498:5)
+FAIL failed erasure retries safely and pending asynchronous work is sanitized before completion: Error: PostgreSQL audit retained customer UUID at $.target_id; PostgreSQL audit retained customer UUID at $.target_id; PostgreSQL audit retained customer UUID at $.target_id; PostgreSQL audit retained customer UUID at $.target_id; PostgreSQL attempts retained PII canary at $.request_payload.canary; PostgreSQL invoice-lines retained name at $.description; PostgreSQL outbox retained customer UUID at $.aggregate_id; PostgreSQL outbox retained customer UUID at $.aggregate_id; PostgreSQL outbox retained customer UUID at $.aggregate_id; PostgreSQL outbox retained customer UUID at $.aggregate_id; PostgreSQL outbox retained customer UUID at $.aggregate_id; PostgreSQL outbox retained customer UUID at $.payload.customerId, customer UUID at $.aggregate_id; PostgreSQL provider-webhooks retained provider customer ID at $.payload.data.providerCustomerId; PostgreSQL dead-letters retained email at $.error, PII canary at $.payload.canary; platform.audit_logs row 22 retained customer UUID at $.target_id; platform.audit_logs row 23 retained customer UUID at $.target_id; platform.audit_logs row 24 retained customer UUID at $.target_id; platform.audit_logs row 25 retained customer UUID at $.target_id; payments.payment_attempts row 4 retained PII canary at $.request_payload.canary; payments.invoice_lines row 3 retained name at $.description; operations.outbox_events row 10 retained customer UUID at $.aggregate_id; operations.outbox_events row 24 retained customer UUID at $.aggregate_id; operations.outbox_events row 25 retained customer UUID at $.aggregate_id; operations.outbox_events row 38 retained customer UUID at $.aggregate_id; operations.outbox_events row 39 retained customer UUID at $.aggregate_id; operations.outbox_events row 48 retained customer UUID at $.payload.customerId, customer UUID at $.aggregate_id; operations.dead_letters row 0 retained email at $.error, PII canary at $.payload.canary; operations.provider_webhooks row 5 retained provider customer ID at $.payload.data.providerCustomerId; provider_sandbox.customers row 4 retained provider customer ID at $.id, provider customer ID at $.email; customers.erasure_request_keys row 4 retained customer UUID at $.customer_id; Redis merchant:381882d2-046f-4d05-915a-e3308d80fa7e:customer:df875558-a594-4cd6-bd2c-248d4684745a (string) retained customer UUID at $.key, customer UUID at $.value; OpenSearch retained the subject document; OpenSearch payflow-customers-v1:381882d2-046f-4d05-915a-e3308d80fa7e:df875558-a594-4cd6-bd2c-248d4684745a (via payflow-customers-v1) retained customer UUID at $.id, customer UUID at $.source.customerId; MinIO 381882d2-046f-4d05-915a-e3308d80fa7e/invoices/bbe56368-0971-476b-b317-cd2d1972fff9.json (version null) retained name at $.body.lines[0].description; Mailpit message 5 retained email at $.message.To[0].Address, customer UUID at $.message.Text, email at $.message.Text, customer UUID at $.message.HTML, email at $.message.HTML, customer UUID at $.raw, email at $.raw
+    at <anonymous> (/srv/payflow/hidden_tests/run.ts:556:35)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async test (/srv/payflow/hidden_tests/run.ts:106:5)
+    at async <anonymous> (/srv/payflow/hidden_tests/run.ts:516:5)
+FAIL delayed webhook and document work cannot reintroduce PII: Error: PostgreSQL analytics retained customer UUID at $.anonymous_id; payments.payment_attempts row 0 retained PII canary at $.request_payload.canary; operations.provider_webhooks row 6 retained provider customer ID at $.payload.data.providerCustomerId; operations.analytics_events row 14 retained customer UUID at $.anonymous_id
+    at <anonymous> (/srv/payflow/hidden_tests/run.ts:571:48)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async test (/srv/payflow/hidden_tests/run.ts:106:5)
+    at async <anonymous> (/srv/payflow/hidden_tests/run.ts:558:5)
+FAIL historical event replay is suppressed by durable erasure state: Error: operations.analytics_events row 19 retained customer UUID at $.anonymous_id
+    at <anonymous> (/srv/payflow/hidden_tests/run.ts:601:47)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async test (/srv/payflow/hidden_tests/run.ts:106:5)
+    at async <anonymous> (/srv/payflow/hidden_tests/run.ts:573:5)
+FAIL survivor remains unchanged after replay and delayed work: Error: shared-ticket subject retained erased customer PII
+    at <anonymous> (/srv/payflow/hidden_tests/run.ts:608:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async test (/srv/payflow/hidden_tests/run.ts:106:5)
+    at async <anonymous> (/srv/payflow/hidden_tests/run.ts:603:5)
+

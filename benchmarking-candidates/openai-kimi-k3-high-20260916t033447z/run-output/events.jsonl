@@ -1,0 +1,3 @@
+{"type":"run_event","event_type":"run_started","timestamp":"2026-09-16T03:35:27.552446Z","model":"openai/kimi-k3","reasoning":"high"}
+{"type":"workspace_metrics","status":"available","files":{"added":0,"modified":0,"deleted":0,"renamed":0,"total_changed":0},"lines":{"added":0,"deleted":0,"changed":0},"renames":[]}
+{"type":"run_event","event_type":"run_failed","timestamp":"2026-09-16T03:35:31.040738Z","error":{"type":"PermissionError","message":"[Errno 1] Operation not permitted: '/Users/amaresh/.openhands/profiles/.profiles.lock'"}}

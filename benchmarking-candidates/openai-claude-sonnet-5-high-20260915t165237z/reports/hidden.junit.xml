@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="payflow-gdpr-erasure" tests="13" failures="9">
+  <testcase classname="payflow.gdpr" name="deterministic fixture provisions cross-store PII" time="3.069"></testcase>
+  <testcase classname="payflow.gdpr" name="request contract is tenant-safe, concurrent, and idempotent" time="0.542">
+    <failure message="hidden verification failed">Error: one or more request-contract checks failed
+    at &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:446:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async test (/srv/payflow/hidden_tests/run.ts:106:5)
+    at async &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:381:5)</failure>
+  </testcase>
+  <testcase classname="payflow.gdpr" name="normal subject PII is absent from every active store" time="0.162">
+    <failure message="hidden verification failed">Error: normal erasure found 87 violation(s):
+- customers retained 1 direct subject link(s)
+- payment-link retained 1 direct subject link(s)
+- invoice-link retained 1 direct subject link(s)
+- analytics-link retained 10 direct subject link(s)
+- manifest-link retained 2 direct subject link(s)
+- customer_imports retained 1 source row(s)
+- customer_import manifest retained 1 row(s)
+- PostgreSQL audit retained email at $.metadata.email, customer UUID at $.target_id
+- PostgreSQL audit retained PII canary at $.metadata.line1, customer UUID at $.target_id
+- PostgreSQL audit retained email at $.metadata.value, customer UUID at $.target_id
+- PostgreSQL audit retained customer UUID at $.target_id
+- PostgreSQL audit retained email at $.metadata.subject.email, PII canary at $.metadata.subject.canary, customer UUID at $.metadata.subject.customerId
+- PostgreSQL payments retained customer UUID at $.customer_id, name at $.description, customer UUID at $.customer_snapshot.id
+- PostgreSQL attempts retained customer UUID at $.request_payload.customerId, name at $.request_payload.description
+- PostgreSQL invoices retained customer UUID at $.customer_id, customer UUID at $.billing_snapshot.id
+- PostgreSQL invoice-lines retained name at $.description
+- PostgreSQL outbox retained name at $.payload.name, email at $.payload.email, phone at $.payload.phone, PII canary at $.payload.metadata.privateNote, nested PII canary at $.payload.metadata.nestedRecord, snapshot PII canary at $.payload.metadata.nestedRecord, customer UUID at $.payload.customerId, external reference at $.payload.externalReference, customer UUID at $.aggregate_id
+- PostgreSQL outbox retained PII canary at $.payload.line1, customer UUID at $.payload.customerId, customer UUID at $.aggregate_id
+- PostgreSQL outbox retained email at $.payload.value, customer UUID at $.payload.customerId, customer UUID at $.aggregate_id
+- PostgreSQL outbox retained customer UUID at $.payload.customerId, name at $.payload.billingName, customer UUID at $.aggregate_id
+- PostgreSQL outbox retained email at $.payload.body, PII canary at $.payload.body, PII canary at $.payload.subject, customer UUID at $.payload.customerId, customer UUID at $.aggregate_id
+- PostgreSQL outbox retained customer UUID at $.payload.customerId, email at $.payload.customerEmail
+- PostgreSQL outbox retained customer UUID at $.payload.customerId
+- PostgreSQL outbox retained customer UUID at $.payload.customerId, email at $.payload.customerEmail
+- PostgreSQL outbox retained customer UUID at $.payload.customerId
+- PostgreSQL outbox retained customer UUID at $.payload.customerId, email at $.payload.customerEmail
+- PostgreSQL jobs retained customer UUID at $.payload.customerId, customer UUID at $.payload.customerSnapshot.id, name at $.payload.customerSnapshot.name, email at $.payload.customerSnapshot.email, phone at $.payload.customerSnapshot.phone, PII canary at $.payload.customerSnapshot.metadata.privateNote, nested PII canary at $.payload.customerSnapshot.metadata.nestedRecord, snapshot PII canary at $.payload.customerSnapshot.metadata.nestedRecord, external reference at $.payload.customerSnapshot.external_reference
+- PostgreSQL provider-webhooks retained customer UUID at $.payload.data.customer.id, name at $.payload.data.customer.name, email at $.payload.data.customer.email, PII canary at $.payload.data.customer.canary
+- PostgreSQL idempotency retained customer UUID at $.response_body.customerId
+- PostgreSQL idempotency retained customer UUID at $.response_body.customerId
+- PostgreSQL idempotency retained customer UUID at $.response_body.customerId
+- PostgreSQL analytics retained customer UUID at $.properties.customerId, customer UUID at $.customer_id, customer UUID at $.anonymous_id
+- PostgreSQL analytics retained customer UUID at $.properties.customerId, customer UUID at $.customer_id, customer UUID at $.anonymous_id
+- PostgreSQL analytics retained customer UUID at $.properties.customerId, customer UUID at $.customer_id, customer UUID at $.anonymous_id
+- PostgreSQL analytics retained customer UUID at $.properties.customerId, customer UUID at $.customer_id, customer UUID at $.anonymous_id
+- PostgreSQL analytics retained customer UUID at $.properties.customerId, customer UUID at $.customer_id, customer UUID at $.anonymous_id
+- PostgreSQL analytics retained customer UUID at $.properties.customerId, customer UUID at $.customer_id
+- PostgreSQL analytics retained customer UUID at $.properties.customerId, customer UUID at $.customer_id
+- PostgreSQL analytics retained customer UUID at $.properties.customerId, customer UUID at $.customer_id
+- PostgreSQL analytics retained customer UUID at $.properties.customerId, customer UUID at $.customer_id
+- PostgreSQL analytics retained customer UUID at $.properties.customerId, customer UUID at $.customer_id
+- PostgreSQL manifests retained customer UUID at $.customer_id
+- PostgreSQL manifests retained customer UUID at $.customer_id
+- platform.audit_logs row 0 retained email at $.metadata.email, customer UUID at $.target_id
+- platform.audit_logs row 1 retained PII canary at $.metadata.line1, customer UUID at $.target_id
+- platform.audit_logs row 2 retained email at $.metadata.value, customer UUID at $.target_id
+- platform.audit_logs row 3 retained customer UUID at $.target_id
+- platform.audit_logs row 20 retained email at $.metadata.subject.email, PII canary at $.metadata.subject.canary, customer UUID at $.metadata.subject.customerId
+- customers.customers row 4 retained customer UUID at $.id, customer UUID at $.email, customer UUID at $.external_reference
+- customers.support_tickets row 4 retained PII canary at $.subject
+- payments.payment_intents row 2 retained customer UUID at $.customer_id, name at $.description, customer UUID at $.customer_snapshot.id
+- payments.payment_attempts row 1 retained customer UUID at $.request_payload.customerId, name at $.request_payload.description
+- payments.invoices row 4 retained customer UUID at $.customer_id, customer UUID at $.billing_snapshot.id
+- payments.invoice_lines row 0 retained name at $.description
+- operations.jobs row 1 retained customer UUID at $.payload.customerId, customer UUID at $.payload.customerSnapshot.id, name at $.payload.customerSnapshot.name, email at $.payload.customerSnapshot.email, phone at $.payload.customerSnapshot.phone, PII canary at $.payload.customerSnapshot.metadata.privateNote, nested PII canary at $.payload.customerSnapshot.metadata.nestedRecord, snapshot PII canary at $.payload.customerSnapshot.metadata.nestedRecord, external reference at $.payload.customerSnapshot.external_reference
+- operations.outbox_events row 0 retained name at $.payload.name, email at $.payload.email, phone at $.payload.phone, PII canary at $.payload.metadata.privateNote, nested PII canary at $.payload.metadata.nestedRecord, snapshot PII canary at $.payload.metadata.nestedRecord, customer UUID at $.payload.customerId, external reference at $.payload.externalReference, customer UUID at $.aggregate_id
+- operations.outbox_events row 1 retained PII canary at $.payload.line1, customer UUID at $.payload.customerId, customer UUID at $.aggregate_id
+- operations.outbox_events row 2 retained email at $.payload.value, customer UUID at $.payload.customerId, customer UUID at $.aggregate_id
+- operations.outbox_events row 3 retained customer UUID at $.payload.customerId, name at $.payload.billingName, customer UUID at $.aggregate_id
+- operations.outbox_events row 4 retained email at $.payload.body, PII canary at $.payload.body, PII canary at $.payload.subject, customer UUID at $.payload.customerId, customer UUID at $.aggregate_id
+- operations.outbox_events row 6 retained customer UUID at $.payload.customerId, email at $.payload.customerEmail
+- operations.outbox_events row 29 retained customer UUID at $.payload.customerId
+- operations.outbox_events row 37 retained customer UUID at $.payload.customerId, email at $.payload.customerEmail
+- operations.outbox_events row 38 retained customer UUID at $.payload.customerId
+- operations.outbox_events row 39 retained customer UUID at $.payload.customerId, email at $.payload.customerEmail
+- operations.provider_webhooks row 2 retained customer UUID at $.payload.data.customer.id, name at $.payload.data.customer.name, email at $.payload.data.customer.email, PII canary at $.payload.data.customer.canary
+- operations.idempotency_keys row 1 retained customer UUID at $.response_body.customerId
+- operations.idempotency_keys row 4 retained customer UUID at $.response_body.customerId
+- operations.idempotency_keys row 5 retained customer UUID at $.response_body.customerId
+- operations.analytics_events row 34 retained customer UUID at $.properties.customerId, customer UUID at $.customer_id, customer UUID at $.anonymous_id
+- operations.analytics_events row 35 retained customer UUID at $.properties.customerId, customer UUID at $.customer_id, customer UUID at $.anonymous_id
+- operations.analytics_events row 36 retained customer UUID at $.properties.customerId, customer UUID at $.customer_id, customer UUID at $.anonymous_id
+- operations.analytics_events row 37 retained customer UUID at $.properties.customerId, customer UUID at $.customer_id, customer UUID at $.anonymous_id
+- operations.analytics_events row 38 retained customer UUID at $.properties.customerId, customer UUID at $.customer_id, customer UUID at $.anonymous_id
+- operations.analytics_events row 39 retained customer UUID at $.properties.customerId, customer UUID at $.customer_id
+- operations.analytics_events row 40 retained customer UUID at $.properties.customerId, customer UUID at $.customer_id
+- operations.analytics_events row 41 retained customer UUID at $.properties.customerId, customer UUID at $.customer_id
+- operations.analytics_events row 42 retained customer UUID at $.properties.customerId, customer UUID at $.customer_id
+- operations.analytics_events row 43 retained customer UUID at $.properties.customerId, customer UUID at $.customer_id
+- operations.document_manifests row 1 retained customer UUID at $.customer_id
+- operations.document_manifests row 11 retained customer UUID at $.customer_id
+- OpenSearch payflow-customers-v1:4f309805-6935-44d2-addd-8098ccd2a070:47dac019-57e6-4c4d-a08d-fe590d4f8d59 (via payflow-customers-v1) retained customer UUID at $.id, customer UUID at $.source.customerId, email at $.source.email, name at $.source.name, phone at $.source.phone
+- MinIO 4f309805-6935-44d2-addd-8098ccd2a070/imports/865431d2-511f-4f7f-92ad-fce8820245ba.json (version null) retained object metadata PII canary at $.metadata[&quot;privacy-canary&quot;], customer UUID at $.body.customerId, email at $.body.email, PII canary at $.body.canary, nested PII canary at $.body.nested.profile.marker, snapshot PII canary at $.body.nested.paymentSnapshot.marker, object metadata PII canary at $.body.objectMetadata.marker
+- MinIO 4f309805-6935-44d2-addd-8098ccd2a070/invoices/3d4f7efe-df44-498e-8d6b-d073b650fa37.json (version null) retained customer UUID at $.body.customer.id, name at $.body.lines[0].description
+- MinIO 4f309805-6935-44d2-addd-8098ccd2a070/receipts/e4a716a1-bba8-4b7b-8117-0426178f5a1f.json (version null) retained customer UUID at $.body.customer.id
+- Mailpit message 2 retained email at $.message.To[0].Address, customer UUID at $.message.Text, email at $.message.Text, customer UUID at $.message.HTML, email at $.message.HTML, customer UUID at $.raw, email at $.raw
+- Mailpit message 8 retained email at $.message.To[0].Address, customer UUID at $.message.Text, email at $.message.Text, customer UUID at $.message.HTML, email at $.message.HTML, customer UUID at $.raw, email at $.raw
+    at assert (/srv/payflow/hidden_tests/lib/verifier.ts:17:25)
+    at assertNoErasureViolations (/srv/payflow/hidden_tests/lib/verifier.ts:591:3)
+    at &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:459:7)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async test (/srv/payflow/hidden_tests/run.ts:106:5)
+    at async &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:449:5)</failure>
+  </testcase>
+  <testcase classname="payflow.gdpr" name="financial truth and shared unrelated records are retained" time="0.001"></testcase>
+  <testcase classname="payflow.gdpr" name="retained financial links remain anonymous and support a later private refund" time="0.000"></testcase>
+  <testcase classname="payflow.gdpr" name="post-erasure refunds preserve financial correctness without restoring PII" time="0.829">
+    <failure message="hidden verification failed">Error: post-erasure refund retained customer identity
+    at &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:485:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async test (/srv/payflow/hidden_tests/run.ts:106:5)
+    at async &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:481:5)</failure>
+  </testcase>
+  <testcase classname="payflow.gdpr" name="failed post-erasure refunds remain private and retry safely" time="0.155">
+    <failure message="hidden verification failed">Error: failed post-erasure refund retained customer identity
+    at &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:491:34)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async test (/srv/payflow/hidden_tests/run.ts:106:5)
+    at async &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:487:5)</failure>
+  </testcase>
+  <testcase classname="payflow.gdpr" name="merchant credentials remain usable after customer erasure" time="0.006"></testcase>
+  <testcase classname="payflow.gdpr" name="customer erasure preserves unrelated customer and merchant-platform survivors" time="0.019">
+    <failure message="hidden verification failed">Error: shared-ticket subject retained erased customer PII
+    at &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:511:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async test (/srv/payflow/hidden_tests/run.ts:106:5)
+    at async &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:498:5)</failure>
+  </testcase>
+  <testcase classname="payflow.gdpr" name="failed erasure retries safely and pending asynchronous work is sanitized before completion" time="2.279">
+    <failure message="hidden verification failed">Error: customers retained 1 direct subject link(s); payment-link retained 1 direct subject link(s); invoice-link retained 1 direct subject link(s); analytics-link retained 6 direct subject link(s); manifest-link retained 1 direct subject link(s); customer_imports retained 1 source row(s); customer_import manifest retained 1 row(s); PostgreSQL audit retained email at $.metadata.email, customer UUID at $.target_id; PostgreSQL audit retained PII canary at $.metadata.line1, customer UUID at $.target_id; PostgreSQL audit retained email at $.metadata.value, customer UUID at $.target_id; PostgreSQL audit retained customer UUID at $.target_id; PostgreSQL payments retained customer UUID at $.customer_id, name at $.description, customer UUID at $.customer_snapshot.id; PostgreSQL attempts retained PII canary at $.request_payload.canary, customer UUID at $.request_payload.customerId; PostgreSQL invoices retained customer UUID at $.customer_id, customer UUID at $.billing_snapshot.id; PostgreSQL invoice-lines retained name at $.description; PostgreSQL outbox retained customer UUID at $.payload.customerId, email at $.payload.customerEmail; PostgreSQL outbox retained name at $.payload.name, email at $.payload.email, phone at $.payload.phone, PII canary at $.payload.metadata.privateNote, nested PII canary at $.payload.metadata.nestedRecord, snapshot PII canary at $.payload.metadata.nestedRecord, customer UUID at $.payload.customerId, external reference at $.payload.externalReference, customer UUID at $.aggregate_id; PostgreSQL outbox retained PII canary at $.payload.line1, customer UUID at $.payload.customerId, customer UUID at $.aggregate_id; PostgreSQL outbox retained email at $.payload.value, customer UUID at $.payload.customerId, customer UUID at $.aggregate_id; PostgreSQL outbox retained customer UUID at $.payload.customerId, name at $.payload.billingName, customer UUID at $.aggregate_id; PostgreSQL outbox retained email at $.payload.body, PII canary at $.payload.body, PII canary at $.payload.subject, customer UUID at $.payload.customerId, customer UUID at $.aggregate_id; PostgreSQL jobs retained customer UUID at $.payload.customerId, PII canary at $.payload.customerSnapshot.canary; PostgreSQL provider-webhooks retained provider customer ID at $.payload.data.providerCustomerId; PostgreSQL dead-letters retained email at $.error, email at $.payload.email, PII canary at $.payload.canary, customer UUID at $.payload.customerId; PostgreSQL idempotency retained customer UUID at $.response_body.customerId; PostgreSQL analytics retained customer UUID at $.properties.customerId, customer UUID at $.customer_id, customer UUID at $.anonymous_id; PostgreSQL analytics retained customer UUID at $.properties.customerId, customer UUID at $.customer_id, customer UUID at $.anonymous_id; PostgreSQL analytics retained customer UUID at $.properties.customerId, customer UUID at $.customer_id, customer UUID at $.anonymous_id; PostgreSQL analytics retained customer UUID at $.properties.customerId, customer UUID at $.customer_id, customer UUID at $.anonymous_id; PostgreSQL analytics retained customer UUID at $.properties.customerId, customer UUID at $.customer_id, customer UUID at $.anonymous_id; PostgreSQL analytics retained customer UUID at $.properties.customerId, customer UUID at $.customer_id; PostgreSQL manifests retained customer UUID at $.customer_id; platform.audit_logs row 12 retained email at $.metadata.email, customer UUID at $.target_id; platform.audit_logs row 13 retained PII canary at $.metadata.line1, customer UUID at $.target_id; platform.audit_logs row 14 retained email at $.metadata.value, customer UUID at $.target_id; platform.audit_logs row 15 retained customer UUID at $.target_id; customers.customers row 4 retained customer UUID at $.id, customer UUID at $.email, customer UUID at $.external_reference; payments.payment_intents row 4 retained customer UUID at $.customer_id, name at $.description, customer UUID at $.customer_snapshot.id; payments.payment_attempts row 4 retained PII canary at $.request_payload.canary, customer UUID at $.request_payload.customerId; payments.invoices row 4 retained customer UUID at $.customer_id, customer UUID at $.billing_snapshot.id; payments.invoice_lines row 3 retained name at $.description; operations.jobs row 4 retained customer UUID at $.payload.customerId, PII canary at $.payload.customerSnapshot.canary; operations.outbox_events row 10 retained customer UUID at $.payload.customerId, email at $.payload.customerEmail; operations.outbox_events row 16 retained name at $.payload.name, email at $.payload.email, phone at $.payload.phone, PII canary at $.payload.metadata.privateNote, nested PII canary at $.payload.metadata.nestedRecord, snapshot PII canary at $.payload.metadata.nestedRecord, customer UUID at $.payload.customerId, external reference at $.payload.externalReference, customer UUID at $.aggregate_id; operations.outbox_events row 17 retained PII canary at $.payload.line1, customer UUID at $.payload.customerId, customer UUID at $.aggregate_id; operations.outbox_events row 18 retained email at $.payload.value, customer UUID at $.payload.customerId, customer UUID at $.aggregate_id; operations.outbox_events row 19 retained customer UUID at $.payload.customerId, name at $.payload.billingName, customer UUID at $.aggregate_id; operations.outbox_events row 26 retained email at $.payload.body, PII canary at $.payload.body, PII canary at $.payload.subject, customer UUID at $.payload.customerId, customer UUID at $.aggregate_id; operations.dead_letters row 0 retained email at $.error, email at $.payload.email, PII canary at $.payload.canary, customer UUID at $.payload.customerId; operations.provider_webhooks row 5 retained provider customer ID at $.payload.data.providerCustomerId; operations.idempotency_keys row 8 retained customer UUID at $.response_body.customerId; operations.analytics_events row 13 retained customer UUID at $.properties.customerId, customer UUID at $.customer_id, customer UUID at $.anonymous_id; operations.analytics_events row 14 retained customer UUID at $.properties.customerId, customer UUID at $.customer_id, customer UUID at $.anonymous_id; operations.analytics_events row 15 retained customer UUID at $.properties.customerId, customer UUID at $.customer_id, customer UUID at $.anonymous_id; operations.analytics_events row 16 retained customer UUID at $.properties.customerId, customer UUID at $.customer_id, customer UUID at $.anonymous_id; operations.analytics_events row 17 retained customer UUID at $.properties.customerId, customer UUID at $.customer_id, customer UUID at $.anonymous_id; operations.analytics_events row 43 retained customer UUID at $.properties.customerId, customer UUID at $.customer_id; operations.document_manifests row 7 retained customer UUID at $.customer_id; OpenSearch payflow-customers-v1:4f309805-6935-44d2-addd-8098ccd2a070:fbaf2576-5020-4432-b33e-0797e801e98c (via payflow-customers-v1) retained customer UUID at $.id, customer UUID at $.source.customerId, email at $.source.email, name at $.source.name, phone at $.source.phone; MinIO 4f309805-6935-44d2-addd-8098ccd2a070/imports/93dfa230-33ab-4e25-a8cd-b40645547e36.json (version null) retained object metadata PII canary at $.metadata[&quot;privacy-canary&quot;], customer UUID at $.body.customerId, email at $.body.email, PII canary at $.body.canary, nested PII canary at $.body.nested.profile.marker, snapshot PII canary at $.body.nested.paymentSnapshot.marker, object metadata PII canary at $.body.objectMetadata.marker; MinIO 4f309805-6935-44d2-addd-8098ccd2a070/invoices/e4333cac-2f30-4ad3-8fa8-7c7fab78e8e5.json (version null) retained customer UUID at $.body.customer.id, name at $.body.lines[0].description; Mailpit message 5 retained email at $.message.To[0].Address, customer UUID at $.message.Text, email at $.message.Text, customer UUID at $.message.HTML, email at $.message.HTML, customer UUID at $.raw, email at $.raw
+    at &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:556:35)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async test (/srv/payflow/hidden_tests/run.ts:106:5)
+    at async &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:516:5)</failure>
+  </testcase>
+  <testcase classname="payflow.gdpr" name="delayed webhook and document work cannot reintroduce PII" time="0.411">
+    <failure message="hidden verification failed">Error: analytics-link retained 7 direct subject link(s); manifest-link retained 2 direct subject link(s); PostgreSQL outbox retained customer UUID at $.payload.customerId; PostgreSQL outbox retained customer UUID at $.payload.customerId; PostgreSQL outbox retained customer UUID at $.payload.customerId; PostgreSQL jobs retained customer UUID at $.payload.customerId, customer UUID at $.payload.customerSnapshot.id; payments.payment_intents row 0 retained customer UUID at $.customer_id, name at $.description, customer UUID at $.customer_snapshot.id; operations.jobs row 5 retained customer UUID at $.payload.customerId, customer UUID at $.payload.customerSnapshot.id; operations.outbox_events row 32 retained customer UUID at $.payload.customerId; operations.outbox_events row 33 retained customer UUID at $.payload.customerId; operations.outbox_events row 49 retained customer UUID at $.payload.customerId; operations.provider_webhooks row 6 retained provider customer ID at $.payload.data.providerCustomerId; operations.analytics_events row 47 retained customer UUID at $.properties.customerId, customer UUID at $.customer_id; operations.analytics_events row 48 retained customer UUID at $.properties.customerId, customer UUID at $.customer_id; operations.analytics_events row 49 retained customer UUID at $.properties.customerId, customer UUID at $.customer_id; operations.document_manifests row 14 retained customer UUID at $.customer_id; MinIO 4f309805-6935-44d2-addd-8098ccd2a070/receipts/8f77d06f-3323-464d-8556-8821d3f2ac9b.json (version null) retained customer UUID at $.body.customer.id
+    at &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:571:48)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async test (/srv/payflow/hidden_tests/run.ts:106:5)
+    at async &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:558:5)</failure>
+  </testcase>
+  <testcase classname="payflow.gdpr" name="historical event replay is suppressed by durable erasure state" time="1.442">
+    <failure message="hidden verification failed">Error: analytics-link retained 11 direct subject link(s); PostgreSQL analytics retained email at $.email, name at $.properties.name, PII canary at $.properties.canary, customer UUID at $.properties.customerId, email at $.properties.customerEmail, provider customer ID at $.properties.providerCustomerId, customer UUID at $.customer_id; PostgreSQL analytics retained email at $.email, email at $.properties.email, name at $.properties.profile.name, phone at $.properties.profile.phone, nested PII canary at $.properties.profile.nested.marker, snapshot PII canary at $.properties.profile.paymentSnapshot.marker, external reference at $.properties.externalReference, customer UUID at $.customer_id, customer UUID at $.anonymous_id; operations.analytics_events row 50 retained email at $.email, name at $.properties.name, PII canary at $.properties.canary, customer UUID at $.properties.customerId, email at $.properties.customerEmail, provider customer ID at $.properties.providerCustomerId, customer UUID at $.customer_id; operations.analytics_events row 51 retained email at $.email, email at $.properties.email, name at $.properties.profile.name, phone at $.properties.profile.phone, nested PII canary at $.properties.profile.nested.marker, snapshot PII canary at $.properties.profile.paymentSnapshot.marker, external reference at $.properties.externalReference, customer UUID at $.customer_id, customer UUID at $.anonymous_id
+    at &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:601:47)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async test (/srv/payflow/hidden_tests/run.ts:106:5)
+    at async &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:573:5)</failure>
+  </testcase>
+  <testcase classname="payflow.gdpr" name="survivor remains unchanged after replay and delayed work" time="0.003">
+    <failure message="hidden verification failed">Error: shared-ticket subject retained erased customer PII
+    at &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:608:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async test (/srv/payflow/hidden_tests/run.ts:106:5)
+    at async &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:603:5)</failure>
+  </testcase>
+</testsuite>

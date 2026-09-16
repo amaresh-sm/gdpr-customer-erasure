@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="payflow-gdpr-erasure" tests="7" failures="5">
+  <testcase classname="payflow.gdpr" name="deterministic fixture provisions cross-store PII" time="0.171">
+    <failure message="hidden verification failed">Error: POST /v1/customer-imports: expected 201, got 500: {&quot;error&quot;:&quot;internal_error&quot;}
+    at api (/srv/payflow/hidden_tests/lib/http.ts:24:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async createSubject (/srv/payflow/hidden_tests/lib/fixture.ts:350:20)
+    at async seedFixture (/srv/payflow/hidden_tests/lib/fixture.ts:450:18)
+    at async &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:374:15)
+    at async test (/srv/payflow/hidden_tests/run.ts:106:5)
+    at async &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:373:3)</failure>
+  </testcase>
+  <testcase classname="payflow.gdpr" name="minimal API fixture provisions isolated customer records" time="0.020"></testcase>
+  <testcase classname="payflow.gdpr" name="independent API contract checks" time="0.058"></testcase>
+  <testcase classname="payflow.gdpr" name="partial normal fixture provisions isolated subjects" time="0.070">
+    <failure message="hidden verification failed">Error: POST /v1/customer-imports: expected 201, got 500: {&quot;error&quot;:&quot;internal_error&quot;}
+    at api (/srv/payflow/hidden_tests/lib/http.ts:24:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async createSubject (/srv/payflow/hidden_tests/lib/fixture.ts:350:20)
+    at async seedFixture (/srv/payflow/hidden_tests/lib/fixture.ts:450:18)
+    at async seedPartialCoreFixture (/srv/payflow/hidden_tests/lib/fixture.ts:646:10)
+    at async &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:214:13)
+    at async test (/srv/payflow/hidden_tests/run.ts:106:5)
+    at async partialFixture (/srv/payflow/hidden_tests/run.ts:213:3)
+    at async runPartialDomainCells (/srv/payflow/hidden_tests/run.ts:233:25)
+    at async &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:611:5)</failure>
+  </testcase>
+  <testcase classname="payflow.gdpr" name="partial financial fixture provisions isolated subjects" time="0.092">
+    <failure message="hidden verification failed">Error: POST /v1/customer-imports: expected 201, got 500: {&quot;error&quot;:&quot;internal_error&quot;}
+    at api (/srv/payflow/hidden_tests/lib/http.ts:24:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async createSubject (/srv/payflow/hidden_tests/lib/fixture.ts:350:20)
+    at async seedFixture (/srv/payflow/hidden_tests/lib/fixture.ts:450:18)
+    at async seedPartialCoreFixture (/srv/payflow/hidden_tests/lib/fixture.ts:646:10)
+    at async &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:214:13)
+    at async test (/srv/payflow/hidden_tests/run.ts:106:5)
+    at async partialFixture (/srv/payflow/hidden_tests/run.ts:213:3)
+    at async runPartialDomainCells (/srv/payflow/hidden_tests/run.ts:268:28)
+    at async &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:611:5)</failure>
+  </testcase>
+  <testcase classname="payflow.gdpr" name="partial scope fixture provisions isolated subjects" time="0.051">
+    <failure message="hidden verification failed">Error: POST /v1/customer-imports: expected 201, got 500: {&quot;error&quot;:&quot;internal_error&quot;}
+    at api (/srv/payflow/hidden_tests/lib/http.ts:24:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async createSubject (/srv/payflow/hidden_tests/lib/fixture.ts:350:20)
+    at async seedFixture (/srv/payflow/hidden_tests/lib/fixture.ts:450:18)
+    at async seedPartialCoreFixture (/srv/payflow/hidden_tests/lib/fixture.ts:646:10)
+    at async &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:214:13)
+    at async test (/srv/payflow/hidden_tests/run.ts:106:5)
+    at async partialFixture (/srv/payflow/hidden_tests/run.ts:213:3)
+    at async runPartialDomainCells (/srv/payflow/hidden_tests/run.ts:293:24)
+    at async &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:611:5)</failure>
+  </testcase>
+  <testcase classname="payflow.gdpr" name="partial async fixture provisions isolated subjects" time="0.075">
+    <failure message="hidden verification failed">Error: POST /v1/customer-imports: expected 201, got 500: {&quot;error&quot;:&quot;internal_error&quot;}
+    at api (/srv/payflow/hidden_tests/lib/http.ts:24:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async createSubject (/srv/payflow/hidden_tests/lib/fixture.ts:350:20)
+    at async seedFixture (/srv/payflow/hidden_tests/lib/fixture.ts:450:18)
+    at async seedPartialCoreFixture (/srv/payflow/hidden_tests/lib/fixture.ts:646:10)
+    at async &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:214:13)
+    at async test (/srv/payflow/hidden_tests/run.ts:106:5)
+    at async partialFixture (/srv/payflow/hidden_tests/run.ts:213:3)
+    at async runPartialDomainCells (/srv/payflow/hidden_tests/run.ts:318:24)
+    at async &lt;anonymous&gt; (/srv/payflow/hidden_tests/run.ts:611:5)</failure>
+  </testcase>
+</testsuite>

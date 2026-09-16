@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "state": "complete",
+  "comparable": true,
+  "hard_pass": false,
+  "earned": 0.0937,
+  "maximum": 1,
+  "evaluated_maximum": 1,
+  "unverified_maximum": 0,
+  "checks": [
+    {
+      "id": "api.unknown_customer",
+      "label": "Unknown customer is tenant-safe",
+      "maximum": 0.0125,
+      "earned": 0.0125,
+      "state": "pass"
+    },
+    {
+      "id": "api.cross_tenant_rejection",
+      "label": "Cross-tenant customer is hidden without mutation",
+      "maximum": 0.0125,
+      "earned": 0.0125,
+      "state": "pass"
+    },
+    {
+      "id": "api.concurrent_idempotency",
+      "label": "Concurrent same-key requests share one workflow",
+      "maximum": 0.025,
+      "earned": 0.025,
+      "state": "pass"
+    },
+    {
+      "id": "api.customer_deduplication",
+      "label": "Alternate key reuses the customer workflow",
+      "maximum": 0.0187,
+      "earned": 0.0187,
+      "state": "pass"
+    },
+    {
+      "id": "api.key_reuse",
+      "label": "Idempotent retry returns the original request",
+      "maximum": 0.0125,
+      "earned": 0.0125,
+      "state": "pass"
+    },
+    {
+      "id": "api.key_conflict",
+      "label": "Key reuse for another customer is rejected",
+      "maximum": 0.0125,
+      "earned": 0.0125,
+      "state": "pass"
+    }
+  ],
+  "fixtures": [
+    {
+      "id": "full-cross-store",
+      "state": "failed",
+      "evidence": "Error: POST /v1/customer-imports: expected 201, got 500: {\"error\":\"internal_error\"}\n    at api (/srv/payflow/hidden_tests/lib/http.ts:24:11)\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async createSubject (/srv/payflow/hidden_tests/lib/fixture.ts:350:20)\n    at async seedFixture (/srv/payflow/hidden_tests/lib/fixture.ts:450:18)\n    at async <anonymous> (/srv/payflow/hidden_tests/run.ts:374:15)\n    at async test (/srv/payflow/hidden_tests/run.ts:106:5)\n    at async <anonymous> (/srv/payflow/hidden_tests/run.ts:373:3)"
+    },
+    {
+      "id": "api-contract",
+      "state": "ready"
+    },
+    {
+      "id": "partial-normal",
+      "state": "failed",
+      "evidence": "Error: POST /v1/customer-imports: expected 201, got 500: {\"error\":\"internal_error\"}\n    at api (/srv/payflow/hidden_tests/lib/http.ts:24:11)\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async createSubject (/srv/payflow/hidden_tests/lib/fixture.ts:350:20)\n    at async seedFixture (/srv/payflow/hidden_tests/lib/fixture.ts:450:18)\n    at async seedPartialCoreFixture (/srv/payflow/hidden_tests/lib/fixture.ts:646:10)\n    at async <anonymous> (/srv/payflow/hidden_tests/run.ts:214:13)\n    at async test (/srv/payflow/hidden_tests/run.ts:106:5)\n    at async partialFixture (/srv/payflow/hidden_tests/run.ts:213:3)\n    at async runPartialDomainCells (/srv/payflow/hidden_tests/run.ts:233:25)\n    at async <anonymous> (/srv/payflow/hidden_tests/run.ts:611:5)"
+    },
+    {
+      "id": "partial-financial",
+      "state": "failed",
+      "evidence": "Error: POST /v1/customer-imports: expected 201, got 500: {\"error\":\"internal_error\"}\n    at api (/srv/payflow/hidden_tests/lib/http.ts:24:11)\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async createSubject (/srv/payflow/hidden_tests/lib/fixture.ts:350:20)\n    at async seedFixture (/srv/payflow/hidden_tests/lib/fixture.ts:450:18)\n    at async seedPartialCoreFixture (/srv/payflow/hidden_tests/lib/fixture.ts:646:10)\n    at async <anonymous> (/srv/payflow/hidden_tests/run.ts:214:13)\n    at async test (/srv/payflow/hidden_tests/run.ts:106:5)\n    at async partialFixture (/srv/payflow/hidden_tests/run.ts:213:3)\n    at async runPartialDomainCells (/srv/payflow/hidden_tests/run.ts:268:28)\n    at async <anonymous> (/srv/payflow/hidden_tests/run.ts:611:5)"
+    },
+    {
+      "id": "partial-scope",
+      "state": "failed",
+      "evidence": "Error: POST /v1/customer-imports: expected 201, got 500: {\"error\":\"internal_error\"}\n    at api (/srv/payflow/hidden_tests/lib/http.ts:24:11)\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async createSubject (/srv/payflow/hidden_tests/lib/fixture.ts:350:20)\n    at async seedFixture (/srv/payflow/hidden_tests/lib/fixture.ts:450:18)\n    at async seedPartialCoreFixture (/srv/payflow/hidden_tests/lib/fixture.ts:646:10)\n    at async <anonymous> (/srv/payflow/hidden_tests/run.ts:214:13)\n    at async test (/srv/payflow/hidden_tests/run.ts:106:5)\n    at async partialFixture (/srv/payflow/hidden_tests/run.ts:213:3)\n    at async runPartialDomainCells (/srv/payflow/hidden_tests/run.ts:293:24)\n    at async <anonymous> (/srv/payflow/hidden_tests/run.ts:611:5)"
+    },
+    {
+      "id": "partial-async",
+      "state": "failed",
+      "evidence": "Error: POST /v1/customer-imports: expected 201, got 500: {\"error\":\"internal_error\"}\n    at api (/srv/payflow/hidden_tests/lib/http.ts:24:11)\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async createSubject (/srv/payflow/hidden_tests/lib/fixture.ts:350:20)\n    at async seedFixture (/srv/payflow/hidden_tests/lib/fixture.ts:450:18)\n    at async seedPartialCoreFixture (/srv/payflow/hidden_tests/lib/fixture.ts:646:10)\n    at async <anonymous> (/srv/payflow/hidden_tests/run.ts:214:13)\n    at async test (/srv/payflow/hidden_tests/run.ts:106:5)\n    at async partialFixture (/srv/payflow/hidden_tests/run.ts:213:3)\n    at async runPartialDomainCells (/srv/payflow/hidden_tests/run.ts:318:24)\n    at async <anonymous> (/srv/payflow/hidden_tests/run.ts:611:5)"
+    }
+  ],
+  "diagnostics": {
+    "passed_checks": 6,
+    "failed_checks": 0,
+    "blocked_checks": 0,
+    "blocked_check_ids": []
+  },
+  "blocked_reason": "full cross-store fixture was unavailable; only independently observed checks are credited"
+}

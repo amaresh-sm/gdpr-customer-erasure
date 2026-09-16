@@ -1,0 +1,1 @@
+{"type":"gateway_response","timestamp":"2026-09-16T06:12:53.050939Z","model":"openai/deepseek-v4-pro","status":"error","latency_ms":1989.667,"error":{"type":"BadRequestError","message":"litellm.BadRequestError: OpenAIException - invalid api key"}}

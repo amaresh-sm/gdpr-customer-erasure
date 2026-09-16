@@ -109,7 +109,8 @@ npx --prefix codebase tsx scripts/candidates/summary.ts -- --run-dir benchmarkin
 The Portkey key is streamed only into a trusted proxy container's tmpfs and is not a model-container
 environment variable, bind mount, candidate file, or persisted report. The report records only a
 SHA-256 route identity. Raw Codex JSONL is retained only temporarily, then sanitized into
-`metadata.json` and `logs/events.sanitized.json`. Cgroup CPU/memory sampling and credential leak
+`metadata.json` and `logs/events.sanitized.json`. The model container's exact combined stdout/stderr
+is retained as `logs/container.raw.log` for debugging completed and failed runs. Cgroup CPU/memory sampling and credential leak
 scanning are currently explicitly marked `not_available`; the launcher does not fabricate them.
 
 For compatibility with existing private benchmark configuration, a supplied private environment

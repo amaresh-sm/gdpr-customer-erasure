@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "harness": {
+    "name": "hackerrank-openhands-gateway",
+    "version": "0.1.0"
+  },
+  "run": {
+    "status": "failed",
+    "exit_code": 1,
+    "error": {
+      "type": "ConversationRunError",
+      "message": "Conversation run failed for id=f93fa56e-d662-465d-a2f4-eb1157e2f001: litellm.BadRequestError: OpenAIException - request body must be valid JSON"
+    }
+  },
+  "model": {
+    "name": "openai/kimi-k3",
+    "reasoning": "high",
+    "provider": "hackerrank-gateway"
+  },
+  "timing": {
+    "started_at": "2026-09-16T03:38:20.632951Z",
+    "completed_at": "2026-09-16T04:00:42.673617Z",
+    "duration_ms": 1342040,
+    "llm_requests": {
+      "count": 0,
+      "with_latency": 0,
+      "successful": 0,
+      "failed": 0,
+      "total_latency_ms": 0.0,
+      "average_latency_ms": null,
+      "min_latency_ms": null,
+      "max_latency_ms": null
+    }
+  },
+  "usage": {
+    "source": null,
+    "input_tokens": null,
+    "cached_input_tokens": null,
+    "cache_read_tokens": null,
+    "cache_write_tokens": null,
+    "output_tokens": null,
+    "reasoning_tokens": null,
+    "total_tokens": null
+  },
+  "cost": {
+    "gateway": {
+      "amount_usd": null,
+      "currency": "USD",
+      "status": "unavailable",
+      "source": "gateway",
+      "responses_with_cost": 0
+    },
+    "openhands": {
+      "amount_usd": null,
+      "currency": "USD",
+      "status": "unavailable",
+      "source": "openhands"
+    },
+    "custom_estimation": {
+      "amount_usd": null,
+      "currency": "USD",
+      "status": "unavailable",
+      "source": "custom_pricing_table",
+      "pricing_version": 1,
+      "model": "openai/kimi-k3",
+      "normalized_model": "kimi-k3",
+      "requests": 0,
+      "requests_with_usage": 0,
+      "requests_missing_usage": 0,
+      "reason": "token_usage_unavailable"
+    }
+  },
+  "workspace": {
+    "type": "workspace_metrics",
+    "status": "available",
+    "files": {
+      "added": 10,
+      "modified": 11,
+      "deleted": 0,
+      "renamed": 0,
+      "total_changed": 21
+    },
+    "lines": {
+      "added": 1231,
+      "deleted": 25,
+      "changed": 1256
+    },
+    "renames": []
+  },
+  "tools": {
+    "total": 134,
+    "successful": 131,
+    "failed": 3,
+    "cancelled": 0,
+    "rejected": 0,
+    "unknown": 0,
+    "by_tool": {
+      "terminal": 37,
+      "file_editor": 96,
+      "think": 1
+    }
+  },
+  "trace": {
+    "events_path": "events.jsonl",
+    "event_count": 274,
+    "invalid_event_count": 0,
+    "integrity_sha256": "e5233098cbe293052e3c8df8c9571f73c3886342bb396e7ec63a949622576d36"
+  }
+}

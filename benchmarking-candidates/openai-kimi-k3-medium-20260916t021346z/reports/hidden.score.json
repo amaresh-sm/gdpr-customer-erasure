@@ -1,0 +1,260 @@
+{
+  "schema_version": 1,
+  "state": "complete",
+  "comparable": true,
+  "hard_pass": false,
+  "earned": 0.1937,
+  "maximum": 1,
+  "evaluated_maximum": 1,
+  "unverified_maximum": 0,
+  "checks": [
+    {
+      "id": "api.unknown_customer",
+      "label": "Unknown customer is tenant-safe",
+      "maximum": 0.0125,
+      "earned": 0.0125,
+      "state": "pass"
+    },
+    {
+      "id": "api.concurrent_idempotency",
+      "label": "Concurrent same-key requests share one workflow",
+      "maximum": 0.025,
+      "earned": 0.025,
+      "state": "pass"
+    },
+    {
+      "id": "api.cross_tenant",
+      "label": "Cross-tenant customer and request are hidden without mutation",
+      "maximum": 0.0125,
+      "earned": 0.0125,
+      "state": "pass"
+    },
+    {
+      "id": "api.customer_deduplication",
+      "label": "Alternate key reuses the customer workflow",
+      "maximum": 0.0187,
+      "earned": 0.0187,
+      "state": "pass"
+    },
+    {
+      "id": "api.key_reuse",
+      "label": "Idempotent retry returns the original request",
+      "maximum": 0.0125,
+      "earned": 0.0125,
+      "state": "pass"
+    },
+    {
+      "id": "api.key_conflict",
+      "label": "Key reuse for another customer is rejected",
+      "maximum": 0.0125,
+      "earned": 0.0125,
+      "state": "pass"
+    },
+    {
+      "id": "workflow.completed",
+      "label": "Request reaches completed only after active-store convergence",
+      "maximum": 0.0313,
+      "earned": 0,
+      "state": "fail",
+      "evidence": "erasure verification found 40 violation(s):\n- PostgreSQL audit retained email at $.metadata.subject.email, PII canary at $.metadata.subject.canary, customer UUID at $.metadata.subject.customerId\n- PostgreSQL audit retained customer UUID at $.target_id\n- PostgreSQL audit retained customer UUID at $.target_id\n- PostgreSQL audit retained customer UUID at $.target_id\n- PostgreSQL audit retained customer UUID at $.target_id\n- PostgreSQL invoice-lines retained name at $.description\n- PostgreSQL outbox retained customer UUID at $.aggregate_id\n- PostgreSQL outbox retained customer UUID at $.aggregate_id\n- PostgreSQL outbox retained customer UUID at $.aggregate_id\n- PostgreSQL outbox retained customer UUID at $.aggregate_id\n- PostgreSQL outbox retained customer UUID at $.aggregate_id\n- PostgreSQL outbox retained customer UUID at $.payload.customerId, customer UUID at $.aggregate_id\n- PostgreSQL provider-webhooks retained customer UUID at $.payload.data.customer.id, name at $.payload.data.customer.name, email at $.payload.data.customer.email, PII canary at $.payload.data.customer.canary\n- PostgreSQL idempotency retained customer UUID at $.response_body.customerId\n- PostgreSQL analytics retained customer UUID at $.anonymous_id\n- platform.audit_logs row 16 retained email at $.metadata.subject.email, PII canary at $.metadata.subject.canary, customer UUID at $.metadata.subject.customerId\n- platform.audit_logs row 18 retained customer UUID at $.target_id\n- platform.audit_logs row 19 retained customer UUID at $.target_id\n- platform.audit_logs row 20 retained customer UUID at $.target_id\n- platform.audit_logs row 21 retained customer UUID at $.target_id\n- customers.support_tickets row 4 retained PII canary at $.subject\n- payments.invoice_lines row 0 retained name at $.description\n- operations.outbox_events row 6 retained customer UUID at $.aggregate_id\n- operations.outbox_events row 7 retained customer UUID at $.aggregate_id\n- operations.outbox_events row 8 retained customer UUID at $.aggregate_id\n- operations.outbox_events row 9 retained customer UUID at $.aggregate_id\n- operations.outbox_events row 10 retained customer UUID at $.aggregate_id\n- operations.outbox_events row 45 retained customer UUID at $.payload.customerId, customer UUID at $.aggregate_id\n- operations.provider_webhooks row 2 retained customer UUID at $.payload.data.customer.id, name at $.payload.data.customer.name, email at $.payload.data.customer.email, PII canary at $.payload.data.customer.canary\n- operations.idempotency_keys row 1 retained customer UUID at $.response_body.customerId\n- operations.analytics_events row 35 retained customer UUID at $.anonymous_id\n- provider_sandbox.customers row 4 retained provider customer ID at $.id, provider customer ID at $.email\n- customers.erasure_request_keys row 0 retained customer UUID at $.customer_id\n- customers.erasure_request_keys row 1 retained customer UUID at $.customer_id\n- Redis merchant:381882d2-046f-4d05-915a-e3308d80fa7e:customer:a13899e8-d350-4cd0-9f21-1980f98380e7 (string) retained customer UUID at $.key, customer UUID at $.value\n- OpenSearch retained the subject document\n- OpenSearch payflow-customers-v1:381882d2-046f-4d05-915a-e3308d80fa7e:a13899e8-d350-4cd0-9f21-1980f98380e7 (via payflow-customers-v1) retained customer UUID at $.id, customer UUID at $.source.customerId\n- MinIO 381882d2-046f-4d05-915a-e3308d80fa7e/invoices/cdcbbe17-87e8-41ac-9d08-e69b8dd9c8d4.json (version null) retained name at $.body.lines[0].description\n- Mailpit message 2 retained email at $.message.To[0].Address, customer UUID at $.message.Text, email at $.message.Text, customer UUID at $.message.HTML, email at $.message.HTML, customer UUID at $.raw, email at $.raw\n- Mailpit message 8 retained email at $.message.To[0].Address, customer UUID at $.message.Text, email at $.message.Text, customer UUID at $.message.HTML, email at $.message.HTML, customer UUID at $.raw, email at $.raw"
+    },
+    {
+      "id": "normal.postgres_relational",
+      "label": "Primary relational records are removed or rekeyed",
+      "maximum": 0.0375,
+      "earned": 0,
+      "state": "fail",
+      "evidence": "customers.support_tickets row 4 retained PII canary at $.subject; payments.invoice_lines row 0 retained name at $.description; operations.outbox_events row 6 retained customer UUID at $.aggregate_id; operations.outbox_events row 7 retained customer UUID at $.aggregate_id; operations.outbox_events row 8 retained customer UUID at $.aggregate_id; operations.outbox_events row 9 retained customer UUID at $.aggregate_id; operations.outbox_events row 10 retained customer UUID at $.aggregate_id; operations.outbox_events row 45 retained customer UUID at $.payload.customerId, customer UUID at $.aggregate_id; operations.idempotency_keys row 1 retained customer UUID at $.response_body.customerId; operations.analytics_events row 35 retained customer UUID at $.anonymous_id; provider_sandbox.customers row 4 retained provider customer ID at $.id, provider customer ID at $.email; customers.erasure_request_keys row 0 retained customer UUID at $.customer_id; customers.erasure_request_keys row 1 retained customer UUID at $.customer_id"
+    },
+    {
+      "id": "normal.postgres_payloads",
+      "label": "Embedded and operational PostgreSQL PII is redacted",
+      "maximum": 0.1,
+      "earned": 0,
+      "state": "fail",
+      "evidence": "PostgreSQL audit retained email at $.metadata.subject.email, PII canary at $.metadata.subject.canary, customer UUID at $.metadata.subject.customerId; PostgreSQL audit retained customer UUID at $.target_id; PostgreSQL audit retained customer UUID at $.target_id; PostgreSQL audit retained customer UUID at $.target_id; PostgreSQL audit retained customer UUID at $.target_id; PostgreSQL invoice-lines retained name at $.description; PostgreSQL outbox retained customer UUID at $.aggregate_id; PostgreSQL outbox retained customer UUID at $.aggregate_id; PostgreSQL outbox retained customer UUID at $.aggregate_id; PostgreSQL outbox retained customer UUID at $.aggregate_id; PostgreSQL outbox retained customer UUID at $.aggregate_id; PostgreSQL outbox retained customer UUID at $.payload.customerId, customer UUID at $.aggregate_id; PostgreSQL provider-webhooks retained customer UUID at $.payload.data.customer.id, name at $.payload.data.customer.name, email at $.payload.data.customer.email, PII canary at $.payload.data.customer.canary; PostgreSQL idempotency retained customer UUID at $.response_body.customerId; PostgreSQL analytics retained customer UUID at $.anonymous_id; platform.audit_logs row 16 retained email at $.metadata.subject.email, PII canary at $.metadata.subject.canary, customer UUID at $.metadata.subject.customerId; platform.audit_logs row 18 retained customer UUID at $.target_id; platform.audit_logs row 19 retained customer UUID at $.target_id; platform.audit_logs row 20 retained customer UUID at $.target_id; platform.audit_logs row 21 retained customer UUID at $.target_id; operations.provider_webhooks row 2 retained customer UUID at $.payload.data.customer.id, name at $.payload.data.customer.name, email at $.payload.data.customer.email, PII canary at $.payload.data.customer.canary"
+    },
+    {
+      "id": "normal.redis",
+      "label": "Redis no longer contains subject PII",
+      "maximum": 0.0187,
+      "earned": 0,
+      "state": "fail",
+      "evidence": "Redis merchant:381882d2-046f-4d05-915a-e3308d80fa7e:customer:a13899e8-d350-4cd0-9f21-1980f98380e7 (string) retained customer UUID at $.key, customer UUID at $.value"
+    },
+    {
+      "id": "normal.opensearch",
+      "label": "OpenSearch no longer contains subject PII",
+      "maximum": 0.0187,
+      "earned": 0,
+      "state": "fail",
+      "evidence": "OpenSearch retained the subject document; OpenSearch payflow-customers-v1:381882d2-046f-4d05-915a-e3308d80fa7e:a13899e8-d350-4cd0-9f21-1980f98380e7 (via payflow-customers-v1) retained customer UUID at $.id, customer UUID at $.source.customerId"
+    },
+    {
+      "id": "normal.minio",
+      "label": "MinIO no longer contains subject PII",
+      "maximum": 0.0313,
+      "earned": 0,
+      "state": "fail",
+      "evidence": "MinIO 381882d2-046f-4d05-915a-e3308d80fa7e/invoices/cdcbbe17-87e8-41ac-9d08-e69b8dd9c8d4.json (version null) retained name at $.body.lines[0].description"
+    },
+    {
+      "id": "normal.mailpit",
+      "label": "Mailpit no longer contains subject PII",
+      "maximum": 0.0313,
+      "earned": 0,
+      "state": "fail",
+      "evidence": "Mailpit message 2 retained email at $.message.To[0].Address, customer UUID at $.message.Text, email at $.message.Text, customer UUID at $.message.HTML, email at $.message.HTML, customer UUID at $.raw, email at $.raw; Mailpit message 8 retained email at $.message.To[0].Address, customer UUID at $.message.Text, email at $.message.Text, customer UUID at $.message.HTML, email at $.message.HTML, customer UUID at $.raw, email at $.raw"
+    },
+    {
+      "id": "financial.retention",
+      "label": "Financial facts remain intact after a successful erasure",
+      "maximum": 0.075,
+      "earned": 0,
+      "state": "blocked",
+      "evidence": "normal-subject PII was not fully removed"
+    },
+    {
+      "id": "financial.anonymous_retained_link",
+      "label": "Retained financial links are anonymous and support a private later refund",
+      "maximum": 0.0125,
+      "earned": 0,
+      "state": "blocked",
+      "evidence": "normal-subject PII was not fully removed"
+    },
+    {
+      "id": "financial.post_erasure_refund",
+      "label": "A later refund remains balanced without restoring customer identity",
+      "maximum": 0.05,
+      "earned": 0,
+      "state": "fail",
+      "evidence": "post-erasure refund retained customer identity"
+    },
+    {
+      "id": "financial.post_erasure_refund_failure_retry",
+      "label": "A failed post-erasure refund stays private and a later retry remains balanced",
+      "maximum": 0.025,
+      "earned": 0,
+      "state": "fail",
+      "evidence": "failed post-erasure refund retained customer identity"
+    },
+    {
+      "id": "security.merchant_credentials_preserved",
+      "label": "Merchant API credential remains active and unchanged",
+      "maximum": 0,
+      "earned": 0,
+      "state": "pass"
+    },
+    {
+      "id": "scope.unrelated_customer_and_shared_record",
+      "label": "Unrelated customer and shared record remain unchanged",
+      "maximum": 0.025,
+      "earned": 0,
+      "state": "fail",
+      "evidence": "shared-ticket subject retained erased customer PII"
+    },
+    {
+      "id": "scope.merchant_identity_and_admin",
+      "label": "Merchant identity and administrator remain unchanged",
+      "maximum": 0.0125,
+      "earned": 0.0125,
+      "state": "pass"
+    },
+    {
+      "id": "scope.merchant_credentials",
+      "label": "Independent merchant credential remains active and usable",
+      "maximum": 0.0125,
+      "earned": 0.0125,
+      "state": "pass"
+    },
+    {
+      "id": "scope.unrelated_payment_notification_document",
+      "label": "Unrelated payment, notification, and receipt remain unchanged",
+      "maximum": 0.025,
+      "earned": 0.025,
+      "state": "pass"
+    },
+    {
+      "id": "async.request_accepted",
+      "label": "Delayed-subject erasure request is accepted",
+      "maximum": 0.0125,
+      "earned": 0.0125,
+      "state": "pass"
+    },
+    {
+      "id": "async.completion_gate",
+      "label": "Participant failure prevents completion and the same request converges when retried",
+      "maximum": 0.0375,
+      "earned": 0.0375,
+      "state": "pass"
+    },
+    {
+      "id": "async.pending_payloads",
+      "label": "Pending work and its payloads are fully sanitized",
+      "maximum": 0.1,
+      "earned": 0,
+      "state": "fail",
+      "evidence": "PostgreSQL audit retained customer UUID at $.target_id; PostgreSQL audit retained customer UUID at $.target_id; PostgreSQL audit retained customer UUID at $.target_id; PostgreSQL audit retained customer UUID at $.target_id; PostgreSQL attempts retained PII canary at $.request_payload.canary; PostgreSQL invoice-lines retained name at $.description; PostgreSQL outbox retained customer UUID at $.aggregate_id; PostgreSQL outbox retained customer UUID at $.aggregate_id; PostgreSQL outbox retained customer UUID at $.aggregate_id; PostgreSQL outbox retained customer UUID at $.aggregate_id; PostgreSQL outbox retained customer UUID at $.aggregate_id; PostgreSQL outbox retained customer UUID at $.payload.customerId, customer UUID at $.aggregate_id; PostgreSQL provider-webhooks retained provider customer ID at $.payload.data.providerCustomerId; PostgreSQL dead-letters retained email at $.error, PII canary at $.payload.canary; platform.audit_logs row 22 retained customer UUID at $.target_id; platform.audit_logs row 23 retained customer UUID at $.target_id; platform.audit_logs row 24 retained customer UUID at $.target_id; platform.audit_logs row 25 retained customer UUID at $.target_id; payments.payment_attempts row 4 retained PII canary at $.request_payload.canary; payments.invoice_lines row 3 retained name at $.description; operations.outbox_events row 10 retained customer UUID at $.aggregate_id; operations.outbox_events row 24 retained customer UUID at $.aggregate_id; operations.outbox_events row 25 retained customer UUID at $.aggregate_id; operations.outbox_events row 38 retained customer UUID at $.aggregate_id; operations.outbox_events row 39 retained customer UUID at $.aggregate_id; operations.outbox_events row 48 retained customer UUID at $.payload.customerId, customer UUID at $.aggregate_id; operations.dead_letters row 0 retained email at $.error, PII canary at $.payload.canary; operations.provider_webhooks row 5 retained provider customer ID at $.payload.data.providerCustomerId; provider_sandbox.customers row 4 retained provider customer ID at $.id, provider customer ID at $.email; customers.erasure_request_keys row 4 retained customer UUID at $.customer_id; Redis merchant:381882d2-046f-4d05-915a-e3308d80fa7e:customer:df875558-a594-4cd6-bd2c-248d4684745a (string) retained customer UUID at $.key, customer UUID at $.value; OpenSearch retained the subject document; OpenSearch payflow-customers-v1:381882d2-046f-4d05-915a-e3308d80fa7e:df875558-a594-4cd6-bd2c-248d4684745a (via payflow-customers-v1) retained customer UUID at $.id, customer UUID at $.source.customerId; MinIO 381882d2-046f-4d05-915a-e3308d80fa7e/invoices/bbe56368-0971-476b-b317-cd2d1972fff9.json (version null) retained name at $.body.lines[0].description; Mailpit message 5 retained email at $.message.To[0].Address, customer UUID at $.message.Text, email at $.message.Text, customer UUID at $.message.HTML, email at $.message.HTML, customer UUID at $.raw, email at $.raw"
+    },
+    {
+      "id": "delayed.work_processes",
+      "label": "Delayed work completes with correct financial processing",
+      "maximum": 0.05,
+      "earned": 0,
+      "state": "blocked",
+      "evidence": "the delayed subject was not clean before delayed work released"
+    },
+    {
+      "id": "delayed.no_reintroduction",
+      "label": "Delayed work does not reintroduce PII",
+      "maximum": 0.075,
+      "earned": 0,
+      "state": "blocked",
+      "evidence": "delayed work could not be safely evaluated after incomplete erasure"
+    },
+    {
+      "id": "replay.consumed",
+      "label": "Historical event is safely consumed",
+      "maximum": 0.05,
+      "earned": 0,
+      "state": "blocked",
+      "evidence": "delayed-work safety was not established"
+    },
+    {
+      "id": "replay.no_reintroduction",
+      "label": "Historical replay does not restore PII",
+      "maximum": 0.075,
+      "earned": 0,
+      "state": "blocked",
+      "evidence": "historical replay could not be safely evaluated"
+    },
+    {
+      "id": "security.survivor_unchanged_after_delayed_replay",
+      "label": "Unrelated shared record remains unchanged after delayed work and replay",
+      "maximum": 0,
+      "earned": 0,
+      "state": "blocked",
+      "evidence": "replay safety was not established"
+    }
+  ],
+  "fixtures": [
+    {
+      "id": "full-cross-store",
+      "state": "ready"
+    }
+  ],
+  "diagnostics": {
+    "passed_checks": 12,
+    "failed_checks": 11,
+    "blocked_checks": 7,
+    "blocked_check_ids": [
+      "financial.retention",
+      "financial.anonymous_retained_link",
+      "delayed.work_processes",
+      "delayed.no_reintroduction",
+      "replay.consumed",
+      "replay.no_reintroduction",
+      "security.survivor_unchanged_after_delayed_replay"
+    ]
+  }
+}

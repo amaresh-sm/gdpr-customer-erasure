@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "state": "finalized",
+  "run_id": "openai-claude-sonnet-5-high-20260915t131223z",
+  "provider": "openhands",
+  "model": "openai/claude-sonnet-5",
+  "reasoning_effort": "high",
+  "timeout_seconds": 14400,
+  "started_at": "2026-09-15T13:12:23.384Z",
+  "prompt_sha256": "96911c13dbb68853376e3be46ad8758a5acbde1c3a466f1c1595d002dbfd0b64",
+  "baseline_ref": "HEAD",
+  "source_directory": "/Users/amaresh/Desktop/repositories/gdpr_benchmark/payflow_platform/benchmarking-candidates/openai-claude-sonnet-5-high-20260915t131223z/source",
+  "network": "payflow-generation-32d261c97e4b4c15ac27a07656fd33fe",
+  "model_container": "payflow-model-32d261c97e4b4c15ac27a07656fd33fe",
+  "gateway_container": null,
+  "artifact_container": "payflow-artifacts-32d261c97e4b4c15ac27a07656fd33fe",
+  "docker_volume": "payflow-inner-docker-32d261c97e4b4c15ac27a07656fd33fe",
+  "workspace_volume": "payflow-workspace-32d261c97e4b4c15ac27a07656fd33fe",
+  "generation_image": {
+    "tag": "payflow-candidate-generation-rootless:v13",
+    "id": "sha256:f17501906105dda9097d2c4f31519e96af6785552b42719b3a9f084c6acbd4fd"
+  },
+  "gateway_image": {
+    "tag": "payflow-codex-egress:v4",
+    "id": "sha256:74706c144869250035ed99bb1469840d41ec887a3cf5851bb56ecdf9db4b9500"
+  },
+  "artifact_image": {
+    "tag": "payflow-codex-egress:v4",
+    "id": "sha256:74706c144869250035ed99bb1469840d41ec887a3cf5851bb56ecdf9db4b9500"
+  },
+  "portkey_route": null,
+  "failure": null,
+  "completed_at": "2026-09-15T13:52:21.000Z",
+  "exit_code": 0,
+  "run_status": "completed",
+  "cleanup_completed": true
+}
