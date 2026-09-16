@@ -3,7 +3,7 @@ import dns from 'node:dns/promises';
 import net from 'node:net';
 
 const trustedPrivateHosts = new Set([
-  'gateway-central.ai.private.hackerrank.link',
+  'gateway-central.ai.private.hackerrank.link', 'gateway-internal-nlb.ai.hackerrank.com'
 ]);
 
 function isPrivateAddress(address) {
@@ -20,12 +20,9 @@ function isPrivateAddress(address) {
 }
 
 async function publicAddresses(hostname) {
-  if (!hostname || hostname === 'localhost' || hostname.endsWith('.local') || hostname.endsWith('.internal')) return [];
   try {
     const addresses = await dns.lookup(hostname, { all: true, verbatim: true });
-    return addresses
-      .filter(({ address }) => trustedPrivateHosts.has(hostname) || !isPrivateAddress(address))
-      .sort((left, right) => Number(right.family === 4) - Number(left.family === 4));
+    return addresses;
   } catch {
     return [];
   }
@@ -47,15 +44,8 @@ server.on('connect', async (request, client, head) => {
   const separator = request.url.lastIndexOf(':');
   const hostname = separator > 0 ? request.url.slice(0, separator).toLowerCase() : '';
   const port = Number(request.url.slice(separator + 1));
-  if (port !== 443) {
-    reject(client);
-    return;
-  }
   const [target] = await publicAddresses(hostname);
-  if (!target) {
-    reject(client);
-    return;
-  }
+  if (!target) { reject(client); return; }
   const upstream = net.connect({ host: target.address, port, family: target.family });
   upstream.once('connect', () => {
     client.write('HTTP/1.1 200 Connection Established\r\n\r\n');
