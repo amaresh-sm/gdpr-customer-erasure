@@ -37,7 +37,33 @@ const server = http.createServer((request, response) => {
     response.writeHead(204).end();
     return;
   }
-  response.writeHead(403, { 'content-length': '0' }).end();
+  let target;
+  try { target = new URL(request.url); } catch {
+    response.writeHead(400, { 'content-length': '0' }).end();
+    return;
+  }
+  if (target.protocol !== 'http:') {
+    response.writeHead(403, { 'content-length': '0' }).end();
+    return;
+  }
+  const headers = { ...request.headers };
+  delete headers['proxy-connection'];
+  delete headers['proxy-authorization'];
+  const upstream = http.request({
+    hostname: target.hostname,
+    port: Number(target.port) || 80,
+    path: target.pathname + target.search,
+    method: request.method,
+    headers,
+  }, (upstreamResponse) => {
+    response.writeHead(upstreamResponse.statusCode, upstreamResponse.headers);
+    upstreamResponse.pipe(response);
+  });
+  upstream.on('error', () => {
+    if (!response.headersSent) response.writeHead(502, { 'content-length': '0' }).end();
+    else response.destroy();
+  });
+  request.pipe(upstream);
 });
 
 server.on('connect', async (request, client, head) => {
