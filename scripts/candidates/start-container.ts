@@ -40,7 +40,7 @@ const candidateRoot = join(root, 'benchmarking-candidates');
 // Bump the generation image when the staged reusable gateway changes so a
 // previously built image cannot silently hide a newer gateway revision.
 const generationImage = 'payflow-candidate-generation-rootless:v13';
-const egressImage = 'payflow-codex-egress:v4';
+const egressImage = 'payflow-codex-egress:v5';
 const innerImages = [
   'node:22-bookworm-slim',
   'postgres:16-alpine',
