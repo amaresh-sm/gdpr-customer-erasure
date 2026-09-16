@@ -15,6 +15,7 @@ interface LaunchRecord {
   started_at: string;
   prompt_sha256: string;
   baseline_ref: string;
+  baseline_source_sha256?: string;
   source_directory: string;
   network: string | null;
   model_container: string | null;
@@ -129,7 +130,7 @@ async function main(): Promise<void> {
     '--import', 'tsx', join(root, 'scripts/candidates/collect.ts'),
     '--run-dir', runDirectory, '--events', rawEvents, '--prompt-file', join(runDirectory, 'trusted', 'generation_prompt.md'),
     '--model', launch.model, '--thinking', launch.reasoning_effort, '--provider', launch.provider,
-    '--baseline-ref', launch.baseline_ref, '--started-at', launch.started_at, '--completed-at', completedAt,
+    '--baseline-ref', launch.baseline_ref, '--baseline-source-sha256', launch.baseline_source_sha256 ?? '', '--started-at', launch.started_at, '--completed-at', completedAt,
     '--model-elapsed-ms', String(Math.max(0, Date.parse(completedAt) - Date.parse(launch.started_at))), '--exit-code', String(exitCode), '--status', status,
   ];
   if (launch.provider === 'openhands') collectArgs.push('--gateway-responses', join(logsDirectory, 'openhands-gateway_responses.jsonl'));

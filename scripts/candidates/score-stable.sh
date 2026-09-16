@@ -18,6 +18,14 @@ if [[ ! -f "$run_dir/metadata.json" ]]; then
   echo "candidate generation has not completed and cannot be scored" >&2
   exit 64
 fi
+source_state=$(npx --prefix "$root_dir/codebase" tsx "$root_dir/scripts/candidates/check-source-change.ts" --run-dir "$run_dir" --baseline-dir "$root_dir/codebase")
+if [[ $(jq -r '.changed' <<<"$source_state") == 'false' ]]; then
+  npx --prefix "$root_dir/codebase" tsx "$root_dir/scripts/candidates/record-zero-score.ts" \
+    --run-dir "$run_dir" --baseline-dir "$root_dir/codebase" \
+    --verifier-ref "$(git -C "$root_dir" rev-parse HEAD)"
+  echo "candidate source matches the baseline; selected stable score: 0.0000 / 1.0000"
+  exit 0
+fi
 
 mkdir -p "$stable_dir"
 
@@ -55,6 +63,7 @@ npx --prefix "$root_dir/codebase" tsx "$root_dir/scripts/candidates/record-score
   --run-dir "$run_dir" \
   --junit "$report_dir/hidden.junit.xml" \
   --score "$report_dir/hidden.score.json" \
+  --baseline-dir "$root_dir/codebase" \
   --verifier-ref "$(git -C "$root_dir" rev-parse HEAD)"
 
 selected_score=$(jq -r '.earned // 0' "$report_dir/hidden.score.json")

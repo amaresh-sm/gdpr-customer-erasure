@@ -1,10 +1,11 @@
 import { createHash } from 'node:crypto';
-import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
-import { join, relative } from 'node:path';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { measured, parseCodexJsonl, unavailable } from './telemetry.js';
 import type { CandidateRunManifest } from './types.js';
+import { treeSha256 } from './source-state.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -23,23 +24,6 @@ function optionalArgument(name: string): string | undefined {
 
 async function sha256File(path: string): Promise<string> {
   return createHash('sha256').update(await readFile(path)).digest('hex');
-}
-
-async function treeSha256(root: string): Promise<string> {
-  const files: string[] = [];
-  async function visit(directory: string): Promise<void> {
-    for (const entry of await readdir(directory, { withFileTypes: true })) {
-      if (entry.name === 'node_modules' || entry.name === 'dist' || entry.name === '.git') continue;
-      const path = join(directory, entry.name);
-      if (entry.isDirectory()) await visit(path);
-      else if (entry.isFile()) files.push(path);
-    }
-  }
-  await visit(root);
-  files.sort();
-  const hash = createHash('sha256');
-  for (const file of files) hash.update(`${relative(root, file)}\0${await sha256File(file)}\n`);
-  return hash.digest('hex');
 }
 
 async function cliVersion(): Promise<string | null> {
@@ -71,6 +55,7 @@ async function main(): Promise<void> {
   const exitCode = Number(argument('--exit-code'));
   const status = argument('--status') as CandidateRunManifest['run']['status'];
   const gatewayResponsesPath = optionalArgument('--gateway-responses');
+  const baselineSourceSha256 = optionalArgument('--baseline-source-sha256') || null;
   const runId = runDirectory.split('/').filter(Boolean).at(-1);
   if (!runId || !Number.isFinite(modelElapsedMs) || !Number.isInteger(exitCode) || !['completed', 'failed', 'timed_out'].includes(status)) {
     throw new Error('invalid run collector arguments');
@@ -78,6 +63,7 @@ async function main(): Promise<void> {
 
   const telemetry = await parseCodexJsonl(eventsPath, gatewayResponsesPath);
   const sourceDirectory = join(runDirectory, 'source');
+  const sourceSha256 = await treeSha256(sourceDirectory);
   const promptHash = await sha256File(promptPath);
   const totalElapsed = Date.parse(completedAt) - Date.parse(startedAt);
   const byTool = Object.fromEntries(telemetry.toolCalls.reduce((counts, call) => {
@@ -148,7 +134,13 @@ async function main(): Promise<void> {
     },
     cleanup: { removed_transient_files: unavailable('launcher', 'cleanup is not performed automatically to preserve the candidate snapshot') },
     portkey: { route_identity: unavailable('provider proxy', 'no Portkey route was configured') },
-    source: { baseline_ref: baselineRef, baseline_commit: await gitCommit(baselineRef), sha256: await treeSha256(sourceDirectory) },
+    source: {
+      baseline_ref: baselineRef,
+      baseline_commit: await gitCommit(baselineRef),
+      baseline_sha256: baselineSourceSha256,
+      sha256: sourceSha256,
+      changed: baselineSourceSha256 === null ? null : baselineSourceSha256 !== sourceSha256,
+    },
     scoring: { verifier_ref: null, junit_path: null, score_path: null, scenarios_total: null, scenarios_passed: null,
       score: null, score_maximum: null, hard_pass: null, score_state: null, report_sha256: null,
       evaluated_maximum: null, comparable: null },

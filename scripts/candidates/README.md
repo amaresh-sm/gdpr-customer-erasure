@@ -86,6 +86,12 @@ The scorer always returns one normalized score from 0 to 1. A passing check earn
 failed or blocked check earns zero. Blocked checks remain visible in the report diagnostics, but
 there is no separate partial or non-comparable score.
 
+Before Docker services or hidden tests start, the scorer compares the exported `source/` tree with
+the trusted baseline snapshot captured at generation launch. If the trees match, it records a final
+score of `0.0000` with reason `no_candidate_changes`; baseline behavior is never credited to a
+candidate. Failed runs that contain actual source changes remain eligible for normal diagnostic
+scoring.
+
 Use the stable scorer for leaderboard results. It runs three fresh isolated stacks and selects the
 lowest score, so timing-dependent behavior cannot improve a candidate result. It keeps each attempt
 and its selection record under `reports/stability/`.

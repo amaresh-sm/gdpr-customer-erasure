@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto';
 import { copyFile, readFile, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import type { CandidateRunManifest, CandidateScoring } from './types.js';
+import { sourceState } from './source-state.js';
 
 function argument(name: string): string {
   const index = process.argv.indexOf(name);
@@ -16,6 +17,7 @@ async function main(): Promise<void> {
   const junitSource = argument('--junit');
   const scoreSource = argument('--score');
   const verifierRef = argument('--verifier-ref');
+  const baselineDirectory = resolve(process.argv.includes('--baseline-dir') ? argument('--baseline-dir') : join(process.cwd(), 'codebase'));
   const metadataPath = join(runDirectory, 'metadata.json');
   const report = await readFile(junitSource, 'utf8');
   const match = /<testsuite[^>]*\btests="(\d+)"[^>]*\bfailures="(\d+)"/.exec(report);
@@ -36,6 +38,11 @@ async function main(): Promise<void> {
   if (score.maximum !== 1) throw new Error('score report maximum must be normalized to 1.0');
   if (score.earned! < 0 || score.earned! > 1) throw new Error('numeric score report was outside the normalized 0.0–1.0 range');
   const manifest = JSON.parse(await readFile(metadataPath, 'utf8')) as CandidateRunManifest;
+  const state = await sourceState(runDirectory, baselineDirectory);
+  if (!state.changed) throw new Error('candidate source matches the baseline; use record-zero-score instead of accepting a verifier score');
+  manifest.source.baseline_sha256 = state.baseline_sha256;
+  manifest.source.sha256 = state.source_sha256;
+  manifest.source.changed = true;
   const target = join(runDirectory, 'reports', 'hidden.junit.xml');
   const scoreTarget = join(runDirectory, 'reports', 'hidden.score.json');
   await copyFile(junitSource, target);

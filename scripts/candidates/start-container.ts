@@ -4,6 +4,7 @@ import { homedir, tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
+import { treeSha256 } from './source-state.js';
 
 type Provider = 'codex-login' | 'portkey' | 'portkey-opencode' | 'openhands';
 
@@ -18,6 +19,7 @@ interface LaunchRecord {
   started_at: string;
   prompt_sha256: string;
   baseline_ref: string;
+  baseline_source_sha256: string;
   source_directory: string;
   network: string | null;
   model_container: string | null;
@@ -159,9 +161,12 @@ async function dotenv(path: string, label = 'provider'): Promise<Record<string, 
 const OPENHANDS_ENVIRONMENT_KEYS = ['LLM_API_KEY', 'LLM_BASE_URL', 'ASTRA_GATEWAY_API_KEY', 'ASTRA_GATEWAY_BASE_URL'] as const;
 
 function openHandsValues(fileValues: Record<string, string>): Record<string, string> {
-  const values = Object.fromEntries(OPENHANDS_ENVIRONMENT_KEYS
-    .map((key) => [key, fileValues[key] ?? process.env[key] ?? ''])
-    .filter(([, entry]) => Boolean(entry)));
+  const entries: Array<[string, string]> = [];
+  for (const key of OPENHANDS_ENVIRONMENT_KEYS) {
+    const value = fileValues[key] ?? process.env[key] ?? '';
+    if (value) entries.push([key, value]);
+  }
+  const values = Object.fromEntries(entries);
   const apiKey = values.LLM_API_KEY || values.ASTRA_GATEWAY_API_KEY;
   if (!apiKey || apiKey.length < 12 || /\s/.test(apiKey)) throw new Error('OpenHands generation requires LLM_API_KEY or ASTRA_GATEWAY_API_KEY');
   for (const key of ['LLM_BASE_URL', 'ASTRA_GATEWAY_BASE_URL']) {
@@ -174,7 +179,10 @@ function openHandsValues(fileValues: Record<string, string>): Record<string, str
 }
 
 function portkeyValues(fileValues: Record<string, string>): Record<string, string> {
-  const overrides = Object.fromEntries(Object.entries(process.env).filter(([key, entry]) => key.startsWith('PORTKEY_') && Boolean(entry)));
+  const overrides: Record<string, string> = {};
+  for (const [key, entry] of Object.entries(process.env)) {
+    if (key.startsWith('PORTKEY_') && entry) overrides[key] = entry;
+  }
   return { ...fileValues, ...overrides };
 }
 
@@ -288,6 +296,7 @@ async function main(): Promise<void> {
   await mkdir(join(runDirectory, 'reports'), { recursive: true });
   await writeFile(join(trustedDirectory, 'generation_prompt.md'), prompt);
   await copyBaseline(baselineDirectory, sourceDirectory);
+  const baselineSourceSha256 = await treeSha256(sourceDirectory);
   // The rootless entrypoint consumes and removes this launcher-only file before Codex starts.
   // It is never present in the candidate's exported source tree.
   await writeFile(join(sourceDirectory, '.payflow-task.md'), `${prompt}\n\nWork only inside this supplied codebase. Implement the task, then run the public checks that are available locally.\n`);
@@ -386,7 +395,7 @@ async function main(): Promise<void> {
   }
   const launch: LaunchRecord = {
     schema_version: 1, state: failure ? 'startup_failed' : 'running', run_id: id, provider, model, reasoning_effort: reasoning, timeout_seconds: timeoutSeconds,
-    started_at: startedAt, prompt_sha256: sha256(prompt), baseline_ref: baselineRef, source_directory: sourceDirectory, network: failure ? null : network,
+    started_at: startedAt, prompt_sha256: sha256(prompt), baseline_ref: baselineRef, baseline_source_sha256: baselineSourceSha256, source_directory: sourceDirectory, network: failure ? null : network,
     model_container: failure ? null : modelName, gateway_container: failure ? null : gateway, artifact_container: failure ? null : artifact, docker_volume: failure ? null : dockerVolume, workspace_volume: failure ? null : workspaceVolume, generation_image: { tag: generationImage, id: generationId }, gateway_image: { tag: provider === 'codex-login' || provider === 'openhands' ? egressImage : proxyImage, id: gatewayId }, artifact_image: { tag: egressImage, id: artifactId }, portkey_route: route, failure,
   };
   await writeFile(launchPath, `${JSON.stringify(launch, null, 2)}\n`);

@@ -34,6 +34,7 @@ export interface CandidateScoring {
   report_sha256: string | null;
   evaluated_maximum?: number | null;
   comparable?: boolean | null;
+  reason?: string | null;
 }
 
 export interface CandidateRunManifest {
@@ -118,7 +119,9 @@ export interface CandidateRunManifest {
   source: {
     baseline_ref: string;
     baseline_commit: string;
+    baseline_sha256: string | null;
     sha256: string | null;
+    changed: boolean | null;
   };
   scoring: CandidateScoring;
 }
