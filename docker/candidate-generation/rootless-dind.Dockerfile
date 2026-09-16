@@ -2,10 +2,7 @@
 FROM docker:29-dind-rootless
 
 USER root
-RUN apk add --no-cache bash nodejs npm git python3 python3-dev py3-pip ripgrep coreutils build-base \
-    && npm install --global --include=optional --no-audit --no-fund @openai/codex@0.144.5 opencode-ai \
-    && codex --version \
-    && opencode --version
+RUN apk add --no-cache bash python3 python3-dev py3-pip ripgrep coreutils build-base
 
 COPY docker/candidate-generation/rootless-dind-entrypoint.sh /usr/local/bin/payflow-rootless-entrypoint
 COPY hackerrank-openhands-gateway /opt/hackerrank-openhands-gateway

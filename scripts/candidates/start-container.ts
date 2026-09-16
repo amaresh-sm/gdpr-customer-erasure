@@ -1,18 +1,16 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { cp, lstat, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { homedir, tmpdir } from 'node:os';
+import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { treeSha256 } from './source-state.js';
 
-type Provider = 'codex-login' | 'portkey' | 'portkey-opencode' | 'openhands';
-
 interface LaunchRecord {
   schema_version: 1;
   state: 'running' | 'startup_failed' | 'finalized';
   run_id: string;
-  provider: Provider;
+  provider: 'openhands';
   model: string;
   reasoning_effort: string;
   timeout_seconds: number;
@@ -30,7 +28,6 @@ interface LaunchRecord {
   generation_image: { tag: string; id: string | null };
   gateway_image: { tag: string; id: string | null };
   artifact_image: { tag: string; id: string | null };
-  portkey_route: { kind: 'config' | 'provider' | 'direct-model'; value_sha256: string } | null;
   failure: string | null;
   completed_at?: string | null;
   exit_code?: number | null;
@@ -44,7 +41,6 @@ const candidateRoot = join(root, 'benchmarking-candidates');
 // previously built image cannot silently hide a newer gateway revision.
 const generationImage = 'payflow-candidate-generation-rootless:v13';
 const egressImage = 'payflow-codex-egress:v4';
-const proxyImage = 'payflow-provider-proxy:v1';
 const innerImages = [
   'node:22-bookworm-slim',
   'postgres:16-alpine',
@@ -133,96 +129,44 @@ async function copyBaseline(source: string, destination: string): Promise<void> 
   });
 }
 
-async function privateAuth(path: string): Promise<string> {
-  const metadata = await lstat(path);
-  if (!metadata.isFile() || metadata.isSymbolicLink() || (metadata.mode & 0o077) !== 0 || metadata.size === 0 || metadata.size > 1024 * 1024) {
-    throw new Error('Codex auth file must be a private, non-empty regular file');
-  }
-  const document = await readFile(path, 'utf8');
-  JSON.parse(document);
-  return document;
-}
-
-async function dotenv(path: string, label = 'provider'): Promise<Record<string, string>> {
+async function requirePrivateEnvironmentFile(path: string, label = 'provider'): Promise<void> {
   const metadata = await lstat(path);
   if (!metadata.isFile() || metadata.isSymbolicLink() || (metadata.mode & 0o077) !== 0 || metadata.size === 0 || metadata.size > 64 * 1024) {
     throw new Error(`${label} environment file must be a private, non-empty regular file`);
   }
-  const values: Record<string, string> = {};
-  for (const raw of (await readFile(path, 'utf8')).split(/\r?\n/)) {
-    if (!raw || raw.trimStart().startsWith('#')) continue;
-    const match = /^([A-Z0-9_]+)=([^\r\n]*?)(?:[ \t]+#.*)?$/.exec(raw);
-    if (!match) throw new Error(`${label} environment file must contain only simple KEY=value entries with optional inline comments`);
-    values[match[1]!] = match[2]!;
+}
+
+const OPENHANDS_ENVIRONMENT_KEYS = new Set(['LLM_API_KEY', 'LLM_BASE_URL', 'ASTRA_GATEWAY_API_KEY', 'ASTRA_GATEWAY_BASE_URL']);
+
+function dotenvAssignment(line: string): [string, string] | null {
+  const match = /^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/.exec(line);
+  if (!match) return null;
+  const key = match[1]!;
+  let value = match[2]!.trim();
+  if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) value = value.slice(1, -1);
+  else value = value.replace(/[ \t]+#.*$/, '').trim();
+  return [key, value];
+}
+
+/** Keeps only validated gateway settings while preserving no unrelated .env entries. */
+function openHandsEnvironment(contents: string): string {
+  const values = new Map<string, string>();
+  for (const line of contents.split(/\r?\n/)) {
+    const assignment = dotenvAssignment(line);
+    if (assignment !== null && OPENHANDS_ENVIRONMENT_KEYS.has(assignment[0])) values.set(...assignment);
   }
-  return values;
-}
-
-const OPENHANDS_ENVIRONMENT_KEYS = ['LLM_API_KEY', 'LLM_BASE_URL', 'ASTRA_GATEWAY_API_KEY', 'ASTRA_GATEWAY_BASE_URL'] as const;
-
-function openHandsValues(fileValues: Record<string, string>): Record<string, string> {
-  const entries: Array<[string, string]> = [];
-  for (const key of OPENHANDS_ENVIRONMENT_KEYS) {
-    const value = fileValues[key] ?? process.env[key] ?? '';
-    if (value) entries.push([key, value]);
+  if (!values.has('ASTRA_GATEWAY_API_KEY') && !values.has('LLM_API_KEY')) {
+    throw new Error('OpenHands environment file must contain ASTRA_GATEWAY_API_KEY or LLM_API_KEY');
   }
-  const values = Object.fromEntries(entries);
-  const apiKey = values.LLM_API_KEY || values.ASTRA_GATEWAY_API_KEY;
-  if (!apiKey || apiKey.length < 12 || /\s/.test(apiKey)) throw new Error('OpenHands generation requires LLM_API_KEY or ASTRA_GATEWAY_API_KEY');
-  for (const key of ['LLM_BASE_URL', 'ASTRA_GATEWAY_BASE_URL']) {
-    const baseUrl = values[key];
-    if (!baseUrl) continue;
-    const parsed = new URL(baseUrl);
-    if (parsed.protocol !== 'https:' || parsed.username || parsed.password) throw new Error(`${key} must be credential-free HTTPS`);
+  // Validate that the gateway URL (if present) is a well-formed HTTP or HTTPS URL.
+  const gatewayUrl = values.get('ASTRA_GATEWAY_BASE_URL') || values.get('LLM_BASE_URL');
+  if (gatewayUrl) {
+    const parsed = new URL(gatewayUrl);
+    if (!['https:', 'http:'].includes(parsed.protocol) || parsed.username || parsed.password) {
+      throw new Error('Gateway base URL must be a credential-free HTTP or HTTPS URL');
+    }
   }
-  return values;
-}
-
-function portkeyValues(fileValues: Record<string, string>): Record<string, string> {
-  const overrides: Record<string, string> = {};
-  for (const [key, entry] of Object.entries(process.env)) {
-    if (key.startsWith('PORTKEY_') && entry) overrides[key] = entry;
-  }
-  return { ...fileValues, ...overrides };
-}
-
-function portkeyBaseUrl(values: Record<string, string>, fileValues: Record<string, string>): string {
-  const baseUrl = values.PORTKEY_BASE_URL || fileValues.OPENAI_BASE_URL || 'https://api.portkey.ai/v1';
-  const parsed = new URL(baseUrl);
-  if (parsed.protocol !== 'https:' || parsed.username || parsed.password) throw new Error('PORTKEY_BASE_URL must be credential-free HTTPS');
-  return `${parsed.origin}${parsed.pathname.replace(/\/$/, '')}${parsed.search}`;
-}
-
-function routeAndProxyConfiguration(fileValues: Record<string, string>): { configuration: string; route: LaunchRecord['portkey_route'] } {
-  const values = portkeyValues(fileValues);
-  const apiKey = values.PORTKEY_API_KEY || fileValues.OPENAI_API_KEY;
-  const config = values.PORTKEY_CONFIG;
-  const provider = values.PORTKEY_PROVIDER;
-  if (!apiKey || apiKey.length < 12 || /\s/.test(apiKey)) throw new Error('Portkey generation requires PORTKEY_API_KEY');
-  if (!config && !provider) throw new Error('Portkey generation requires PORTKEY_CONFIG or PORTKEY_PROVIDER');
-  // A route configuration is more specific than a provider default. Some existing private
-  // Portkey files include both, so preserve the explicit configuration route when present.
-  const routeValue = config ?? provider!;
-  if (routeValue.length > 512 || /[\x00-\x1f\x7f]/.test(routeValue)) throw new Error('Portkey route is invalid');
-  const routeHeader = config ? 'x-portkey-config' : 'x-portkey-provider';
-  const baseUrl = portkeyBaseUrl(values, fileValues);
-  const upstream = `${baseUrl}${baseUrl.endsWith('/responses') ? '' : '/responses'}`;
-  return {
-    configuration: JSON.stringify({ mode: 'portkey', api_key: apiKey, upstream_url: upstream, route_header: routeHeader, route_value: routeValue }),
-    route: { kind: config ? 'config' : 'provider', value_sha256: sha256(routeValue) },
-  };
-}
-
-/** Creates a header-only relay configuration for OpenCode's OpenAI-compatible client. */
-function directModelProxyConfiguration(fileValues: Record<string, string>, model: string): { configuration: string; route: LaunchRecord['portkey_route'] } {
-  const values = portkeyValues(fileValues);
-  const apiKey = values.PORTKEY_API_KEY || fileValues.OPENAI_API_KEY;
-  if (!apiKey || apiKey.length < 12 || /\s/.test(apiKey)) throw new Error('OpenCode Portkey generation requires PORTKEY_API_KEY or OPENAI_API_KEY');
-  const baseUrl = portkeyBaseUrl(values, fileValues);
-  return {
-    configuration: JSON.stringify({ mode: 'portkey-openai-compatible', api_key: apiKey, upstream_url: baseUrl }),
-    route: { kind: 'direct-model', value_sha256: sha256(model) },
-  };
+  return `${[...values].map(([key, value]) => `${key}=${value}`).join('\n')}\n`;
 }
 
 async function removeContainer(name: string | null): Promise<void> {
@@ -268,18 +212,13 @@ async function preloadInnerImages(container: string): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  const provider = value('--provider', 'codex-login') as Provider;
-  if (!['codex-login', 'portkey', 'portkey-opencode', 'openhands'].includes(provider)) throw new Error('--provider must be codex-login, portkey, portkey-opencode, or openhands');
   const requestedModel = value('--model');
   // HackerRank's OpenAI-compatible gateway expects its provider namespace for
-  // OpenHands requests (for example, openai/gpt-5.6-terra). Keep the CLI
+  // OpenHands requests (for example, openai/deepseek-v4-pro). Keep the CLI
   // ergonomic while recording and executing the effective gateway model.
-  const model = provider === 'openhands' && !requestedModel.includes('/') ? `openai/${requestedModel}` : requestedModel;
+  const model = requestedModel.includes('/') ? requestedModel : `openai/${requestedModel}`;
   const reasoning = value('--thinking');
   if (!['low', 'medium', 'high', 'xhigh', 'ultra', 'max'].includes(reasoning)) throw new Error('unsupported --thinking value');
-  if (provider === 'codex-login' && !['gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna'].includes(model)) {
-    throw new Error('Codex login supports gpt-5.6-sol, gpt-5.6-terra, and gpt-5.6-luna only');
-  }
   const timeoutSeconds = Number(value('--timeout-seconds', '14400'));
   if (!Number.isInteger(timeoutSeconds) || timeoutSeconds < 1 || timeoutSeconds > 14400) throw new Error('--timeout-seconds must be 1..14400');
   const baselineRef = value('--baseline-ref', 'HEAD');
@@ -297,29 +236,23 @@ async function main(): Promise<void> {
   await writeFile(join(trustedDirectory, 'generation_prompt.md'), prompt);
   await copyBaseline(baselineDirectory, sourceDirectory);
   const baselineSourceSha256 = await treeSha256(sourceDirectory);
-  // The rootless entrypoint consumes and removes this launcher-only file before Codex starts.
+  // The rootless entrypoint consumes and removes this launcher-only file before the agent starts.
   // It is never present in the candidate's exported source tree.
   await writeFile(join(sourceDirectory, '.payflow-task.md'), `${prompt}\n\nWork only inside this supplied codebase. Implement the task, then run the public checks that are available locally.\n`);
 
   const suffix = randomUUID().replaceAll('-', '');
   const network = `payflow-generation-${suffix}`;
   const modelContainer = `payflow-model-${suffix}`;
-  const gatewayContainer = `payflow-gateway-${suffix}`;
   const artifactContainer = `payflow-artifacts-${suffix}`;
   const dockerVolume = `payflow-inner-docker-${suffix}`;
   const workspaceVolume = `payflow-workspace-${suffix}`;
   const startedAt = new Date().toISOString();
-  let gateway: string | null = null;
   let artifact: string | null = null;
   let modelName: string | null = null;
-  let route: LaunchRecord['portkey_route'] = null;
   let generationId: string | null = null;
-  let gatewayId: string | null = null;
   let artifactId: string | null = null;
   let failure: string | null = null;
-  let auth: string | null = null;
-  let proxyConfig: string | null = null;
-  let openhandsEnvironment: Record<string, string> = {};
+  let openhandsEnvironment: string | null = null;
   try {
     generationId = await ensureImage(generationImage, 'docker/candidate-generation/rootless-dind.Dockerfile', [
       {
@@ -332,19 +265,9 @@ async function main(): Promise<void> {
       },
     ]);
     artifactId = await ensureImage(egressImage, 'docker/codex-egress/Dockerfile');
-    if (provider === 'codex-login') {
-      gatewayId = artifactId;
-      auth = await privateAuth(resolve(value('--codex-auth-file', process.env.CODEX_AUTH_FILE ?? join(homedir(), '.codex', 'auth.json'))));
-    } else if (provider === 'portkey' || provider === 'portkey-opencode') {
-      gatewayId = await ensureImage(proxyImage, 'docker/provider-proxy/Dockerfile');
-      const environmentFile = process.argv.includes('--portkey-env-file') ? await dotenv(resolve(value('--portkey-env-file'))) : {};
-      ({ configuration: proxyConfig, route } = provider === 'portkey-opencode'
-        ? directModelProxyConfiguration(environmentFile, model)
-        : routeAndProxyConfiguration(environmentFile));
-    } else {
-      openhandsEnvironment = openHandsValues(await dotenv(resolve(value('--openhands-env-file')), 'OpenHands'));
-      gatewayId = artifactId;
-    }
+    const environmentFile = resolve(value('--openhands-env-file', resolve(root, '../../hackerrank-openhands-gateway/.env')));
+    await requirePrivateEnvironmentFile(environmentFile, 'OpenHands');
+    openhandsEnvironment = openHandsEnvironment(await readFile(environmentFile, 'utf8'));
     await required('docker', ['network', 'create', '--internal', network]);
     await required('docker', ['volume', 'create', dockerVolume]);
     await required('docker', ['volume', 'create', workspaceVolume]);
@@ -353,50 +276,34 @@ async function main(): Promise<void> {
     await required('docker', ['run', '--detach', '--name', artifactContainer, '--read-only', '--tmpfs', '/tmp:rw,noexec,nosuid,nodev,size=16m', '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges:true', '--pids-limit', '64', '--memory', '128m', '--memory-swap', '128m', '--cpus', '0.25', '--log-driver', 'none', egressImage]);
     artifact = artifactContainer;
     await required('docker', ['network', 'connect', '--alias', 'artifact-egress', network, artifactContainer]);
-    if (provider === 'codex-login') {
-      gateway = artifactContainer;
-    } else if (provider === 'openhands') {
-      // OpenHands talks directly to the configured HTTPS gateway through the egress relay.
-      gateway = null;
-    } else {
-      await required('docker', ['run', '--detach', '--name', gatewayContainer, '--read-only', '--tmpfs', '/tmp:rw,noexec,nosuid,nodev,size=32m,uid=65532,gid=65532,mode=0700', '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges:true', '--pids-limit', '64', '--memory', '1024m', '--memory-swap', '1024m', '--cpus', '0.5', '--log-driver', 'none', proxyImage]);
-      gateway = gatewayContainer;
-      await required('docker', ['network', 'connect', '--alias', 'provider-proxy', network, gatewayContainer]);
-    }
     const modelArgs = ['run', '--detach', '--name', modelContainer, '--network', network, '--privileged',
       '--tmpfs', '/tmp:rw,exec,nosuid,nodev,size=512m,mode=1777,uid=1000,gid=1000',
-      '--tmpfs', '/codex-home:rw,exec,nosuid,nodev,size=128m,mode=0700,uid=1000,gid=1000',
       '--tmpfs', '/home/rootless/.docker/run:rw,exec,nosuid,nodev,size=64m,mode=0700,uid=1000,gid=1000',
       '--mount', `type=volume,src=${dockerVolume},dst=/home/rootless/.local/share/docker`,
       '--mount', `type=volume,src=${workspaceVolume},dst=/workspace`,
       '--pids-limit', '4096', '--memory', '10g', '--memory-swap', '10g', '--cpus', '5', '--ulimit', 'nofile=8192:8192', '--log-driver', 'local',
-      '--env', 'HOME=/home/rootless', '--env', 'CODEX_HOME=/codex-home', '--env', `PAYFLOW_GENERATION_PROVIDER=${provider}`, '--env', `PAYFLOW_GENERATION_MODEL=${model}`, '--env', `PAYFLOW_GENERATION_REASONING_EFFORT=${reasoning}`, '--env', `PAYFLOW_GENERATION_TIMEOUT_SECONDS=${timeoutSeconds}`];
-    modelArgs.push('--env', 'HTTPS_PROXY=http://artifact-egress:8082', '--env', 'HTTP_PROXY=http://artifact-egress:8082', '--env', 'ALL_PROXY=http://artifact-egress:8082', '--env', 'NO_PROXY=localhost,127.0.0.1,provider-proxy');
+      '--env', 'HOME=/home/rootless', '--env', `PAYFLOW_GENERATION_PROVIDER=openhands`, '--env', `PAYFLOW_GENERATION_MODEL=${model}`, '--env', `PAYFLOW_GENERATION_REASONING_EFFORT=${reasoning}`, '--env', `PAYFLOW_GENERATION_TIMEOUT_SECONDS=${timeoutSeconds}`];
+    modelArgs.push('--env', 'HTTPS_PROXY=http://artifact-egress:8082', '--env', 'HTTP_PROXY=http://artifact-egress:8082', '--env', 'ALL_PROXY=http://artifact-egress:8082', '--env', 'NO_PROXY=localhost,127.0.0.1');
     modelArgs.push('--mount', `type=bind,src=${sourceDirectory},dst=/input,readonly`, '--workdir', '/workspace', generationImage);
     await required('docker', modelArgs);
     modelName = modelContainer;
     await waitForReady(modelContainer);
     await preloadInnerImages(modelContainer);
-    if (auth !== null) await required('docker', ['exec', '-i', '--user', '1000:1000', modelContainer, 'sh', '-c', 'umask 077 && cat > /codex-home/auth.json'], auth);
-    if (proxyConfig !== null) await required('docker', ['exec', '-i', '--user', '65532:65532', gatewayContainer, 'sh', '-c', 'umask 077 && cat > /tmp/trusted-provider-config.json && touch /tmp/provider.start'], proxyConfig);
-    if (provider === 'openhands') {
-      const environment = `${Object.entries(openhandsEnvironment).map(([key, entry]) => `${key}=${entry}`).join('\n')}\n`;
-      await required('docker', ['exec', '-i', '--user', '1000:1000', modelContainer, 'sh', '-c', 'umask 077 && cat > /tmp/openhands.env'], environment);
-    }
+    await required('docker', ['exec', '-i', '--user', '1000:1000', modelContainer, 'sh', '-c', 'umask 077 && cat > /tmp/openhands.env'], openhandsEnvironment ?? '');
     await required('docker', ['exec', modelContainer, 'touch', '/tmp/generation.start']);
   } catch (error) {
     failure = error instanceof Error ? error.message : String(error);
     await removeContainer(modelName);
-    await removeContainer(gateway);
-    if (artifact !== gateway) await removeContainer(artifact);
+    await removeContainer(artifact);
     await removeVolume(dockerVolume);
     await removeVolume(workspaceVolume);
     await command('docker', ['network', 'rm', network]);
   }
   const launch: LaunchRecord = {
-    schema_version: 1, state: failure ? 'startup_failed' : 'running', run_id: id, provider, model, reasoning_effort: reasoning, timeout_seconds: timeoutSeconds,
+    schema_version: 1, state: failure ? 'startup_failed' : 'running', run_id: id, provider: 'openhands', model, reasoning_effort: reasoning, timeout_seconds: timeoutSeconds,
     started_at: startedAt, prompt_sha256: sha256(prompt), baseline_ref: baselineRef, baseline_source_sha256: baselineSourceSha256, source_directory: sourceDirectory, network: failure ? null : network,
-    model_container: failure ? null : modelName, gateway_container: failure ? null : gateway, artifact_container: failure ? null : artifact, docker_volume: failure ? null : dockerVolume, workspace_volume: failure ? null : workspaceVolume, generation_image: { tag: generationImage, id: generationId }, gateway_image: { tag: provider === 'codex-login' || provider === 'openhands' ? egressImage : proxyImage, id: gatewayId }, artifact_image: { tag: egressImage, id: artifactId }, portkey_route: route, failure,
+    model_container: failure ? null : modelName, gateway_container: null, artifact_container: failure ? null : artifact, docker_volume: failure ? null : dockerVolume, workspace_volume: failure ? null : workspaceVolume,
+    generation_image: { tag: generationImage, id: generationId }, gateway_image: { tag: egressImage, id: artifactId }, artifact_image: { tag: egressImage, id: artifactId }, failure,
   };
   await writeFile(launchPath, `${JSON.stringify(launch, null, 2)}\n`);
   if (failure) throw new Error(failure);

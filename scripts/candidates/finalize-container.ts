@@ -8,7 +8,7 @@ import type { CandidateRunManifest, Evidence } from './types.js';
 interface LaunchRecord {
   state: 'running' | 'startup_failed' | 'finalized';
   run_id: string;
-  provider: 'codex-login' | 'portkey' | 'portkey-opencode' | 'openhands';
+  provider: 'openhands';
   model: string;
   reasoning_effort: string;
   timeout_seconds: number;
@@ -26,7 +26,6 @@ interface LaunchRecord {
   generation_image: { tag: string; id: string | null };
   gateway_image: { tag: string; id: string | null };
   artifact_image: { tag: string; id: string | null };
-  portkey_route: { kind: 'config' | 'provider'; value_sha256: string } | null;
   failure: string | null;
   completed_at?: string | null;
   exit_code?: number | null;
@@ -111,9 +110,13 @@ async function main(): Promise<void> {
   }
   const rawEvents = join(runDirectory, 'trusted', 'events.raw.jsonl');
   const logs = await required('docker', ['logs', launch.model_container]);
-  await exportWorkspace(launch, runDirectory);
   const logsDirectory = join(runDirectory, 'logs');
   await mkdir(logsDirectory, { recursive: true });
+  // Preserve the exact model-container stdout/stderr before export or cleanup.
+  // The sanitized event stream remains the telemetry source, while this raw
+  // copy is intentionally retained for post-run debugging of failed agents.
+  await writeFile(join(logsDirectory, 'container.raw.log'), logs);
+  await exportWorkspace(launch, runDirectory);
   // The model container's /tmp is ephemeral. The entrypoint stages the package
   // artifacts into the exported workspace so they survive until this handoff.
   const packageTelemetryDirectory = join(launch.source_directory, '.hackerrank-openhands-run');
@@ -149,28 +152,17 @@ async function main(): Promise<void> {
     : measured(`${launch.gateway_image.tag}@${launch.gateway_image.id}`, 'Docker image inspect');
   metadata.isolation.host_mount_assertion = measured(true, 'trusted launcher: candidate source was the only host bind mount and was read-only; edits occurred in a private named volume');
   metadata.isolation.network_mode = measured(
-    launch.provider === 'codex-login'
-      ? 'private internal network with public HTTPS egress proxy; private and local destinations blocked'
-      : launch.provider === 'openhands'
-        ? 'private internal network with public HTTPS egress; OpenHands credentials loaded from ephemeral tmpfs'
-      : 'private internal network with strict Portkey Responses proxy and public HTTPS egress; private and local destinations blocked',
+    'private internal network with public HTTPS egress; OpenHands credentials loaded from ephemeral tmpfs',
     'trusted Docker network launcher',
   );
-  metadata.credential_safety.location = measured(
-    launch.provider === 'codex-login'
-      ? '/codex-home/auth.json'
-      : launch.provider === 'openhands' ? '/tmp/openhands.env' : 'trusted provider proxy configuration only',
-    'trusted launcher',
-  );
+  metadata.credential_safety.location = measured('/tmp/openhands.env', 'trusted launcher');
   metadata.credential_safety.ephemeral_storage = measured(true, 'Docker tmpfs');
   metadata.credential_safety.post_run_persistence = measured(false, 'model container removed after telemetry collection');
   metadata.credential_safety.leak_scan = unavailable('trusted launcher', 'credential leak scanning is not implemented yet; no claim is made');
   metadata.cleanup.removed_transient_files = measured(['inner Docker containers and volumes', 'private workspace volume', 'inner Docker data volume'], 'rootless DinD cleanup policy');
   metadata.resources.cpu_seconds = unavailable('Docker cgroups', 'detached runs are not sampled yet');
   metadata.resources.peak_memory_bytes = unavailable('Docker cgroups', 'detached runs are not sampled yet');
-  metadata.portkey.route_identity = launch.portkey_route === null
-    ? { value: null, status: 'not_applicable', source: 'provider selection', reason: launch.provider === 'openhands' ? 'OpenHands gateway credentials were used' : 'Codex login was used' }
-    : measured(`${launch.portkey_route.kind}:${launch.portkey_route.value_sha256}`, 'trusted Portkey launcher');
+  metadata.portkey.route_identity = { value: null, status: 'not_applicable', source: 'provider selection', reason: 'OpenHands gateway credentials were used' };
   metadata.run.failure_reason = status === 'completed' ? null : `model container exit ${exitCode}; see logs/container-state.json and logs/events.sanitized.json`;
   await writeFile(metadataPath, `${JSON.stringify(metadata, null, 2)}\n`);
   await cleanup(launch);
