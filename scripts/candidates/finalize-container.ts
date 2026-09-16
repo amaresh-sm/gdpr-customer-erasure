@@ -19,13 +19,13 @@ interface LaunchRecord {
   source_directory: string;
   network: string | null;
   model_container: string | null;
-  gateway_container: string | null;
-  artifact_container: string | null;
+  // Kept optional so runs launched before proxy removal still clean up safely.
+  gateway_container?: string | null;
+  artifact_container?: string | null;
   docker_volume: string | null;
   workspace_volume: string | null;
   generation_image: { tag: string; id: string | null };
-  gateway_image: { tag: string; id: string | null };
-  artifact_image: { tag: string; id: string | null };
+  gateway_image: { tag: string; id: string | null } | null;
   failure: string | null;
   completed_at?: string | null;
   exit_code?: number | null;
@@ -71,10 +71,21 @@ function unavailable<T>(source: string, reason: string): Evidence<T> {
 async function cleanup(launch: LaunchRecord): Promise<void> {
   if (launch.model_container) await command('docker', ['rm', '--force', '--volumes', launch.model_container]);
   if (launch.gateway_container) await command('docker', ['rm', '--force', '--volumes', launch.gateway_container]);
-  if (launch.artifact_container && launch.artifact_container !== launch.gateway_container) await command('docker', ['rm', '--force', '--volumes', launch.artifact_container]);
+  if (launch.artifact_container && launch.artifact_container !== launch.gateway_container) {
+    await command('docker', ['rm', '--force', '--volumes', launch.artifact_container]);
+  }
   if (launch.network) await command('docker', ['network', 'rm', launch.network]);
   if (launch.docker_volume) await command('docker', ['volume', 'rm', '--force', launch.docker_volume]);
   if (launch.workspace_volume) await command('docker', ['volume', 'rm', '--force', launch.workspace_volume]);
+}
+
+/** Move an optional artifact without turning an agent failure into a finalizer failure. */
+async function moveOptional(source: string, destination: string): Promise<boolean> {
+  const present = await command('test', ['-f', source]);
+  if (present.code !== 0) return false;
+  const moved = await command('mv', [source, destination]);
+  if (moved.code !== 0) throw new Error(`could not preserve artifact ${source}: ${moved.stderr.trim().slice(-500)}`);
+  return true;
 }
 
 async function exportWorkspace(launch: LaunchRecord, runDirectory: string): Promise<void> {
@@ -120,13 +131,21 @@ async function main(): Promise<void> {
   // The model container's /tmp is ephemeral. The entrypoint stages the package
   // artifacts into the exported workspace so they survive until this handoff.
   const packageTelemetryDirectory = join(launch.source_directory, '.hackerrank-openhands-run');
-  for (const artifact of ['telemetry.json', 'trajectory.json', 'gateway_responses.jsonl']) {
-    const source = join(packageTelemetryDirectory, artifact);
-    const destination = join(logsDirectory, `openhands-${artifact}`);
-    await command('mv', [source, destination]);
+  const exactEvents = join(logsDirectory, 'openhands-events.jsonl');
+  const eventsMoved = await moveOptional(join(packageTelemetryDirectory, 'events.jsonl'), exactEvents);
+  for (const [artifact, destinationName] of [
+    ['telemetry.json', 'openhands-telemetry.json'],
+    ['trajectory.json', 'openhands-trajectory.json'],
+    ['gateway_responses.jsonl', 'openhands-gateway_responses.jsonl'],
+    ['openhands.stdout.log', 'openhands.stdout.log'],
+    ['openhands.stderr.log', 'openhands.stderr.log'],
+  ] as const) {
+    await moveOptional(join(packageTelemetryDirectory, artifact), join(logsDirectory, destinationName));
   }
   await rm(packageTelemetryDirectory, { recursive: true, force: true });
-  await writeFile(rawEvents, logs);
+  // Prefer the exact OpenHands event stream. The Docker log is a fallback for
+  // older images and still remains available as container.raw.log.
+  await writeFile(rawEvents, eventsMoved ? await readFile(exactEvents, 'utf8') : logs);
   await writeFile(join(logsDirectory, 'container-state.json'), `${JSON.stringify(state, null, 2)}\n`);
   const status = exitCode === 0 ? 'completed' : exitCode === 124 ? 'timed_out' : 'failed';
   const collectArgs = [
@@ -147,12 +166,14 @@ async function main(): Promise<void> {
   metadata.runtime.generation_image = launch.generation_image.id === null
     ? unavailable('Docker image inspect', 'generation image ID was unavailable')
     : measured(`${launch.generation_image.tag}@${launch.generation_image.id}`, 'Docker image inspect');
-  metadata.runtime.gateway_image = launch.gateway_image.id === null
-    ? unavailable('Docker image inspect', 'gateway image ID was unavailable')
-    : measured(`${launch.gateway_image.tag}@${launch.gateway_image.id}`, 'Docker image inspect');
+  metadata.runtime.gateway_image = launch.gateway_image === null
+    ? unavailable('Docker launcher', 'direct gateway connection; no local proxy image was used')
+    : launch.gateway_image.id === null
+      ? unavailable('Docker image inspect', 'gateway image ID was unavailable')
+      : measured(`${launch.gateway_image.tag}@${launch.gateway_image.id}`, 'Docker image inspect');
   metadata.isolation.host_mount_assertion = measured(true, 'trusted launcher: candidate source was the only host bind mount and was read-only; edits occurred in a private named volume');
   metadata.isolation.network_mode = measured(
-    'private internal network with public HTTPS egress; OpenHands credentials loaded from ephemeral tmpfs',
+    'private Docker bridge network with direct gateway access; OpenHands credentials loaded from ephemeral tmpfs',
     'trusted Docker network launcher',
   );
   metadata.credential_safety.location = measured('/tmp/openhands.env', 'trusted launcher');

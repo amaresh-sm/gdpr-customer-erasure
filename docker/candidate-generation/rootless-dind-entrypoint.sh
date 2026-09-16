@@ -2,18 +2,6 @@
 set -eu
 
 mkdir -p "$XDG_RUNTIME_DIR" /workspace/source
-mkdir -p "$HOME/.docker"
-cat > "$HOME/.docker/config.json" <<EOF
-{
-  "proxies": {
-    "default": {
-      "httpProxy": "${HTTP_PROXY:-}",
-      "httpsProxy": "${HTTPS_PROXY:-}",
-      "noProxy": "${NO_PROXY:-localhost,127.0.0.1}"
-    }
-  }
-}
-EOF
 if [ -d /input ]; then
   cp -R /input/. /workspace/source/
 fi
@@ -51,7 +39,10 @@ fi
 
 set +e
 openhands_output=/tmp/hackerrank-openhands-run
+openhands_stdout=/tmp/hackerrank-openhands.stdout.log
+openhands_stderr=/tmp/hackerrank-openhands.stderr.log
 rm -rf "$openhands_output"
+rm -f "$openhands_stdout" "$openhands_stderr"
 mkdir -p "$openhands_output"
 timeout --signal=TERM --kill-after=30s "${PAYFLOW_GENERATION_TIMEOUT_SECONDS}s" \
   hackerrank-openhands run \
@@ -59,18 +50,21 @@ timeout --signal=TERM --kill-after=30s "${PAYFLOW_GENERATION_TIMEOUT_SECONDS}s" 
   --model "$PAYFLOW_GENERATION_MODEL" --reasoning "$PAYFLOW_GENERATION_REASONING_EFFORT" \
   --output "$openhands_output" \
   --env-file /tmp/openhands.env \
-  --redact
+  --redact >"$openhands_stdout" 2>"$openhands_stderr"
 result=$?
-if [ -f "$openhands_output/events.jsonl" ]; then
-  cat "$openhands_output/events.jsonl"
-fi
+# Keep the original command output visible in the Docker log while also
+# preserving stdout/stderr as separate failure-debugging artifacts.
+cat "$openhands_stdout"
+cat "$openhands_stderr" >&2
 if [ -d "$openhands_output" ]; then
   mkdir -p /workspace/source/.hackerrank-openhands-run
-  for artifact in telemetry.json trajectory.json gateway_responses.jsonl; do
+  for artifact in events.jsonl telemetry.json trajectory.json gateway_responses.jsonl; do
     if [ -f "$openhands_output/$artifact" ]; then
       cp "$openhands_output/$artifact" "/workspace/source/.hackerrank-openhands-run/$artifact"
     fi
   done
+  cp "$openhands_stdout" /workspace/source/.hackerrank-openhands-run/openhands.stdout.log
+  cp "$openhands_stderr" /workspace/source/.hackerrank-openhands-run/openhands.stderr.log
 fi
 set -e
 completed_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)

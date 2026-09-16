@@ -63,10 +63,9 @@ npm run candidates:generate:openhands -- \
 
 OpenAI-compatible HackerRank gateway models use the `openai/` namespace (for example,
 `openai/gpt-5.6-terra`); the launcher also adds that prefix automatically when omitted.
-The file must contain `LLM_API_KEY` or `ASTRA_GATEWAY_API_KEY`. The isolated egress relay
-allows the exact HackerRank gateway hostname in addition to public HTTPS destinations. Optional
-`LLM_BASE_URL` or `ASTRA_GATEWAY_BASE_URL` values must be credential-free HTTPS URLs; otherwise
-the default HackerRank gateway is used. The package’s Gemini compatibility fix removes unsupported
+The file must contain `LLM_API_KEY` or `ASTRA_GATEWAY_API_KEY`. The generation container connects
+directly to the configured gateway. Optional `LLM_BASE_URL` or `ASTRA_GATEWAY_BASE_URL` values must
+be credential-free HTTP or HTTPS URLs; otherwise the default HackerRank gateway is used. The package’s Gemini compatibility fix removes unsupported
 `prompt_cache_key` fields before Gateway requests. Its `telemetry.json`, `trajectory.json`, and
 `gateway_responses.jsonl` are retained under the candidate’s `logs/` directory; the trusted PayFlow
 collector also maps the package event stream into the common `metadata.json` and

@@ -21,13 +21,10 @@ interface LaunchRecord {
   source_directory: string;
   network: string | null;
   model_container: string | null;
-  gateway_container: string | null;
-  artifact_container: string | null;
   docker_volume: string | null;
   workspace_volume: string | null;
   generation_image: { tag: string; id: string | null };
-  gateway_image: { tag: string; id: string | null };
-  artifact_image: { tag: string; id: string | null };
+  gateway_image: { tag: string; id: string | null } | null;
   failure: string | null;
   completed_at?: string | null;
   exit_code?: number | null;
@@ -39,8 +36,7 @@ const root = resolve(process.cwd());
 const candidateRoot = join(root, 'benchmarking-candidates');
 // Bump the generation image when the staged reusable gateway changes so a
 // previously built image cannot silently hide a newer gateway revision.
-const generationImage = 'payflow-candidate-generation-rootless:v13';
-const egressImage = 'payflow-codex-egress:v5';
+const generationImage = 'payflow-candidate-generation-rootless:v16';
 const innerImages = [
   'node:22-bookworm-slim',
   'postgres:16-alpine',
@@ -243,14 +239,11 @@ async function main(): Promise<void> {
   const suffix = randomUUID().replaceAll('-', '');
   const network = `payflow-generation-${suffix}`;
   const modelContainer = `payflow-model-${suffix}`;
-  const artifactContainer = `payflow-artifacts-${suffix}`;
   const dockerVolume = `payflow-inner-docker-${suffix}`;
   const workspaceVolume = `payflow-workspace-${suffix}`;
   const startedAt = new Date().toISOString();
-  let artifact: string | null = null;
   let modelName: string | null = null;
   let generationId: string | null = null;
-  let artifactId: string | null = null;
   let failure: string | null = null;
   let openhandsEnvironment: string | null = null;
   try {
@@ -264,18 +257,14 @@ async function main(): Promise<void> {
         target: 'docker/candidate-generation/rootless-dind-entrypoint.sh',
       },
     ]);
-    artifactId = await ensureImage(egressImage, 'docker/codex-egress/Dockerfile');
     const environmentFile = resolve(value('--openhands-env-file', resolve(root, '../../hackerrank-openhands-gateway/.env')));
     await requirePrivateEnvironmentFile(environmentFile, 'OpenHands');
     openhandsEnvironment = openHandsEnvironment(await readFile(environmentFile, 'utf8'));
-    await required('docker', ['network', 'create', '--internal', network]);
+    await required('docker', ['network', 'create', network]);
     await required('docker', ['volume', 'create', dockerVolume]);
     await required('docker', ['volume', 'create', workspaceVolume]);
     await required('docker', ['run', '--rm', '--user', 'root', '--entrypoint', 'chown', '--mount', `type=volume,src=${dockerVolume},dst=/docker-data`, generationImage, '-R', '1000:1000', '/docker-data']);
     await required('docker', ['run', '--rm', '--user', 'root', '--entrypoint', 'chown', '--mount', `type=volume,src=${workspaceVolume},dst=/workspace-data`, generationImage, '-R', '1000:1000', '/workspace-data']);
-    await required('docker', ['run', '--detach', '--name', artifactContainer, '--read-only', '--tmpfs', '/tmp:rw,noexec,nosuid,nodev,size=16m', '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges:true', '--pids-limit', '64', '--memory', '128m', '--memory-swap', '128m', '--cpus', '0.25', '--log-driver', 'none', egressImage]);
-    artifact = artifactContainer;
-    await required('docker', ['network', 'connect', '--alias', 'artifact-egress', network, artifactContainer]);
     const modelArgs = ['run', '--detach', '--name', modelContainer, '--network', network, '--privileged',
       '--tmpfs', '/tmp:rw,exec,nosuid,nodev,size=512m,mode=1777,uid=1000,gid=1000',
       '--tmpfs', '/home/rootless/.docker/run:rw,exec,nosuid,nodev,size=64m,mode=0700,uid=1000,gid=1000',
@@ -283,7 +272,6 @@ async function main(): Promise<void> {
       '--mount', `type=volume,src=${workspaceVolume},dst=/workspace`,
       '--pids-limit', '4096', '--memory', '10g', '--memory-swap', '10g', '--cpus', '5', '--ulimit', 'nofile=8192:8192', '--log-driver', 'local',
       '--env', 'HOME=/home/rootless', '--env', `PAYFLOW_GENERATION_PROVIDER=openhands`, '--env', `PAYFLOW_GENERATION_MODEL=${model}`, '--env', `PAYFLOW_GENERATION_REASONING_EFFORT=${reasoning}`, '--env', `PAYFLOW_GENERATION_TIMEOUT_SECONDS=${timeoutSeconds}`];
-    modelArgs.push('--env', 'HTTPS_PROXY=http://artifact-egress:8082', '--env', 'HTTP_PROXY=http://artifact-egress:8082', '--env', 'ALL_PROXY=http://artifact-egress:8082', '--env', 'NO_PROXY=localhost,127.0.0.1');
     modelArgs.push('--mount', `type=bind,src=${sourceDirectory},dst=/input,readonly`, '--workdir', '/workspace', generationImage);
     await required('docker', modelArgs);
     modelName = modelContainer;
@@ -294,7 +282,6 @@ async function main(): Promise<void> {
   } catch (error) {
     failure = error instanceof Error ? error.message : String(error);
     await removeContainer(modelName);
-    await removeContainer(artifact);
     await removeVolume(dockerVolume);
     await removeVolume(workspaceVolume);
     await command('docker', ['network', 'rm', network]);
@@ -302,8 +289,8 @@ async function main(): Promise<void> {
   const launch: LaunchRecord = {
     schema_version: 1, state: failure ? 'startup_failed' : 'running', run_id: id, provider: 'openhands', model, reasoning_effort: reasoning, timeout_seconds: timeoutSeconds,
     started_at: startedAt, prompt_sha256: sha256(prompt), baseline_ref: baselineRef, baseline_source_sha256: baselineSourceSha256, source_directory: sourceDirectory, network: failure ? null : network,
-    model_container: failure ? null : modelName, gateway_container: null, artifact_container: failure ? null : artifact, docker_volume: failure ? null : dockerVolume, workspace_volume: failure ? null : workspaceVolume,
-    generation_image: { tag: generationImage, id: generationId }, gateway_image: { tag: egressImage, id: artifactId }, artifact_image: { tag: egressImage, id: artifactId }, failure,
+    model_container: failure ? null : modelName, docker_volume: failure ? null : dockerVolume, workspace_volume: failure ? null : workspaceVolume,
+    generation_image: { tag: generationImage, id: generationId }, gateway_image: null, failure,
   };
   await writeFile(launchPath, `${JSON.stringify(launch, null, 2)}\n`);
   if (failure) throw new Error(failure);
