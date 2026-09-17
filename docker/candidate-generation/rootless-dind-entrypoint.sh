@@ -63,6 +63,13 @@ if [ -d "$openhands_output" ]; then
       cp "$openhands_output/$artifact" "/workspace/source/.hackerrank-openhands-run/$artifact"
     fi
   done
+  # gateway_responses_failures/ holds the exact, uncapped message array for every
+  # failed gateway call (written by harness.py's _dump_failed_request). It lives
+  # in the container's ephemeral /tmp, so without this it is lost the moment the
+  # container is torn down, leaving a failure with no way to inspect what was sent.
+  if [ -d "$openhands_output/gateway_responses_failures" ]; then
+    cp -R "$openhands_output/gateway_responses_failures" /workspace/source/.hackerrank-openhands-run/gateway_responses_failures
+  fi
   cp "$openhands_stdout" /workspace/source/.hackerrank-openhands-run/openhands.stdout.log
   cp "$openhands_stderr" /workspace/source/.hackerrank-openhands-run/openhands.stderr.log
 fi

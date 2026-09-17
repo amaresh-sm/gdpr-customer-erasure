@@ -142,6 +142,13 @@ async function main(): Promise<void> {
   ] as const) {
     await moveOptional(join(packageTelemetryDirectory, artifact), join(logsDirectory, destinationName));
   }
+  // The exact, uncapped message array for every failed gateway call (one file per
+  // failure, written by harness.py's _dump_failed_request). Preserve it so a
+  // gateway-side rejection is debuggable after the run without a fresh repro.
+  const failuresSource = join(packageTelemetryDirectory, 'gateway_responses_failures');
+  if ((await command('test', ['-d', failuresSource])).code === 0) {
+    await required('mv', [failuresSource, join(logsDirectory, 'openhands-gateway_responses_failures')]);
+  }
   await rm(packageTelemetryDirectory, { recursive: true, force: true });
   // Prefer the exact OpenHands event stream. The Docker log is a fallback for
   // older images and still remains available as container.raw.log.

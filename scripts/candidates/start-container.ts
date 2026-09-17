@@ -36,7 +36,7 @@ const root = resolve(process.cwd());
 const candidateRoot = join(root, 'benchmarking-candidates');
 // Bump the generation image when the staged reusable gateway changes so a
 // previously built image cannot silently hide a newer gateway revision.
-const generationImage = 'payflow-candidate-generation-rootless:v16';
+const generationImage = 'payflow-candidate-generation-rootless:v22';
 const innerImages = [
   'node:22-bookworm-slim',
   'postgres:16-alpine',
@@ -212,6 +212,12 @@ async function main(): Promise<void> {
   // HackerRank's OpenAI-compatible gateway expects its provider namespace for
   // OpenHands requests (for example, openai/deepseek-v4-pro). Keep the CLI
   // ergonomic while recording and executing the effective gateway model.
+  //
+  // LiteLLM needs this prefix purely for its own client-side provider dispatch;
+  // it strips the prefix before serializing the wire request regardless. A
+  // prior "bare alias" special case for minimax-m3 removed the prefix and made
+  // every request fail instantly with "LLM Provider NOT provided" -- confirmed
+  // by reproducing that exact failure. Every model uses the prefix.
   const model = requestedModel.includes('/') ? requestedModel : `openai/${requestedModel}`;
   const reasoning = value('--thinking');
   if (!['low', 'medium', 'high', 'xhigh', 'ultra', 'max'].includes(reasoning)) throw new Error('unsupported --thinking value');
