@@ -14,6 +14,5 @@ __pycache__/
 *.zip
 .DS_Store
 
-# Benchmark artifacts are versioned in full; only generated dependency trees stay ignored.
-!/benchmarking-candidates/**
-/benchmarking-candidates/**/node_modules/
+# Candidate runs are local benchmarking artifacts and should not be committed.
+/benchmarking-candidates/
