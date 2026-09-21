@@ -58,10 +58,10 @@
       "reason": null
     },
     "cached_input": {
-      "value": null,
-      "status": "not_available",
-      "source": "HackerRank OpenHands Gateway package",
-      "reason": "usage event absent"
+      "value": 38390170,
+      "status": "backfilled",
+      "source": "Global median cache-ratio fallback",
+      "reason": "Derived with r=0.950000; original cache fields were zero or unavailable"
     },
     "output": {
       "value": 791734,

@@ -36,7 +36,7 @@ const root = resolve(process.cwd());
 const candidateRoot = join(root, 'benchmarking-candidates');
 // Bump the generation image when the staged reusable gateway changes so a
 // previously built image cannot silently hide a newer gateway revision.
-const generationImage = 'payflow-candidate-generation-rootless:v22';
+const generationImage = 'payflow-candidate-generation-rootless:v24';
 const innerImages = [
   'node:22-bookworm-slim',
   'postgres:16-alpine',
@@ -221,8 +221,8 @@ async function main(): Promise<void> {
   const model = requestedModel.includes('/') ? requestedModel : `openai/${requestedModel}`;
   const reasoning = value('--thinking');
   if (!['low', 'medium', 'high', 'xhigh', 'ultra', 'max'].includes(reasoning)) throw new Error('unsupported --thinking value');
-  const timeoutSeconds = Number(value('--timeout-seconds', '14400'));
-  if (!Number.isInteger(timeoutSeconds) || timeoutSeconds < 1 || timeoutSeconds > 14400) throw new Error('--timeout-seconds must be 1..14400');
+  const timeoutSeconds = Number(value('--timeout-seconds', '21600'));
+  if (!Number.isInteger(timeoutSeconds) || timeoutSeconds < 1 || timeoutSeconds > 21600) throw new Error('--timeout-seconds must be 1..21600');
   const baselineRef = value('--baseline-ref', 'HEAD');
   const baselineDirectory = resolve(value('--codebase-dir', 'codebase'));
   const promptFile = resolve(value('--prompt-file', 'instruction/task.md'));

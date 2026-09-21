@@ -21,6 +21,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 CANDIDATE_ROOT = ROOT / "benchmarking-candidates"
+RUNS_ROOT = ROOT / "benchmarking-runs"
 FAILED_ROOT = CANDIDATE_ROOT / "failed"
 REPORT_PATH = ROOT / "benchmarking-data.md"
 GATEWAY_SRC = ROOT.parent / "hackerrank-openhands-gateway" / "src"
@@ -144,9 +145,18 @@ def read_json(path: Path) -> dict[str, Any] | None:
     return value if isinstance(value, dict) else None
 
 
+def first_existing(run_dir: Path, *relative_paths: str) -> Path | None:
+    """Return the first available artifact path in the canonical or legacy layout."""
+    for relative_path in relative_paths:
+        path = run_dir / relative_path
+        if path.is_file():
+            return path
+    return None
+
+
 def gateway_usages(run_dir: Path) -> list[dict[str, Any]]:
-    path = run_dir / "logs" / "openhands-gateway_responses.jsonl"
-    if not path.is_file():
+    path = first_existing(run_dir, "logs/openhands-gateway_responses.jsonl")
+    if path is None:
         return []
     usages: list[dict[str, Any]] = []
     for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
@@ -188,7 +198,8 @@ def aggregate_gateway_usage(usages: list[dict[str, Any]]) -> dict[str, int] | No
 
 
 def score_for(run_dir: Path) -> float | None:
-    score = read_json(run_dir / "reports" / "hidden.score.json")
+    score_path = first_existing(run_dir, "score/hidden.score.json", "reports/hidden.score.json")
+    score = read_json(score_path) if score_path else None
     return numeric(score.get("earned")) if score else None
 
 
@@ -255,6 +266,30 @@ def dependency_count(source: Path) -> int | None:
     return len(dependencies) + len(dev_dependencies)
 
 
+def actual_largest_file(source: Path) -> str | None:
+    """Find the largest source/content file, excluding generated and metadata files."""
+    if not source.is_dir():
+        return None
+    candidates: list[tuple[int, Path]] = []
+    for path in source.rglob("*"):
+        if not path.is_file():
+            continue
+        relative = path.relative_to(source)
+        if any(part in EXCLUDED_PARTS for part in relative.parts) or path.name in EXCLUDED_NAMES:
+            continue
+        if path.suffix.lower() not in CODE_OR_CONTENT_SUFFIXES:
+            continue
+        try:
+            size = path.stat().st_size
+        except OSError:
+            continue
+        candidates.append((size, relative))
+    if not candidates:
+        return None
+    size, relative = max(candidates, key=lambda item: (item[0], str(item[1])))
+    return f"{relative} ({size / 1024:.1f}KB)"
+
+
 def test_summary(run_dir: Path) -> str:
     path = run_dir / "reports" / "hidden.junit.xml"
     if not path.is_file():
@@ -276,40 +311,52 @@ def run_row(run_dir: Path) -> dict[str, Any] | None:
     model_slug = str(nested_value(metadata, "model", "name") or "").removeprefix("openai/")
     model = MODEL_NAMES.get(model_slug, model_slug)
     reasoning = nested_value(metadata, "model", "reasoning_effort") or "—"
-    telemetry = read_json(run_dir / "logs" / "openhands-telemetry.json") or {}
+    telemetry_path = first_existing(run_dir, "telemetry/openhands-telemetry.json", "logs/openhands-telemetry.json")
+    telemetry = read_json(telemetry_path) if telemetry_path else {}
+    telemetry = telemetry or {}
     usage = telemetry.get("usage") if isinstance(telemetry.get("usage"), dict) else {}
-    raw_usages = gateway_usages(run_dir)
-    gateway_aggregate = aggregate_gateway_usage(raw_usages)
-    input_tokens = first_number(usage.get("input_tokens"), nested_value(metadata, "tokens", "input", "value"), gateway_aggregate and gateway_aggregate["input_tokens"])
-    output_tokens = first_number(usage.get("output_tokens"), nested_value(metadata, "tokens", "output", "value"), gateway_aggregate and gateway_aggregate["output_tokens"])
-    reasoning_tokens = first_number(usage.get("reasoning_tokens"), nested_value(metadata, "tokens", "reasoning", "value"), gateway_aggregate and gateway_aggregate["reasoning_tokens"])
-    cached_tokens = first_number(usage.get("cached_input_tokens"), usage.get("cache_read_tokens"), nested_value(metadata, "tokens", "cached_input", "value"), gateway_aggregate and gateway_aggregate["cached_input_tokens"])
-    openhands_usage = {"input_tokens": input_tokens or 0, "output_tokens": output_tokens or 0, "reasoning_tokens": reasoning_tokens or 0, "cached_input_tokens": cached_tokens or 0}
-    estimated = estimate_custom_cost(model_slug, gateway_usages=raw_usages, openhands_usage=openhands_usage)
+    input_tokens = first_number(usage.get("input_tokens"), nested_value(metadata, "tokens", "input", "value"))
+    output_tokens = first_number(usage.get("output_tokens"), nested_value(metadata, "tokens", "output", "value"))
+    reasoning_tokens = first_number(usage.get("reasoning_tokens"), nested_value(metadata, "tokens", "reasoning", "value"))
+    cache_read_tokens = first_number(
+        usage.get("cache_read_tokens"),
+        usage.get("cached_input_tokens"),
+        nested_value(metadata, "tokens", "cached_input", "value"),
+    )
+    openhands_usage = {
+        "input_tokens": input_tokens or 0,
+        "output_tokens": output_tokens or 0,
+        "reasoning_tokens": reasoning_tokens or 0,
+        "cached_input_tokens": cache_read_tokens or 0,
+        "cache_read_tokens": cache_read_tokens or 0,
+    }
+    # Use the canonical telemetry/metadata usage so cache backfills affect the
+    # estimate. Raw gateway logs may predate the backfill and are not preferred.
+    estimated = estimate_custom_cost(model_slug, gateway_usages=(), openhands_usage=openhands_usage)
     gateway_reported = first_number(nested_value(telemetry, "cost", "gateway", "amount_usd"), nested_value(metadata, "tokens", "gateway_cost_usd", "value"))
     openhands_reported = first_number(nested_value(telemetry, "cost", "openhands", "amount_usd"), nested_value(metadata, "tokens", "cost_usd", "value"))
     reported = gateway_reported if gateway_reported and gateway_reported > 0 else openhands_reported if openhands_reported and openhands_reported > 0 else None
     files_total = first_number(nested_value(telemetry, "workspace", "files", "total_changed"))
     loc_total = first_number(nested_value(telemetry, "workspace", "lines", "changed"))
     tools_total = first_number(nested_value(telemetry, "tools", "total"), nested_value(metadata, "tool_usage", "total", "value"))
-    tools_failed = first_number(nested_value(telemetry, "tools", "failed"), nested_value(metadata, "tool_usage", "failed", "value"))
-    events = first_number(nested_value(telemetry, "trace", "event_count"))
+    iteration_steps = first_number(nested_value(telemetry, "trace", "event_count"))
+    source = CANDIDATE_ROOT / run_dir.name / "source"
     return {
         "run": run_dir.name,
         "model": model,
         "reasoning": reasoning,
         "score": f"{score:.4f}",
-        "tokens": f"{format_count(input_tokens)}/{format_count(output_tokens)}/{format_count(reasoning_tokens)}/{format_count(cached_tokens)}",
+        "tokens": f"{format_count(input_tokens)}/{format_count(output_tokens)}/{format_count(reasoning_tokens)}/{format_count(cache_read_tokens)}",
         "estimated": estimated.get("amount_usd"),
         "reported": reported,
         "duration": format_duration(first_number(nested_value(metadata, "timing", "generation_elapsed_ms"), nested_value(telemetry, "timing", "duration_ms"))),
         "files": int(files_total) if files_total is not None else None,
         "loc": int(loc_total) if loc_total is not None else None,
         "tests": test_summary(run_dir),
-        "deps": dependency_count(run_dir / "source"),
+        "deps": dependency_count(source),
+        "largest": actual_largest_file(source),
         "tools": int(tools_total) if tools_total is not None else None,
-        "tools_failed": int(tools_failed) if tools_failed is not None else None,
-        "events": int(events) if events is not None else None,
+        "iteration_steps": int(iteration_steps) if iteration_steps is not None else None,
         "status": "completed",
     }
 
@@ -329,15 +376,15 @@ def render(rows: list[dict[str, Any]]) -> str:
         "",
         "Generated by `python3 scripts/update_benchmarking_data.py`.",
         "",
-        "| Run name | Model | Reasoning | Score | Tokens (in/out/r/cache) | Est cost (USD) | Reported cost (USD) | Duration | Files total | LOC total | Tests | Deps | Tool calls | Tool calls failed | Events | Status |",
-        "|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|",
+        "| Run-name (unique Id) | Model Name | Reasoning | Score | Token (input/output/reasoning/cache-read) | Tool calls | Iteration steps | Est cost | Reported cost | Duration | Total Files | LOC | Deps | Largest file |",
+        "|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|",
     ]
     for row in rows:
         values = [
             row["run"], row["model"], row["reasoning"], row["score"], row["tokens"],
-            format_cost(row["estimated"]), format_cost(row["reported"]), row["duration"],
-            row["files"], row["loc"], row["tests"], row["deps"], row["tools"],
-            row["tools_failed"], row["events"], row["status"],
+            row["tools"], row["iteration_steps"], format_cost(row["estimated"]),
+            format_cost(row["reported"]), row["duration"], row["files"], row["loc"],
+            row["deps"], row["largest"],
         ]
         lines.append("| " + " | ".join(markdown(value) for value in values) + " |")
     return "\n".join(lines) + "\n"
@@ -352,7 +399,9 @@ def main() -> int:
         print("Archived invalid runs:")
         for name in archived:
             print(f"- {name}")
-    rows = [row for path in sorted(CANDIDATE_ROOT.iterdir()) if path.is_dir() and path.name != FAILED_ROOT.name for row in [run_row(path)] if row]
+    run_root = RUNS_ROOT if RUNS_ROOT.is_dir() else CANDIDATE_ROOT
+    paths = sorted(run_root.glob("*/*/*")) if run_root == RUNS_ROOT else sorted(CANDIDATE_ROOT.iterdir())
+    rows = [row for path in paths if path.is_dir() and path.name != FAILED_ROOT.name for row in [run_row(path)] if row]
     rows.sort(key=lambda row: row["run"])
     if not args.dry_run:
         REPORT_PATH.write_text(render(rows), encoding="utf-8")
