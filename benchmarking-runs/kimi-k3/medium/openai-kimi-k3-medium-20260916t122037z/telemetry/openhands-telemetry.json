@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "harness": {
+    "name": "hackerrank-openhands-gateway",
+    "version": "0.1.0"
+  },
+  "run": {
+    "status": "completed",
+    "exit_code": 0,
+    "error": null
+  },
+  "model": {
+    "name": "openai/kimi-k3",
+    "reasoning": "medium",
+    "provider": "hackerrank-gateway"
+  },
+  "timing": {
+    "started_at": "2026-09-16T12:21:42.066383Z",
+    "completed_at": "2026-09-16T12:33:41.122586Z",
+    "duration_ms": 719056,
+    "llm_requests": {
+      "count": 73,
+      "with_latency": 73,
+      "successful": 73,
+      "failed": 0,
+      "total_latency_ms": 557368.709,
+      "average_latency_ms": 7635.188,
+      "min_latency_ms": 1863.237,
+      "max_latency_ms": 42312.123
+    }
+  },
+  "usage": {
+    "source": "gateway",
+    "requests": 73,
+    "input_tokens": 4074714,
+    "cached_input_tokens": 4070160,
+    "cache_read_tokens": 4070160,
+    "cache_write_tokens": 0,
+    "output_tokens": 31059,
+    "reasoning_tokens": 11022,
+    "total_tokens": 4105773
+  },
+  "cost": {
+    "gateway": {
+      "amount_usd": 1.7005949999999996,
+      "currency": "USD",
+      "status": "reported",
+      "source": "gateway",
+      "responses_with_cost": 73
+    },
+    "openhands": {
+      "amount_usd": null,
+      "currency": "USD",
+      "status": "unavailable",
+      "source": "openhands"
+    },
+    "custom_estimation": {
+      "amount_usd": 1.700595,
+      "currency": "USD",
+      "status": "estimated",
+      "source": "custom_pricing_table",
+      "pricing_version": 1,
+      "model": "openai/kimi-k3",
+      "normalized_model": "kimi-k3",
+      "requests": 73,
+      "requests_with_usage": 73,
+      "requests_missing_usage": 0,
+      "usage_source": "gateway_usage",
+      "pricing": {
+        "input_usd_per_million": 3.0,
+        "output_usd_per_million": 15.0,
+        "cache_read_usd_per_million": 0.3,
+        "cache_write_usd_per_million": null,
+        "note": "~Moonshot Kimi K3 public API pricing"
+      }
+    }
+  },
+  "workspace": {
+    "type": "workspace_metrics",
+    "status": "available",
+    "files": {
+      "added": 6,
+      "modified": 8,
+      "deleted": 0,
+      "renamed": 0,
+      "total_changed": 14
+    },
+    "lines": {
+      "added": 665,
+      "deleted": 10,
+      "changed": 675
+    },
+    "renames": []
+  },
+  "tools": {
+    "total": 79,
+    "successful": 76,
+    "failed": 3,
+    "cancelled": 0,
+    "rejected": 0,
+    "unknown": 0,
+    "by_tool": {
+      "terminal": 57,
+      "file_editor": 21,
+      "finish": 1
+    }
+  },
+  "trace": {
+    "events_path": "events.jsonl",
+    "event_count": 164,
+    "invalid_event_count": 0,
+    "integrity_sha256": "59275e56c0f67999dfab8e9df4a35f076ef75c1194ebb93b6df307d526ab5f76"
+  }
+}

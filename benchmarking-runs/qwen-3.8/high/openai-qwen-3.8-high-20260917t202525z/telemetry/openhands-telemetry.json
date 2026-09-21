@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "harness": {
+    "name": "hackerrank-openhands-gateway",
+    "version": "0.1.1"
+  },
+  "run": {
+    "status": "completed",
+    "exit_code": 0,
+    "error": null
+  },
+  "model": {
+    "name": "openai/qwen-3.8",
+    "reasoning": "high",
+    "provider": "hackerrank-gateway"
+  },
+  "timing": {
+    "started_at": "2026-09-17T20:26:10.824272Z",
+    "completed_at": "2026-09-17T23:35:47.162986Z",
+    "duration_ms": 11376338,
+    "llm_requests": {
+      "count": 500,
+      "with_latency": 500,
+      "successful": 500,
+      "failed": 0,
+      "total_latency_ms": 11289276.951,
+      "average_latency_ms": 22578.554,
+      "min_latency_ms": 1196.693,
+      "max_latency_ms": 239413.64
+    }
+  },
+  "usage": {
+    "source": "gateway",
+    "requests": 500,
+    "input_tokens": 20652314,
+    "cached_input_tokens": 19311680,
+    "cache_read_tokens": 19311680,
+    "cache_write_tokens": 0,
+    "output_tokens": 1208370,
+    "reasoning_tokens": 1109794,
+    "total_tokens": 21860684
+  },
+  "cost": {
+    "gateway": {
+      "amount_usd": 14.546210000000015,
+      "currency": "USD",
+      "status": "reported",
+      "source": "gateway",
+      "responses_with_cost": 500
+    },
+    "openhands": {
+      "amount_usd": null,
+      "currency": "USD",
+      "status": "unavailable",
+      "source": "openhands"
+    },
+    "custom_estimation": {
+      "amount_usd": 48.554848,
+      "currency": "USD",
+      "status": "estimated",
+      "source": "custom_pricing_table",
+      "pricing_version": 1,
+      "model": "openai/qwen-3.8",
+      "normalized_model": "qwen-3.8",
+      "requests": 500,
+      "requests_with_usage": 500,
+      "requests_missing_usage": 0,
+      "usage_source": "gateway_usage",
+      "pricing": {
+        "input_usd_per_million": 2.0,
+        "output_usd_per_million": 6.0,
+        "cache_read_usd_per_million": null,
+        "cache_write_usd_per_million": null,
+        "note": "~Alibaba Qwen3.8 Max international tier; cache rate not public"
+      }
+    }
+  },
+  "workspace": {
+    "type": "workspace_metrics",
+    "status": "available",
+    "files": {
+      "added": 5,
+      "modified": 2,
+      "deleted": 0,
+      "renamed": 0,
+      "total_changed": 7
+    },
+    "lines": {
+      "added": 669,
+      "deleted": 2,
+      "changed": 671
+    },
+    "renames": []
+  },
+  "tools": {
+    "total": 496,
+    "successful": 493,
+    "failed": 3,
+    "cancelled": 0,
+    "rejected": 0,
+    "unknown": 0,
+    "by_tool": {
+      "file_editor": 80,
+      "terminal": 408,
+      "think": 8
+    }
+  },
+  "trace": {
+    "events_path": "events.jsonl",
+    "event_count": 1035,
+    "invalid_event_count": 0,
+    "integrity_sha256": "0ccfd4daefcfa6342fe6d7b44cb7978733c20c4920921af26befff0df2c33725"
+  }
+}

@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "harness": {
+    "name": "hackerrank-openhands-gateway",
+    "version": "0.1.1"
+  },
+  "run": {
+    "status": "completed",
+    "exit_code": 0,
+    "error": null
+  },
+  "model": {
+    "name": "openai/qwen-3.8",
+    "reasoning": "medium",
+    "provider": "hackerrank-gateway"
+  },
+  "timing": {
+    "started_at": "2026-09-17T16:39:24.476414Z",
+    "completed_at": "2026-09-17T18:34:22.222812Z",
+    "duration_ms": 6897746,
+    "llm_requests": {
+      "count": 270,
+      "with_latency": 270,
+      "successful": 270,
+      "failed": 0,
+      "total_latency_ms": 6472500.252,
+      "average_latency_ms": 23972.223,
+      "min_latency_ms": 1966.959,
+      "max_latency_ms": 639307.277
+    }
+  },
+  "usage": {
+    "source": "gateway",
+    "requests": 270,
+    "input_tokens": 23022868,
+    "cached_input_tokens": 21469824,
+    "cache_read_tokens": 21469824,
+    "cache_write_tokens": 0,
+    "output_tokens": 387239,
+    "reasoning_tokens": 295077,
+    "total_tokens": 23410107
+  },
+  "cost": {
+    "gateway": {
+      "amount_usd": 10.607239999999997,
+      "currency": "USD",
+      "status": "reported",
+      "source": "gateway",
+      "responses_with_cost": 270
+    },
+    "openhands": {
+      "amount_usd": null,
+      "currency": "USD",
+      "status": "unavailable",
+      "source": "openhands"
+    },
+    "custom_estimation": {
+      "amount_usd": 48.36917,
+      "currency": "USD",
+      "status": "estimated",
+      "source": "custom_pricing_table",
+      "pricing_version": 1,
+      "model": "openai/qwen-3.8",
+      "normalized_model": "qwen-3.8",
+      "requests": 270,
+      "requests_with_usage": 270,
+      "requests_missing_usage": 0,
+      "usage_source": "gateway_usage",
+      "pricing": {
+        "input_usd_per_million": 2.0,
+        "output_usd_per_million": 6.0,
+        "cache_read_usd_per_million": null,
+        "cache_write_usd_per_million": null,
+        "note": "~Alibaba Qwen3.8 Max international tier; cache rate not public"
+      }
+    }
+  },
+  "workspace": {
+    "type": "workspace_metrics",
+    "status": "available",
+    "files": {
+      "added": 7,
+      "modified": 10,
+      "deleted": 0,
+      "renamed": 0,
+      "total_changed": 17
+    },
+    "lines": {
+      "added": 895,
+      "deleted": 29,
+      "changed": 924
+    },
+    "renames": []
+  },
+  "tools": {
+    "total": 293,
+    "successful": 286,
+    "failed": 7,
+    "cancelled": 0,
+    "rejected": 0,
+    "unknown": 0,
+    "by_tool": {
+      "terminal": 175,
+      "file_editor": 115,
+      "think": 2,
+      "finish": 1
+    }
+  },
+  "trace": {
+    "events_path": "events.jsonl",
+    "event_count": 605,
+    "invalid_event_count": 0,
+    "integrity_sha256": "d140d6bf64859a35b65d4327e9e8f9d40168af2751c9f9daf4d651a4d867d5d8"
+  }
+}

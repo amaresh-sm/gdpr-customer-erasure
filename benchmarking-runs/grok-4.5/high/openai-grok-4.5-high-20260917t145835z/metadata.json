@@ -1,0 +1,4039 @@
+{
+  "schema_version": 1,
+  "run": {
+    "id": "openai-grok-4.5-high-20260917t145835z",
+    "status": "completed",
+    "exit_code": 0,
+    "timeout_exceeded": false,
+    "failure_reason": null
+  },
+  "model": {
+    "provider": "openhands",
+    "name": "openai/grok-4.5",
+    "reasoning_effort": "high"
+  },
+  "timing": {
+    "started_at": {
+      "value": "2026-09-17T14:58:35.554Z",
+      "status": "measured",
+      "source": "trusted launcher clock",
+      "reason": null
+    },
+    "completed_at": {
+      "value": "2026-09-17T15:22:25.000Z",
+      "status": "measured",
+      "source": "trusted launcher clock",
+      "reason": null
+    },
+    "generation_elapsed_ms": {
+      "value": 1429446,
+      "status": "measured",
+      "source": "trusted launcher clock",
+      "reason": null
+    },
+    "model_execution_elapsed_ms": {
+      "value": 1429446,
+      "status": "measured",
+      "source": "Codex child-process wall clock",
+      "reason": null
+    }
+  },
+  "tokens": {
+    "cost_usd": {
+      "value": 0,
+      "status": "measured",
+      "source": "HackerRank OpenHands Gateway package cost usage",
+      "reason": null
+    },
+    "gateway_cost_usd": {
+      "value": 3.4187091999999994,
+      "status": "measured",
+      "source": "Gateway response usage",
+      "reason": null
+    },
+    "input": {
+      "value": 6631072,
+      "status": "measured",
+      "source": "HackerRank OpenHands Gateway package token usage",
+      "reason": null
+    },
+    "cached_input": {
+      "value": 6005504,
+      "status": "measured",
+      "source": "HackerRank OpenHands Gateway package token usage",
+      "reason": null
+    },
+    "output": {
+      "value": 60987,
+      "status": "measured",
+      "source": "HackerRank OpenHands Gateway package token usage",
+      "reason": null
+    },
+    "reasoning": {
+      "value": 9087,
+      "status": "measured",
+      "source": "HackerRank OpenHands Gateway package token usage",
+      "reason": null
+    },
+    "total": {
+      "value": 12697563,
+      "status": "measured",
+      "source": "HackerRank OpenHands Gateway package token usage",
+      "reason": null
+    },
+    "source": {
+      "value": "HackerRank OpenHands Gateway package token usage",
+      "status": "measured",
+      "source": "HackerRank OpenHands Gateway package",
+      "reason": null
+    },
+    "provider_codex_agreement": {
+      "value": null,
+      "status": "not_available",
+      "source": "provider proxy",
+      "reason": "no provider-proxy usage export was supplied"
+    }
+  },
+  "tool_usage": {
+    "total": {
+      "value": 220,
+      "status": "measured",
+      "source": "HackerRank OpenHands Gateway package",
+      "reason": null
+    },
+    "successful": {
+      "value": 220,
+      "status": "measured",
+      "source": "HackerRank OpenHands Gateway package",
+      "reason": null
+    },
+    "failed": {
+      "value": 0,
+      "status": "measured",
+      "source": "HackerRank OpenHands Gateway package",
+      "reason": null
+    },
+    "cancelled": {
+      "value": 0,
+      "status": "measured",
+      "source": "HackerRank OpenHands Gateway package",
+      "reason": null
+    },
+    "shell": {
+      "value": 90,
+      "status": "measured",
+      "source": "HackerRank OpenHands Gateway package",
+      "reason": null
+    },
+    "patch": {
+      "value": 0,
+      "status": "measured",
+      "source": "HackerRank OpenHands Gateway package",
+      "reason": null
+    },
+    "by_tool": {
+      "terminal": 90,
+      "file_editor": 130
+    },
+    "trajectory": [
+      {
+        "sequence": 1,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T14:59:27.625744",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 2,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T14:59:27.648040",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 3,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T14:59:32.008983",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 4,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T14:59:32.031283",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 5,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T14:59:41.439780",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 6,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T14:59:41.463164",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 7,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T14:59:46.948530",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 8,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T14:59:46.971731",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 9,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T14:59:50.762686",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 10,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T14:59:50.785851",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 11,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T14:59:56.261401",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 12,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T14:59:56.797110",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 13,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:00:02.828355",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 14,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:00:03.362643",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 15,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:00:13.487835",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 16,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:00:14.531679",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 17,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:00:23.405445",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 18,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:00:23.940359",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 19,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:00:31.493914",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 20,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:00:32.027250",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 21,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:00:38.796246",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 22,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:00:38.818451",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 23,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:01:39.000060",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 24,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:01:39.022883",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 25,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:02:50.876038",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 26,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:02:50.886839",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 27,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:03:13.491090",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 28,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:03:13.497194",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 29,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:03:33.321526",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 30,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:03:33.346948",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 31,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:03:53.225228",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 32,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:03:53.233397",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 33,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:04:25.031136",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 34,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:04:25.038380",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 35,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:05:59.729038",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 36,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:05:59.746756",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 37,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:06:24.644437",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 38,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:06:24.651091",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 39,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:06:34.517501",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 40,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:06:34.521388",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 41,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:07:12.485573",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 42,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:07:12.488042",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 43,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:07:12.491205",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 44,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:07:12.492499",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 45,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:07:12.493624",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 46,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:07:12.495013",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 47,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:07:12.496068",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 48,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:07:12.505850",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 49,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:07:12.507435",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 50,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:07:12.508860",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 51,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:07:12.510259",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 52,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:07:12.511546",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 53,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:07:12.513427",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 54,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:07:12.514831",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 55,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:10:18.599041",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 56,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:10:18.623715",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 57,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:10:18.629824",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 58,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:10:18.633483",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 59,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:10:18.637134",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 60,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:10:18.643101",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 61,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:10:18.649336",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 62,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:10:18.674752",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 63,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:10:18.678518",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 64,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:10:18.682553",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 65,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:10:18.687697",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 66,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:10:18.694142",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 67,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:10:18.698663",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 68,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:10:18.701520",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 69,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:10:56.075784",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 70,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:10:56.087128",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 71,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:10:56.090430",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 72,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:10:56.091842",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 73,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:10:56.093068",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 74,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:10:56.094063",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 75,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:10:56.094952",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 76,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:10:56.096031",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 77,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:10:56.096731",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 78,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:10:56.107143",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 79,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:10:56.109385",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 80,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:10:56.111008",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 81,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:10:56.112307",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 82,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:10:56.113555",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 83,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:10:56.115532",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 84,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:10:56.119937",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 85,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:10:56.123744",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 86,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:10:56.128036",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 87,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:11:06.724834",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 88,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:11:06.752341",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 89,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:12:09.655477",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 90,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:12:09.660584",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 91,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:12:09.665830",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 92,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:12:09.667071",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 93,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:12:09.674532",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 94,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:12:09.677975",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 95,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:12:09.679632",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 96,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:12:09.683062",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 97,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:12:27.962233",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 98,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:12:27.976590",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 99,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:12:33.371500",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 100,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:12:33.394267",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 101,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:12:39.550590",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 102,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:12:40.594128",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 103,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:12:44.761648",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 104,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:12:45.296736",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 105,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:12:48.933334",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 106,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:12:48.957976",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 107,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:13:01.823804",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 108,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:13:12.061951",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 109,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:13:21.152073",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 110,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:13:21.686504",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 111,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:13:26.396039",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 112,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:13:38.181504",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 113,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:13:46.290200",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 114,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:13:58.609987",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 115,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:14:06.991099",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 116,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:14:07.532864",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 117,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:14:24.810678",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 118,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:14:26.053488",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 119,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:14:32.646346",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 120,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:14:33.180105",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 121,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:14:58.006928",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 122,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:14:58.540958",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 123,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:15:05.515485",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 124,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:15:05.537618",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 125,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:15:10.363203",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 126,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:15:10.368170",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 127,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:15:56.011555",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 128,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:15:56.015694",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 129,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:15:56.018018",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 130,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:15:56.019397",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 131,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:15:56.021138",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 132,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:15:56.021989",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 133,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:15:56.027347",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 134,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:15:56.029985",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 135,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:15:56.031722",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 136,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:15:56.033798",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 137,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:15:56.035256",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 138,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:15:56.036749",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 139,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:16:03.847084",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 140,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:16:04.380489",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 141,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:16:12.236658",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 142,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:16:19.931229",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 143,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:16:36.595076",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 144,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:16:36.598495",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 145,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:16:36.604960",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 146,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:16:36.607033",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 147,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:16:43.859255",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 148,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:16:50.517443",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 149,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:17:06.747288",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 150,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:17:06.751731",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 151,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:17:06.758424",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 152,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:17:06.760907",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 153,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:17:20.387370",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 154,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:17:20.389112",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 155,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:17:20.393842",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 156,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:17:29.121354",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 157,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:18:01.071969",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 158,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:18:05.995251",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 159,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:18:15.409663",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 160,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:18:16.462199",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 161,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:19:09.430640",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 162,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:19:09.436538",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 163,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:19:09.438132",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 164,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:19:09.439059",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 165,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:19:09.440180",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 166,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:19:09.441643",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 167,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:19:09.442501",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 168,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:19:09.444194",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 169,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:19:09.445036",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 170,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:19:09.450657",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 171,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:19:09.451991",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 172,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:19:09.453654",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 173,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:19:09.455126",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 174,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:19:09.456993",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 175,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:19:09.458494",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 176,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:19:09.460780",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 177,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:19:09.462092",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 178,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:19:09.463516",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 179,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:19:14.982422",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 180,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:19:15.010826",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 181,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:19:21.421425",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 182,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:19:21.954755",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 183,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:19:34.118772",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 184,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:19:34.121144",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 185,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:19:34.123339",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 186,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:19:34.124707",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 187,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:19:34.126021",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 188,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:19:34.131150",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 189,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:19:34.133052",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 190,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:19:34.135053",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 191,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:19:34.137071",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 192,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:19:39.773956",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 193,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:20:12.446201",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 194,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:20:18.362263",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 195,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:20:28.369451",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 196,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:20:31.454588",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 197,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:20:41.364102",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 198,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:20:41.366125",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 199,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:20:41.370146",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 200,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:20:44.453541",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 201,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:20:49.900586",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 202,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:20:52.985134",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 203,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:20:56.534100",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 204,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:20:58.598629",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 205,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:21:16.501446",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 206,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:21:16.503978",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 207,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:21:16.508322",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 208,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:21:16.509971",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 209,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:21:31.820559",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 210,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:21:31.821927",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 211,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:21:31.823046",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 212,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:21:31.826137",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 213,
+        "call_id": null,
+        "name": "file_editor",
+        "category": "other",
+        "started_at": "2026-09-17T15:21:31.828953",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 214,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:21:31.829390",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 215,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:21:40.533385",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 216,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:21:44.639955",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 217,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:21:53.698588",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 218,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:21:56.333763",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 219,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:22:11.294471",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 45,
+        "result_sha256": "bcc9abc7b44b3d69e5ef4f7663307b92e208dafd6941cd06da1555ac22ff7976",
+        "result_metadata": {
+          "event_type": "ActionEvent",
+          "source": "agent"
+        },
+        "truncated": null
+      },
+      {
+        "sequence": 220,
+        "call_id": null,
+        "name": "terminal",
+        "category": "shell",
+        "started_at": "2026-09-17T15:22:14.475777",
+        "duration_ms": null,
+        "status": "ok",
+        "sanitized_arguments": null,
+        "result_size_bytes": 56,
+        "result_sha256": "62048c420b9b3af170b11779c393d76cffc9b84c547c5fcfb7827cf1e2b6ec37",
+        "result_metadata": {
+          "event_type": "ObservationEvent",
+          "source": "environment"
+        },
+        "truncated": null
+      }
+    ]
+  },
+  "resources": {
+    "cpu_seconds": {
+      "value": null,
+      "status": "not_available",
+      "source": "Docker cgroups",
+      "reason": "detached runs are not sampled yet"
+    },
+    "peak_memory_bytes": {
+      "value": null,
+      "status": "not_available",
+      "source": "Docker cgroups",
+      "reason": "detached runs are not sampled yet"
+    }
+  },
+  "event_integrity": {
+    "codex_thread_id": {
+      "value": null,
+      "status": "not_available",
+      "source": "HackerRank OpenHands Gateway package",
+      "reason": "session identifier absent"
+    },
+    "jsonl_event_count": {
+      "value": 227,
+      "status": "measured",
+      "source": "HackerRank OpenHands Gateway package",
+      "reason": null
+    },
+    "invalid_event_count": {
+      "value": 0,
+      "status": "measured",
+      "source": "HackerRank OpenHands Gateway package",
+      "reason": null
+    },
+    "terminal_event": {
+      "value": "run_completed",
+      "status": "measured",
+      "source": "HackerRank OpenHands Gateway package",
+      "reason": null
+    }
+  },
+  "error_integrity": {
+    "codex_error_count": {
+      "value": 0,
+      "status": "measured",
+      "source": "HackerRank OpenHands Gateway package",
+      "reason": null
+    },
+    "error_sha256": {
+      "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "measured",
+      "source": "redacted HackerRank OpenHands Gateway package errors",
+      "reason": null
+    }
+  },
+  "prompt_integrity": {
+    "sha256": "96911c13dbb68853376e3be46ad8758a5acbde1c3a466f1c1595d002dbfd0b64"
+  },
+  "runtime": {
+    "codex_cli_version": {
+      "value": null,
+      "status": "not_available",
+      "source": "OpenHands runner",
+      "reason": "runner version is not emitted"
+    },
+    "generation_image": {
+      "value": "payflow-candidate-generation-rootless:v22@sha256:cb13a9d3e4d840b2e8b3bad8889dc5df4c1373d402b8fa631858c67cf5783a6a",
+      "status": "measured",
+      "source": "Docker image inspect",
+      "reason": null
+    },
+    "gateway_image": {
+      "value": null,
+      "status": "not_available",
+      "source": "Docker launcher",
+      "reason": "direct gateway connection; no local proxy image was used"
+    }
+  },
+  "isolation": {
+    "host_mount_assertion": {
+      "value": true,
+      "status": "measured",
+      "source": "trusted launcher: candidate source was the only host bind mount and was read-only; edits occurred in a private named volume",
+      "reason": null
+    },
+    "network_mode": {
+      "value": "private Docker bridge network with direct gateway access; OpenHands credentials loaded from ephemeral tmpfs",
+      "status": "measured",
+      "source": "trusted Docker network launcher",
+      "reason": null
+    }
+  },
+  "credential_safety": {
+    "location": {
+      "value": "/tmp/openhands.env",
+      "status": "measured",
+      "source": "trusted launcher",
+      "reason": null
+    },
+    "ephemeral_storage": {
+      "value": true,
+      "status": "measured",
+      "source": "Docker tmpfs",
+      "reason": null
+    },
+    "post_run_persistence": {
+      "value": false,
+      "status": "measured",
+      "source": "model container removed after telemetry collection",
+      "reason": null
+    },
+    "leak_scan": {
+      "value": null,
+      "status": "not_available",
+      "source": "trusted launcher",
+      "reason": "credential leak scanning is not implemented yet; no claim is made"
+    }
+  },
+  "cleanup": {
+    "removed_transient_files": {
+      "value": [
+        "inner Docker containers and volumes",
+        "private workspace volume",
+        "inner Docker data volume"
+      ],
+      "status": "measured",
+      "source": "rootless DinD cleanup policy",
+      "reason": null
+    }
+  },
+  "portkey": {
+    "route_identity": {
+      "value": null,
+      "status": "not_applicable",
+      "source": "provider selection",
+      "reason": "OpenHands gateway credentials were used"
+    }
+  },
+  "source": {
+    "baseline_ref": "HEAD",
+    "baseline_commit": "9330a024ccfbf569f0534ef32494dcb09e9d9541",
+    "baseline_sha256": "7d805adff622e2c5d0174362ff737cf1198ccb9d4963f4f98774c883787af946",
+    "sha256": "3e7a7d3e04c9f93e64a57053ba05d7519b615073cf1bdfd714bc4314bb652c3f",
+    "changed": true
+  },
+  "scoring": {
+    "verifier_ref": "9330a024ccfbf569f0534ef32494dcb09e9d9541",
+    "junit_path": "reports/hidden.junit.xml",
+    "score_path": "reports/hidden.score.json",
+    "scenarios_total": 13,
+    "scenarios_passed": 4,
+    "score": 0.225,
+    "score_maximum": 1,
+    "hard_pass": false,
+    "score_state": "complete",
+    "report_sha256": "f3ed8be21c3da90ef81e266bb7fc7c0a497e6ae4726a3b5bf706da492b5bddd2",
+    "evaluated_maximum": 1,
+    "comparable": true
+  }
+}

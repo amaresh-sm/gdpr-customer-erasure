@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "harness": {
+    "name": "hackerrank-openhands-gateway",
+    "version": "0.1.1"
+  },
+  "run": {
+    "status": "completed",
+    "exit_code": 0,
+    "error": null
+  },
+  "model": {
+    "name": "openai/deepseek-v4-pro",
+    "reasoning": "high",
+    "provider": "hackerrank-gateway"
+  },
+  "timing": {
+    "started_at": "2026-09-17T15:47:09.823809Z",
+    "completed_at": "2026-09-17T16:11:59.559406Z",
+    "duration_ms": 1489735,
+    "llm_requests": {
+      "count": 123,
+      "with_latency": 123,
+      "successful": 123,
+      "failed": 0,
+      "total_latency_ms": 1152606.406,
+      "average_latency_ms": 9370.784,
+      "min_latency_ms": 2181.346,
+      "max_latency_ms": 70762.663
+    }
+  },
+  "usage": {
+    "source": "gateway",
+    "requests": 123,
+    "input_tokens": 8602410,
+    "cached_input_tokens": 7806464,
+    "cache_read_tokens": 7806464,
+    "cache_write_tokens": 0,
+    "output_tokens": 56887,
+    "reasoning_tokens": 29484,
+    "total_tokens": 8659297
+  },
+  "cost": {
+    "gateway": {
+      "amount_usd": 2.9871683099999995,
+      "currency": "USD",
+      "status": "reported",
+      "source": "gateway",
+      "responses_with_cost": 123
+    },
+    "openhands": {
+      "amount_usd": null,
+      "currency": "USD",
+      "status": "unavailable",
+      "source": "openhands"
+    },
+    "custom_estimation": {
+      "amount_usd": 0.809702828,
+      "currency": "USD",
+      "status": "estimated",
+      "source": "custom_pricing_table",
+      "pricing_version": 1,
+      "model": "openai/deepseek-v4-pro",
+      "normalized_model": "deepseek-v4-pro",
+      "requests": 123,
+      "requests_with_usage": 123,
+      "requests_missing_usage": 0,
+      "usage_source": "gateway_usage",
+      "pricing": {
+        "input_usd_per_million": 0.66,
+        "output_usd_per_million": 1.98,
+        "cache_read_usd_per_million": 0.022,
+        "cache_write_usd_per_million": null,
+        "note": "DeepSeek V4 Pro off-peak pricing; peak rates are 2x"
+      }
+    }
+  },
+  "workspace": {
+    "type": "workspace_metrics",
+    "status": "available",
+    "files": {
+      "added": 5,
+      "modified": 9,
+      "deleted": 0,
+      "renamed": 0,
+      "total_changed": 14
+    },
+    "lines": {
+      "added": 540,
+      "deleted": 5,
+      "changed": 545
+    },
+    "renames": []
+  },
+  "tools": {
+    "total": 160,
+    "successful": 158,
+    "failed": 2,
+    "cancelled": 0,
+    "rejected": 0,
+    "unknown": 0,
+    "by_tool": {
+      "file_editor": 95,
+      "think": 1,
+      "terminal": 63,
+      "finish": 1
+    }
+  },
+  "trace": {
+    "events_path": "events.jsonl",
+    "event_count": 329,
+    "invalid_event_count": 0,
+    "integrity_sha256": "ce4b2be3b49712fcf3b902b0b6339d11c7fbff736fa836324d375f525c7af52b"
+  }
+}

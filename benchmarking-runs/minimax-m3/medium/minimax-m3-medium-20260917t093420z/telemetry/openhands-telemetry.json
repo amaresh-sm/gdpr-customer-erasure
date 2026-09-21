@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "harness": {
+    "name": "hackerrank-openhands-gateway",
+    "version": "0.1.1"
+  },
+  "run": {
+    "status": "completed",
+    "exit_code": 0,
+    "error": null
+  },
+  "model": {
+    "name": "openai/minimax-m3",
+    "reasoning": "medium",
+    "provider": "hackerrank-gateway"
+  },
+  "timing": {
+    "started_at": "2026-09-17T09:39:25.761163Z",
+    "completed_at": "2026-09-17T10:56:54.982892Z",
+    "duration_ms": 4649221,
+    "llm_requests": {
+      "count": 500,
+      "with_latency": 500,
+      "successful": 500,
+      "failed": 0,
+      "total_latency_ms": 3827360.017,
+      "average_latency_ms": 7654.72,
+      "min_latency_ms": 1007.976,
+      "max_latency_ms": 98011.468
+    }
+  },
+  "usage": {
+    "source": "gateway",
+    "requests": 500,
+    "input_tokens": 30274454,
+    "cached_input_tokens": 29457920,
+    "cache_read_tokens": 29457920,
+    "cache_write_tokens": 0,
+    "output_tokens": 121662,
+    "reasoning_tokens": 1337,
+    "total_tokens": 30396116
+  },
+  "cost": {
+    "gateway": {
+      "amount_usd": 2.158429799999999,
+      "currency": "USD",
+      "status": "reported",
+      "source": "gateway",
+      "responses_with_cost": 500
+    },
+    "openhands": {
+      "amount_usd": null,
+      "currency": "USD",
+      "status": "unavailable",
+      "source": "openhands"
+    },
+    "custom_estimation": {
+      "amount_usd": 4.3168596,
+      "currency": "USD",
+      "status": "estimated",
+      "source": "custom_pricing_table",
+      "pricing_version": 1,
+      "model": "openai/minimax-m3",
+      "normalized_model": "minimax-m3",
+      "requests": 500,
+      "requests_with_usage": 500,
+      "requests_missing_usage": 0,
+      "usage_source": "gateway_usage",
+      "pricing": {
+        "input_usd_per_million": 0.6,
+        "output_usd_per_million": 2.4,
+        "cache_read_usd_per_million": 0.12,
+        "cache_write_usd_per_million": null,
+        "note": "MiniMax public API pricing; long context > 512K tokens",
+        "long_context_threshold_tokens": 512001,
+        "long_context": {
+          "input_usd_per_million": 1.2,
+          "output_usd_per_million": 4.8,
+          "cache_read_usd_per_million": 0.24
+        }
+      }
+    }
+  },
+  "workspace": {
+    "type": "workspace_metrics",
+    "status": "available",
+    "files": {
+      "added": 6,
+      "modified": 9,
+      "deleted": 0,
+      "renamed": 0,
+      "total_changed": 15
+    },
+    "lines": {
+      "added": 1052,
+      "deleted": 10,
+      "changed": 1062
+    },
+    "renames": []
+  },
+  "tools": {
+    "total": 493,
+    "successful": 489,
+    "failed": 4,
+    "cancelled": 0,
+    "rejected": 0,
+    "unknown": 0,
+    "by_tool": {
+      "terminal": 306,
+      "file_editor": 185,
+      "think": 2
+    }
+  },
+  "trace": {
+    "events_path": "events.jsonl",
+    "event_count": 1000,
+    "invalid_event_count": 0,
+    "integrity_sha256": "c0adc22b752d04a59163a9bd7c567192cd8b0919594736f14fa2ffe1e8f432b4"
+  }
+}

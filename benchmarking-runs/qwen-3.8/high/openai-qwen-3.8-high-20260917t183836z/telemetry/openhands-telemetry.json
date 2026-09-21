@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "harness": {
+    "name": "hackerrank-openhands-gateway",
+    "version": "0.1.1"
+  },
+  "run": {
+    "status": "completed",
+    "exit_code": 0,
+    "error": null
+  },
+  "model": {
+    "name": "openai/qwen-3.8",
+    "reasoning": "high",
+    "provider": "hackerrank-gateway"
+  },
+  "timing": {
+    "started_at": "2026-09-17T18:39:26.364926Z",
+    "completed_at": "2026-09-17T21:24:22.495217Z",
+    "duration_ms": 9896130,
+    "llm_requests": {
+      "count": 424,
+      "with_latency": 424,
+      "successful": 423,
+      "failed": 1,
+      "total_latency_ms": 9471740.45,
+      "average_latency_ms": 22339.01,
+      "min_latency_ms": 1180.934,
+      "max_latency_ms": 902767.436
+    }
+  },
+  "usage": {
+    "source": "gateway",
+    "requests": 423,
+    "input_tokens": 28712592,
+    "cached_input_tokens": 27828992,
+    "cache_read_tokens": 27828992,
+    "cache_write_tokens": 0,
+    "output_tokens": 641032,
+    "reasoning_tokens": 534984,
+    "total_tokens": 29353624
+  },
+  "cost": {
+    "gateway": {
+      "amount_usd": 12.570639999999996,
+      "currency": "USD",
+      "status": "reported",
+      "source": "gateway",
+      "responses_with_cost": 423
+    },
+    "openhands": {
+      "amount_usd": null,
+      "currency": "USD",
+      "status": "unavailable",
+      "source": "openhands"
+    },
+    "custom_estimation": {
+      "amount_usd": 61.271376,
+      "currency": "USD",
+      "status": "estimated",
+      "source": "custom_pricing_table",
+      "pricing_version": 1,
+      "model": "openai/qwen-3.8",
+      "normalized_model": "qwen-3.8",
+      "requests": 423,
+      "requests_with_usage": 423,
+      "requests_missing_usage": 0,
+      "usage_source": "gateway_usage",
+      "pricing": {
+        "input_usd_per_million": 2.0,
+        "output_usd_per_million": 6.0,
+        "cache_read_usd_per_million": null,
+        "cache_write_usd_per_million": null,
+        "note": "~Alibaba Qwen3.8 Max international tier; cache rate not public"
+      }
+    }
+  },
+  "workspace": {
+    "type": "workspace_metrics",
+    "status": "available",
+    "files": {
+      "added": 6,
+      "modified": 10,
+      "deleted": 0,
+      "renamed": 0,
+      "total_changed": 16
+    },
+    "lines": {
+      "added": 837,
+      "deleted": 17,
+      "changed": 854
+    },
+    "renames": []
+  },
+  "tools": {
+    "total": 465,
+    "successful": 447,
+    "failed": 18,
+    "cancelled": 0,
+    "rejected": 0,
+    "unknown": 0,
+    "by_tool": {
+      "file_editor": 209,
+      "terminal": 249,
+      "think": 7
+    }
+  },
+  "trace": {
+    "events_path": "events.jsonl",
+    "event_count": 955,
+    "invalid_event_count": 0,
+    "integrity_sha256": "65a7c9d3521642a820cd4f01b8dc2d36e70fbd8c79e23ee9dcb460e8d3a5f6ed"
+  }
+}
