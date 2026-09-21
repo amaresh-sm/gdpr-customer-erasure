@@ -14,7 +14,9 @@ python3 scripts/update_benchmarking_data.py
 ```
 
 Scores, telemetry, token usage, cache-read tokens, and estimated costs come from
-`benchmarking-runs/`. Dependency counts and largest source-file metrics are read
-from the matching local candidate directory when available. The report includes
-only completed runs with numeric scores. Use `--dry-run` to preview candidate
-directories that would be archived.
+`benchmarking-runs/`. Dependency counts and largest-file metrics are read from the
+matching local candidate directory when available. “Largest file” means the eligible
+core source/content file with the highest line count; generated artifacts, migrations
+and database dumps, logs, reports, snapshots, caches, dependency manifests, lockfiles,
+and `node_modules` are excluded. The report includes only completed runs with numeric
+scores. Use `--dry-run` to preview candidate directories that would be archived.

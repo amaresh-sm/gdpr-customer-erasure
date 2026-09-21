@@ -58,11 +58,19 @@ EXCLUDED_PARTS = {
     ".git",
     ".cache",
     ".pytest_cache",
+    "artifacts",
     "cache",
     "coverage",
     "dist",
     "build",
+    "fixtures",
+    "logs",
+    "migrations",
     "node_modules",
+    "reports",
+    "snapshots",
+    "tmp",
+    "vendor",
 }
 EXCLUDED_NAMES = {
     ".dockerignore",
@@ -72,6 +80,9 @@ EXCLUDED_NAMES = {
     ".gitattributes",
     ".gitignore",
     "Dockerfile",
+    "Cargo.lock",
+    "Gemfile.lock",
+    "go.sum",
     "docker-compose.yml",
     "eslint.config.js",
     "metadata.json",
@@ -79,6 +90,8 @@ EXCLUDED_NAMES = {
     "package-lock.json",
     "package.json",
     "pnpm-lock.yaml",
+    "poetry.lock",
+    "Pipfile.lock",
     "tsconfig.json",
     "yarn.lock",
 }
@@ -267,7 +280,13 @@ def dependency_count(source: Path) -> int | None:
 
 
 def actual_largest_file(source: Path) -> str | None:
-    """Find the largest source/content file, excluding generated and metadata files."""
+    """Find the largest eligible core file by line count.
+
+    Benchmark metadata should describe the candidate's substantive source/content,
+    not generated artifacts, dependency manifests, database migrations/dumps, logs,
+    caches, or lockfiles.  Line count is used instead of byte size so formatting or
+    minification cannot make an incidental file appear to be the largest.
+    """
     if not source.is_dir():
         return None
     candidates: list[tuple[int, Path]] = []
@@ -280,14 +299,15 @@ def actual_largest_file(source: Path) -> str | None:
         if path.suffix.lower() not in CODE_OR_CONTENT_SUFFIXES:
             continue
         try:
-            size = path.stat().st_size
-        except OSError:
+            with path.open("r", encoding="utf-8", errors="replace") as handle:
+                line_count = sum(1 for _ in handle)
+        except (OSError, UnicodeError):
             continue
-        candidates.append((size, relative))
+        candidates.append((line_count, relative))
     if not candidates:
         return None
-    size, relative = max(candidates, key=lambda item: (item[0], str(item[1])))
-    return f"{relative} ({size / 1024:.1f}KB)"
+    line_count, relative = max(candidates, key=lambda item: (item[0], str(item[1])))
+    return f"{relative} ({line_count} LOC)"
 
 
 def test_summary(run_dir: Path) -> str:
