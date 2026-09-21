@@ -25,6 +25,7 @@
     "candidates:finalize": "npx --prefix codebase tsx scripts/candidates/finalize-container.ts",
     "candidates:score": "bash scripts/candidates/score.sh",
     "candidates:score:stable": "bash scripts/candidates/score-stable.sh",
-    "candidates:summary": "npx --prefix codebase tsx scripts/candidates/summary.ts"
+    "candidates:summary": "npx --prefix codebase tsx scripts/candidates/summary.ts",
+    "benchmarking:data": "python3 scripts/update_benchmarking_data.py"
   }
 }
